@@ -1455,14 +1455,12 @@ export class HeadlessTableEngine {
           continue; // Skip accounting log if it failed
         }
 
-        // Emit bus event so the player's UI updates immediately
-        if (typeof window === 'undefined') {
-          // Inside backend engine, rely on global masterBus (assumed to be imported or available)
-          // But actually this is 'HeadlessTableEngine', wait, let's just use WalletService or whatever is appropriate if we want to.
-          // Actually, since this is backend, we might not have 'masterBus'. Looking at autorebuy, it doesn't emit 'BALANCE_UPDATED', WalletService does.
-          // Since we bypassed WalletService.unlockFromTable, we should emit if we can. But HeadlessTableEngine doesn't import masterBus directly.
-          // Let's just log it.
-        }
+        // Emit BALANCE_UPDATED so the player's cashier/wallet UI refreshes in real-time
+        masterBus.emit('BALANCE_UPDATED', {
+          source: 'leave_pending_cashout',
+          userId: seat.user_id,
+          amount: returnedChips,
+        });
 
         console.log(
           `[HeadlessTableEngine:${this.tableId}] Processed leave_pending for ${seat.user_id} — ` +
@@ -1510,7 +1508,10 @@ export class HeadlessTableEngine {
         .update({ current_players: count ?? 0 })
         .eq('id', this.tableId);
     } else {
-      console.error(`[HeadlessTableEngine:${this.tableId}] Recount after leave-pending failed:`, countErr);
+      console.error(
+        `[HeadlessTableEngine:${this.tableId}] Recount after leave-pending failed:`,
+        countErr
+      );
     }
   }
 
@@ -1537,7 +1538,10 @@ export class HeadlessTableEngine {
         .is('left_at', null);
 
       if (countErr) {
-        console.error(`[HeadlessTableEngine:${this.tableId}] Recount failed after horse left:`, countErr);
+        console.error(
+          `[HeadlessTableEngine:${this.tableId}] Recount failed after horse left:`,
+          countErr
+        );
       } else {
         await this.supabaseClient
           .from('tables')

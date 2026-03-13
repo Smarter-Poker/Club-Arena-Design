@@ -138,6 +138,7 @@ class PromotionServiceClass {
       .maybeSingle();
 
     if (error) throw error;
+    if (!data) throw new Error('Promotion created but no data returned');
     return this.mapPromotion(data);
   }
 
@@ -231,6 +232,7 @@ class PromotionServiceClass {
         .eq('id', promotionId);
     }
 
+    if (!data) throw new Error('Claim created but no data returned');
     return this.mapClaim(data);
   }
 
