@@ -532,6 +532,24 @@ class DailyChallengeServiceClass {
   }
 
   /**
+   * Emit push notification trigger for daily reset
+   */
+  public emitDailyResetReminder(): void {
+    try {
+      const today = this.getTodayKey();
+      const lastReminder = localStorage.getItem('last_daily_reset_reminder');
+
+      if (lastReminder !== today) {
+        masterBus.emit('DAILY_RESET_AVAILABLE', { date: today });
+        localStorage.setItem('last_daily_reset_reminder', today);
+        console.log('[DailyChallenge] Emitted DAILY_RESET_AVAILABLE push event');
+      }
+    } catch (e) {
+      // Ignore localStorage errors (e.g. strict privacy settings)
+    }
+  }
+
+  /**
    * Select random challenges for today
    */
   private selectDailyChallenges(count: number): DailyChallenge[] {

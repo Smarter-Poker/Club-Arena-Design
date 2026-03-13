@@ -86,13 +86,15 @@ export default function TournamentDetails() {
   const [visibleEntries, setVisibleEntries] = useState<Set<string>>(new Set());
 
   useEffect(() => {
+    let isMounted = true;
     if (tournamentId) {
-      loadTournament();
+      loadTournament(() => isMounted);
     }
     if (user?.id) {
       loadWalletBalance();
     }
     return () => {
+      isMounted = false;
       if (timerRef.current) clearInterval(timerRef.current);
       if (lateRegTimerRef.current) clearInterval(lateRegTimerRef.current);
     };
@@ -337,11 +339,12 @@ export default function TournamentDetails() {
     });
   }, [entries]);
 
-  const loadTournament = async () => {
+  const loadTournament = async (getIsMounted?: () => boolean) => {
     if (!tournamentId) return;
-    setIsLoading(true);
+    if (!getIsMounted || getIsMounted()) setIsLoading(true);
     try {
       const data = await tournamentService.getTournament(tournamentId);
+      if (getIsMounted && !getIsMounted()) return;
       setTournament(data);
 
       if (data) {
@@ -351,6 +354,8 @@ export default function TournamentDetails() {
           .select('id, user_id, username, chips, status, position, club_id, table_id')
           .eq('tournament_id', data.id)
           .order('registered_at', { ascending: true });
+
+        if (getIsMounted && !getIsMounted()) return;
 
         if (!error && playersData) {
           setEntries(
@@ -395,7 +400,9 @@ export default function TournamentDetails() {
             .from('tables')
             .select('id, name, status, max_players, current_players, small_blind, big_blind')
             .eq('tournament_id', data.id);
-          setTables((tablesData || []) as TournamentTable[]);
+          if (!getIsMounted || getIsMounted()) {
+            setTables((tablesData || []) as TournamentTable[]);
+          }
         }
 
         // Fetch union name for XMTT tournaments
@@ -406,7 +413,7 @@ export default function TournamentDetails() {
               .select('name')
               .eq('id', (data as any).union_id)
               .maybeSingle();
-            if (unionData?.name) setUnionName(unionData.name);
+            if (unionData?.name && (!getIsMounted || getIsMounted())) setUnionName(unionData.name);
           } catch {
             /* non-critical */
           }
@@ -414,9 +421,9 @@ export default function TournamentDetails() {
       }
     } catch (error) {
       console.error('Failed to load tournament:', error);
-      toast.error('Failed to load tournament details');
+      if (!getIsMounted || getIsMounted()) toast.error('Failed to load tournament details');
     }
-    setIsLoading(false);
+    if (!getIsMounted || getIsMounted()) setIsLoading(false);
   };
 
   const startCountdown = () => {

@@ -14,6 +14,7 @@ import LobbyHeroBanner from '../components/lobby/LobbyHeroBanner';
 import { tableService } from '../services/TableService';
 import { supabase } from '../lib/supabase';
 import { masterBus } from '../core/MasterBus';
+import { dailyChallengeService } from '../services/DailyChallengeService';
 import { useUserStore } from '../stores/useUserStore';
 import type { PokerTable } from '../types/database.types';
 import DailyLoginReward from '../components/gamification/DailyLoginReward';
@@ -100,6 +101,9 @@ export default function LobbyPage() {
     bonusService.getWheelStats(user.id).then((stats) => {
       if (isMounted.current) setWheelStats(stats);
     });
+
+    // Trigger push notification event if daily reset is available
+    dailyChallengeService.emitDailyResetReminder();
 
     // Listen for balance updates (e.g., from wheel spins or daily claims) to force profile refresh
     const unsubBalance = masterBus.subscribe('BALANCE_UPDATED', () => {

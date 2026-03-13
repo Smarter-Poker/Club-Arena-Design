@@ -60,11 +60,15 @@ export default function ClubLobby() {
   }, [clubId, navigate]);
 
   useEffect(() => {
+    let isMounted = true;
     if (!clubId) {
       setIsLoading(false);
       return;
     }
-    loadClubData();
+    loadClubData(() => isMounted);
+    return () => {
+      isMounted = false;
+    };
   }, [clubId, currentUser?.id]);
 
   // ── Realtime subscription: live table and tournament updates ──
@@ -122,7 +126,7 @@ export default function ClubLobby() {
     };
   }, [clubId]);
 
-  const loadClubData = async () => {
+  const loadClubData = async (getIsMounted: () => boolean) => {
     if (!clubId) return;
     setIsLoading(true);
     try {
@@ -131,11 +135,11 @@ export default function ClubLobby() {
         tableService.getClubTables(clubId),
         tournamentService.getTournaments(clubId),
       ]);
+      if (!getIsMounted()) return;
       setClub(clubData);
       setTables(tableData);
       setTournaments(tournamentData);
 
-      // Load wallet balances for current user
       if (currentUser?.id) {
         const { data: walletData } = await supabase
           .from('wallets')
@@ -143,19 +147,19 @@ export default function ClubLobby() {
           .eq('user_id', currentUser.id)
           .eq('wallet_type', 'PLAYER')
           .maybeSingle();
-        if (walletData) setChipBalance(walletData.balance || 0);
+        if (getIsMounted() && walletData) setChipBalance(walletData.balance || 0);
 
         const { data: diamondData } = await supabase
           .from('diamond_wallets')
           .select('balance')
           .eq('user_id', currentUser.id)
           .maybeSingle();
-        if (diamondData) setDiamondBalance(diamondData.balance || 0);
+        if (getIsMounted() && diamondData) setDiamondBalance(diamondData.balance || 0);
       }
     } catch {
       // Error loading club data - user will see empty state
     }
-    setIsLoading(false);
+    if (getIsMounted()) setIsLoading(false);
   };
 
   const filters: GameFilter[] = ['ALL', "Hold'em", 'Omaha', 'Mixed', 'MTT', 'Spin-It', 'SN'];

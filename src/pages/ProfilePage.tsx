@@ -25,6 +25,7 @@ import FinancialAchievementBadge from '../components/gamification/FinancialAchie
 import CircularGauge from '../components/common/CircularGauge';
 import DiamondRainEffect from '../components/effects/DiamondRainEffect';
 import MissionsPanel, { Mission } from '../components/gamification/MissionsPanel';
+import GamificationLeaderboard from '../components/gamification/GamificationLeaderboard';
 import { dailyChallengeService, type UserDailyChallenge } from '../services/DailyChallengeService';
 import { useSwipeTabs } from '../hooks/useSwipeTabs';
 import { useToast } from '../components/common/Toast';
@@ -245,21 +246,23 @@ export default function ProfilePage() {
 
   // Load profile data from Supabase
   useEffect(() => {
+    let isMounted = true;
     async function loadProfile() {
       setIsLoading(true);
       try {
         const {
           data: { user: authUser },
         } = await supabase.auth.getUser();
-        if (!authUser) return;
+        if (!authUser || !isMounted) return;
 
+        // Fetch basic profile and stats
         const { data: profile } = await supabase
           .from('profiles')
           .select('*')
           .eq('id', authUser.id)
           .maybeSingle();
 
-        if (profile) {
+        if (profile && isMounted) {
           setUser({
             id: profile.id,
             username: profile.username || 'Player',
@@ -300,7 +303,7 @@ export default function ProfilePage() {
             .select('*, achievement:achievements(*)')
             .eq('user_id', authUser.id);
 
-          if (userAchievements) {
+          if (userAchievements && isMounted) {
             setAchievements(
               userAchievements.map((ua) => ({
                 id: ua.achievement?.id || ua.id,
@@ -328,21 +331,23 @@ export default function ProfilePage() {
 
           const allMissions = [...daily, ...weekly, ...monthly];
 
-          setMissions(
-            allMissions.map((mc) => ({
-              id: mc.id,
-              tier: ('tier' in mc ? mc.tier : 'daily') as 'daily' | 'weekly' | 'monthly',
-              title: mc.challenge.name,
-              description: mc.challenge.description,
-              icon: mc.challenge.icon,
-              current: mc.progress,
-              target: mc.challenge.requirement,
-              rewardAmount: mc.challenge.chipReward,
-              rewardType: 'chips' as const,
-              completed: mc.completed,
-              claimed: mc.claimed,
-            }))
-          );
+          if (isMounted) {
+            setMissions(
+              allMissions.map((mc) => ({
+                id: mc.id,
+                tier: ('tier' in mc ? mc.tier : 'daily') as 'daily' | 'weekly' | 'monthly',
+                title: mc.challenge.name,
+                description: mc.challenge.description,
+                icon: mc.challenge.icon,
+                current: mc.progress,
+                target: mc.challenge.requirement,
+                rewardAmount: mc.challenge.chipReward,
+                rewardType: 'chips' as const,
+                completed: mc.completed,
+                claimed: mc.claimed,
+              }))
+            );
+          }
         } catch (err) {
           console.error('[PROFILE] Failed to load missions:', err);
         }
@@ -356,7 +361,7 @@ export default function ProfilePage() {
             .order('created_at', { ascending: true })
             .limit(200);
 
-          if (txns) setTransactions(txns);
+          if (txns && isMounted) setTransactions(txns);
         } catch {
           setTransactions([]);
         }
@@ -371,12 +376,15 @@ export default function ProfilePage() {
         }
       } catch (err: any) {
         console.error('[PROFILE] Load failed:', err);
-        toast.error(err.message || 'Failed to load profile data');
+        if (isMounted) toast.error(err.message || 'Failed to load profile data');
       } finally {
-        setIsLoading(false);
+        if (isMounted) setIsLoading(false);
       }
     }
     loadProfile();
+    return () => {
+      isMounted = false;
+    };
   }, []);
 
   // ── Bus Listeners: cross-page profile reactivity ──
@@ -871,6 +879,11 @@ export default function ProfilePage() {
             }
           }}
         />
+      </section>
+
+      {/* Gamification Leaderboard */}
+      <section className={styles.contentSection}>
+        <GamificationLeaderboard />
       </section>
 
       {/* Achievement Showcase — always visible */}
