@@ -731,6 +731,111 @@ class MessagingServiceClass {
 
     return await this.mapMessage(data);
   }
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // Q3: MESSAGE SCHEDULING
+  // ═══════════════════════════════════════════════════════════════════════════
+
+  /**
+   * Schedule a message for future delivery (club admin announcements).
+   * Stores in `scheduled_messages` table; a cron picks them up at send_at time.
+   */
+  async scheduleMessage(
+    conversationId: string,
+    senderId: string,
+    content: string,
+    sendAt: Date
+  ): Promise<{ id: string } | null> {
+    const { data, error } = await supabase
+      .from('scheduled_messages')
+      .insert({
+        conversation_id: conversationId,
+        sender_id: senderId,
+        content,
+        send_at: sendAt.toISOString(),
+        status: 'pending',
+      })
+      .select('id')
+      .maybeSingle();
+
+    if (error) {
+      console.error('[Messaging] Schedule failed:', error);
+      return null;
+    }
+
+    return data;
+  }
+
+  /**
+   * Get pending scheduled messages for a conversation
+   */
+  async getScheduledMessages(conversationId: string): Promise<
+    Array<{ id: string; content: string; sendAt: string; status: string }>
+  > {
+    const { data, error } = await supabase
+      .from('scheduled_messages')
+      .select('id, content, send_at, status')
+      .eq('conversation_id', conversationId)
+      .eq('status', 'pending')
+      .order('send_at', { ascending: true });
+
+    if (error) return [];
+    return (data || []).map((d: any) => ({
+      id: d.id,
+      content: d.content,
+      sendAt: d.send_at,
+      status: d.status,
+    }));
+  }
+
+  /**
+   * Cancel a scheduled message
+   */
+  async cancelScheduledMessage(messageId: string): Promise<boolean> {
+    const { error } = await supabase
+      .from('scheduled_messages')
+      .update({ status: 'cancelled' })
+      .eq('id', messageId);
+
+    return !error;
+  }
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // Q3: NOTIFICATION PREFERENCES (per-type muting)
+  // ═══════════════════════════════════════════════════════════════════════════
+
+  /**
+   * Get user's notification preferences from localStorage
+   */
+  getNotificationPreferences(): Record<string, boolean> {
+    try {
+      const raw = localStorage.getItem('notif_preferences');
+      return raw ? JSON.parse(raw) : {
+        messages: true,
+        games: true,
+        social: true,
+        achievements: true,
+        system: true,
+      };
+    } catch {
+      return { messages: true, games: true, social: true, achievements: true, system: true };
+    }
+  }
+
+  /**
+   * Set user's notification preferences
+   */
+  setNotificationPreferences(prefs: Record<string, boolean>): void {
+    localStorage.setItem('notif_preferences', JSON.stringify(prefs));
+  }
+
+  /**
+   * Check if a specific notification type is muted
+   */
+  isNotificationTypeMuted(type: string): boolean {
+    const prefs = this.getNotificationPreferences();
+    return prefs[type] === false;
+  }
 }
 
 // Reaction type
