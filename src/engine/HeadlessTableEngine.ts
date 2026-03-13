@@ -1498,16 +1498,20 @@ export class HeadlessTableEngine {
     }
 
     // Update player count after removals
-    const { count } = await this.supabaseClient
+    const { count, error: countErr } = await this.supabaseClient
       .from('table_seats')
       .select('*', { count: 'exact', head: true })
       .eq('table_id', this.tableId)
       .is('left_at', null);
 
-    await this.supabaseClient
-      .from('tables')
-      .update({ current_players: count || 0 })
-      .eq('id', this.tableId);
+    if (!countErr) {
+      await this.supabaseClient
+        .from('tables')
+        .update({ current_players: count ?? 0 })
+        .eq('id', this.tableId);
+    } else {
+      console.error(`[HeadlessTableEngine:${this.tableId}] Recount after leave-pending failed:`, countErr);
+    }
   }
 
   private async markHorseAsLeft(userId: string, reason: string): Promise<void> {
