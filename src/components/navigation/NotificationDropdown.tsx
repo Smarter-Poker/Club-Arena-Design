@@ -6,218 +6,228 @@
  */
 
 import { useState, useEffect, useRef } from 'react';
-import { supabase } from '../../lib/supabase'
+import { supabase } from '../../lib/supabase';
 import { masterBus } from '../../core/MasterBus';
 import { useUserStore } from '../../stores/useUserStore';
 import styles from './NotificationDropdown.module.css';
 
 interface Notification {
-    id: string;
-    type: string;
-    title: string;
-    message: string;
-    data?: Record<string, any>;
-    isRead: boolean;
-    createdAt: string;
+  id: string;
+  type: string;
+  title: string;
+  message: string;
+  data?: Record<string, any>;
+  isRead: boolean;
+  createdAt: string;
 }
 
 interface NotificationDropdownProps {
-    onNavigate?: (path: string) => void;
+  onNavigate?: (path: string) => void;
 }
 
 export default function NotificationDropdown({ onNavigate }: NotificationDropdownProps) {
-    const { user } = useUserStore();
-    const [isOpen, setIsOpen] = useState(false);
-    const [notifications, setNotifications] = useState<Notification[]>([]);
-    const [unreadCount, setUnreadCount] = useState(0);
-    const [loading, setLoading] = useState(true);
-    const [visibleItems, setVisibleItems] = useState<Set<number>>(new Set());
-    const dropdownRef = useRef<HTMLDivElement>(null);
+  const { user } = useUserStore();
+  const [isOpen, setIsOpen] = useState(false);
+  const [notifications, setNotifications] = useState<Notification[]>([]);
+  const [unreadCount, setUnreadCount] = useState(0);
+  const [loading, setLoading] = useState(true);
+  const [visibleItems, setVisibleItems] = useState<Set<number>>(new Set());
+  const dropdownRef = useRef<HTMLDivElement>(null);
 
-    useEffect(() => {
-        if (user?.id) {
-            loadNotifications();
-            const cleanup = subscribeToNotifications();
-            return () => { cleanup(); };
-        }
-    }, [user?.id]);
+  useEffect(() => {
+    if (user?.id) {
+      loadNotifications();
+      const cleanup = subscribeToNotifications();
+      return () => {
+        cleanup();
+      };
+    }
+  }, [user?.id]);
 
-    useEffect(() => {
-        const handleClickOutside = (e: MouseEvent) => {
-            if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
-                setIsOpen(false);
-            }
-        };
-        document.addEventListener('mousedown', handleClickOutside);
-        return () => document.removeEventListener('mousedown', handleClickOutside);
-    }, []);
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
+        setIsOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
-    const loadNotifications = async () => {
-        setLoading(true);
-        const { data, error } = await supabase
-            .from('notifications')
-            .select('id, type, title, message, data, is_read, created_at')
-            .eq('user_id', user?.id)
-            .order('created_at', { ascending: false })
-            .limit(20);
+  const loadNotifications = async () => {
+    setLoading(true);
+    const { data, error } = await supabase
+      .from('notifications')
+      .select('id, type, title, message, data, is_read, created_at')
+      .eq('user_id', user?.id)
+      .order('created_at', { ascending: false })
+      .limit(20);
 
-        if (!error && data) {
-            const mapped = data.map((n: any) => ({
+    if (!error && data) {
+      const mapped = data.map((n: any) => ({
+        id: n.id,
+        type: n.type,
+        title: n.title,
+        message: n.message,
+        data: n.data,
+        isRead: n.is_read,
+        createdAt: n.created_at,
+      }));
+      setNotifications(mapped);
+      setUnreadCount(mapped.filter((n) => !n.isRead).length);
+      setVisibleItems(new Set());
+      mapped.forEach((_, i) => {
+        setTimeout(() => setVisibleItems((prev) => new Set(prev).add(i)), i * 60);
+      });
+    }
+    setLoading(false);
+  };
+
+  const subscribeToNotifications = () => {
+    const channelKey = `notifications:${user?.id}`;
+
+    const channel = masterBus.getOrCreateChannel(channelKey);
+    channel
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'notifications',
+          filter: `user_id=eq.${user?.id}`,
+        },
+        (payload) => {
+          const n = payload.new as any;
+          setNotifications((prev) =>
+            [
+              {
                 id: n.id,
                 type: n.type,
                 title: n.title,
                 message: n.message,
                 data: n.data,
-                isRead: n.is_read,
-                createdAt: n.created_at
-            }));
-            setNotifications(mapped);
-            setUnreadCount(mapped.filter(n => !n.isRead).length);
-            setVisibleItems(new Set());
-            mapped.forEach((_, i) => {
-                setTimeout(() => setVisibleItems(prev => new Set(prev).add(i)), i * 60);
-            });
+                isRead: false,
+                createdAt: n.created_at,
+              },
+              ...prev,
+            ].slice(0, 20)
+          );
+          setUnreadCount((prev) => prev + 1);
         }
-        setLoading(false);
-    };
+      )
+      .subscribe();
 
-    const subscribeToNotifications = () => {
-        const channelKey = `notifications:${user?.id}`;
+    return () => masterBus.removeRegisteredChannel(channelKey);
+  };
 
-        const channel = masterBus.getOrCreateChannel(channelKey);
-            channel
-            .on('postgres_changes', {
-                event: 'INSERT',
-                schema: 'public',
-                table: 'notifications',
-                filter: `user_id=eq.${user?.id}`
-            }, (payload) => {
-                const n = payload.new as any;
-                setNotifications(prev => [{
-                    id: n.id,
-                    type: n.type,
-                    title: n.title,
-                    message: n.message,
-                    data: n.data,
-                    isRead: false,
-                    createdAt: n.created_at
-                }, ...prev].slice(0, 20));
-                setUnreadCount(prev => prev + 1);
-            })
-            .subscribe();
+  const markAsRead = async (id: string) => {
+    const { error } = await supabase.from('notifications').update({ is_read: true }).eq('id', id);
 
-        return () => masterBus.removeRegisteredChannel(channelKey);
-    };
+    if (error) return;
 
-    const markAsRead = async (id: string) => {
-        await supabase
-            .from('notifications')
-            .update({ is_read: true })
-            .eq('id', id);
+    setNotifications((prev) => prev.map((n) => (n.id === id ? { ...n, isRead: true } : n)));
+    setUnreadCount((prev) => Math.max(0, prev - 1));
+  };
 
-        setNotifications(prev => prev.map(n =>
-            n.id === id ? { ...n, isRead: true } : n
-        ));
-        setUnreadCount(prev => Math.max(0, prev - 1));
-    };
+  const markAllAsRead = async () => {
+    const { error } = await supabase
+      .from('notifications')
+      .update({ is_read: true })
+      .eq('user_id', user?.id)
+      .eq('is_read', false);
 
-    const markAllAsRead = async () => {
-        await supabase
-            .from('notifications')
-            .update({ is_read: true })
-            .eq('user_id', user?.id)
-            .eq('is_read', false);
+    if (error) return;
 
-        setNotifications(prev => prev.map(n => ({ ...n, isRead: true })));
-        setUnreadCount(0);
-    };
+    setNotifications((prev) => prev.map((n) => ({ ...n, isRead: true })));
+    setUnreadCount(0);
+  };
 
-    const handleNotificationClick = (notification: Notification) => {
-        markAsRead(notification.id);
+  const handleNotificationClick = (notification: Notification) => {
+    markAsRead(notification.id);
 
-        // Navigate based on notification type
-        if (notification.data?.path && onNavigate) {
-            onNavigate(notification.data.path);
-        }
-        setIsOpen(false);
-    };
+    // Navigate based on notification type
+    if (notification.data?.path && onNavigate) {
+      onNavigate(notification.data.path);
+    }
+    setIsOpen(false);
+  };
 
-    const getIcon = (type: string): string => {
-        switch (type) {
-            case 'achievement': return '★';
-            case 'friend_request': return '●';
-            case 'message': return '◈';
-            case 'tournament': return 'T';
-            case 'table_invite': return '♠';
-            case 'payment': return '◉';
-            case 'club': return '♛';
-            default: return '○';
-        }
-    };
+  const getIcon = (type: string): string => {
+    switch (type) {
+      case 'achievement':
+        return '★';
+      case 'friend_request':
+        return '●';
+      case 'message':
+        return '◈';
+      case 'tournament':
+        return 'T';
+      case 'table_invite':
+        return '♠';
+      case 'payment':
+        return '◉';
+      case 'club':
+        return '♛';
+      default:
+        return '○';
+    }
+  };
 
-    const formatTime = (dateStr: string): string => {
-        const date = new Date(dateStr);
-        const now = new Date();
-        const diffMs = now.getTime() - date.getTime();
-        const diffMins = Math.floor(diffMs / 60000);
-        const diffHours = Math.floor(diffMs / 3600000);
+  const formatTime = (dateStr: string): string => {
+    const date = new Date(dateStr);
+    const now = new Date();
+    const diffMs = now.getTime() - date.getTime();
+    const diffMins = Math.floor(diffMs / 60000);
+    const diffHours = Math.floor(diffMs / 3600000);
 
-        if (diffMins < 1) return 'Just now';
-        if (diffMins < 60) return `${diffMins}m`;
-        if (diffHours < 24) return `${diffHours}h`;
-        return date.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
-    };
+    if (diffMins < 1) return 'Just now';
+    if (diffMins < 60) return `${diffMins}m`;
+    if (diffHours < 24) return `${diffHours}h`;
+    return date.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+  };
 
-    return (
-        <div className={styles.container} ref={dropdownRef}>
-            <button
-                className={styles.trigger}
-                onClick={() => setIsOpen(!isOpen)}
-            >
+  return (
+    <div className={styles.container} ref={dropdownRef}>
+      <button className={styles.trigger} onClick={() => setIsOpen(!isOpen)}>
+        {unreadCount > 0 && <span className={styles.badge}>{unreadCount}</span>}
+      </button>
 
-                {unreadCount > 0 && (
-                    <span className={styles.badge}>{unreadCount}</span>
-                )}
-            </button>
+      {isOpen && (
+        <div className={styles.dropdown}>
+          <div className={styles.header}>
+            <h4>Notifications</h4>
+            {unreadCount > 0 && <button onClick={markAllAsRead}>Mark all read</button>}
+          </div>
 
-            {isOpen && (
-                <div className={styles.dropdown}>
-                    <div className={styles.header}>
-                        <h4>Notifications</h4>
-                        {unreadCount > 0 && (
-                            <button onClick={markAllAsRead}>Mark all read</button>
-                        )}
-                    </div>
-
-                    <div className={styles.list}>
-                        {loading ? (
-                            <div className={styles.loading}>Loading...</div>
-                        ) : notifications.length === 0 ? (
-                            <div className={styles.empty}>No notifications</div>
-                        ) : (
-                            notifications.map((n, i) => (
-                                <div
-                                    key={n.id}
-                                    className={`${styles.item} ${!n.isRead ? styles.unread : ''}`}
-                                    onClick={() => handleNotificationClick(n)}
-                                    style={{
-                                        opacity: visibleItems.has(i) ? 1 : 0,
-                                        transform: visibleItems.has(i) ? 'translateY(0)' : 'translateY(8px)',
-                                        transition: 'all 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275)'
-                                    }}
-                                >
-                                    <span className={styles.icon}>{getIcon(n.type)}</span>
-                                    <div className={styles.content}>
-                                        <span className={styles.title}>{n.title}</span>
-                                        <span className={styles.message}>{n.message}</span>
-                                    </div>
-                                    <span className={styles.time}>{formatTime(n.createdAt)}</span>
-                                </div>
-                            ))
-                        )}
-                    </div>
+          <div className={styles.list}>
+            {loading ? (
+              <div className={styles.loading}>Loading...</div>
+            ) : notifications.length === 0 ? (
+              <div className={styles.empty}>No notifications</div>
+            ) : (
+              notifications.map((n, i) => (
+                <div
+                  key={n.id}
+                  className={`${styles.item} ${!n.isRead ? styles.unread : ''}`}
+                  onClick={() => handleNotificationClick(n)}
+                  style={{
+                    opacity: visibleItems.has(i) ? 1 : 0,
+                    transform: visibleItems.has(i) ? 'translateY(0)' : 'translateY(8px)',
+                    transition: 'all 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275)',
+                  }}
+                >
+                  <span className={styles.icon}>{getIcon(n.type)}</span>
+                  <div className={styles.content}>
+                    <span className={styles.title}>{n.title}</span>
+                    <span className={styles.message}>{n.message}</span>
+                  </div>
+                  <span className={styles.time}>{formatTime(n.createdAt)}</span>
                 </div>
+              ))
             )}
+          </div>
         </div>
-    );
+      )}
+    </div>
+  );
 }
