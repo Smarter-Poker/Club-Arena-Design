@@ -113,7 +113,8 @@ export default function ClubAnnouncementsPage() {
         )
         .eq('club_id', clubId)
         .order('is_pinned', { ascending: false })
-        .order('created_at', { ascending: false });
+        .order('created_at', { ascending: false })
+        .limit(200);
 
       if (getIsMounted && !getIsMounted()) return;
       if (!error && data) {

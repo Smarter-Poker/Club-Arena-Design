@@ -175,10 +175,14 @@ export function TournamentRegistration({
           .maybeSingle();
 
         if (t) {
-          await supabase
+          const { error: updateErr } = await supabase
             .from('tournaments')
             .update({ current_players: Math.max((t.current_players || 1) - 1, 0) })
             .eq('id', tournamentId);
+
+          if (updateErr) {
+            console.error('[AdminRemove] Failed to decrement player count:', updateErr);
+          }
         }
       }
 

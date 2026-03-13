@@ -12,6 +12,9 @@
 
 import { useRef, useEffect, useCallback } from 'react';
 
+// Stable ref for onComplete to avoid including it in useEffect deps
+// (inline arrows from parent would restart animation on every re-render)
+
 // ═══════════════════════════════════════════════════════════════════════════════
 // TYPES
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -73,6 +76,8 @@ export function ConfettiCanvas({
     const animFrameRef = useRef<number>(0);
     const particlesRef = useRef<Particle[]>([]);
     const startTimeRef = useRef<number>(0);
+    const onCompleteRef = useRef(onComplete);
+    onCompleteRef.current = onComplete; // Always point to latest callback
 
     const createParticles = useCallback((width: number, height: number): Particle[] => {
         const particles: Particle[] = [];
@@ -154,7 +159,7 @@ export function ConfettiCanvas({
                 // Animation complete
                 ctx.clearRect(0, 0, window.innerWidth, window.innerHeight);
                 particlesRef.current = [];
-                onComplete?.();
+                onCompleteRef.current?.();
             }
         };
 
@@ -165,7 +170,9 @@ export function ConfettiCanvas({
                 cancelAnimationFrame(animFrameRef.current);
             }
         };
-    }, [active, duration, createParticles, onComplete]);
+    // onComplete intentionally omitted — stored in ref to prevent animation restart
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [active, duration, createParticles]);
 
     if (!active) return null;
 
