@@ -1425,3 +1425,48 @@
       inset 0 0 0 1px rgba(0, 212, 255, 0.5);
   }
 }
+
+/* ═══════════════════════════════════════════════════════════════════════════════
+   MOTIVATIONAL CTA — Fills empty space on sparse leaderboards
+   ═══════════════════════════════════════════════════════════════════════════════ */
+
+.lb-motivational-cta {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-top: 1.5rem;
+  padding: 1.25rem 1.5rem;
+  background: linear-gradient(145deg, rgba(0, 212, 255, 0.06) 0%, rgba(0, 100, 170, 0.04) 100%);
+  border: 1px dashed rgba(0, 212, 255, 0.2);
+  border-radius: 14px;
+  animation: fadeInUp 0.5s ease-out 0.3s both;
+}
+
+.lb-motivational-icon {
+  font-size: 2rem;
+  flex-shrink: 0;
+  animation: ctaIconBounce 3s ease-in-out infinite;
+}
+
+@keyframes ctaIconBounce {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-4px); }
+}
+
+.lb-motivational-text {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.lb-motivational-text strong {
+  font-size: 0.95rem;
+  color: #00d4ff;
+  text-shadow: 0 0 8px rgba(0, 212, 255, 0.3);
+}
+
+.lb-motivational-text span {
+  font-size: 0.8rem;
+  color: #6a7a8a;
+  line-height: 1.4;
+}
