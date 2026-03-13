@@ -1538,11 +1538,7 @@ export class HeadlessTableEngine {
         .eq('id', this.tableId);
 
       // Emit bus event so lobby/UI updates the table player count in real-time
-      masterBus.emit('TABLE_UPDATED', {
-        tableId: this.tableId,
-        current_players: count || 0,
-        source: 'horse_left',
-      });
+      masterBus.emit('TABLE_UPDATED', { tableId: this.tableId });
     }
   }
 
