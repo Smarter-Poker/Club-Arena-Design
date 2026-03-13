@@ -216,7 +216,8 @@ class ProfileServiceClass {
     const { data } = await supabase
       .from('hand_players')
       .select('chips_won, chips_lost, is_winner, hands(game_type)')
-      .eq('user_id', userId);
+      .eq('user_id', userId)
+      .limit(5000);
 
     if (!data || data.length === 0) {
       return {

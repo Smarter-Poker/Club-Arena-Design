@@ -121,7 +121,8 @@ class AgentServiceClass {
             `
       )
       .eq('club_id', clubId)
-      .order('joined_at', { ascending: false });
+      .order('joined_at', { ascending: false })
+      .limit(500);
 
     if (error) throw error;
 
@@ -711,7 +712,8 @@ class AgentServiceClass {
                 )
             `
       )
-      .eq('agent_id', agent.membership_id);
+      .eq('agent_id', agent.membership_id)
+      .limit(500);
 
     if (error) throw error;
 

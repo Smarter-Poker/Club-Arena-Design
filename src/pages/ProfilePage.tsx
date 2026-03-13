@@ -303,7 +303,8 @@ export default function ProfilePage() {
           const { data: userAchievements } = await supabase
             .from('user_achievements')
             .select('*, achievement:achievements(*)')
-            .eq('user_id', authUser.id);
+            .eq('user_id', authUser.id)
+            .limit(200);
 
           if (userAchievements && isMounted) {
             setAchievements(
