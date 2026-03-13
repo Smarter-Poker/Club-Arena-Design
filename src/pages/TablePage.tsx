@@ -2048,6 +2048,7 @@ export default function TablePage({
     };
     const unsubTimeBankStopped = masterBus.subscribe('TIME_BANK_STOPPED', persistTimeBankState);
     const unsubTimeBankDepleted = masterBus.subscribe('TIME_BANK_DEPLETED', persistTimeBankState);
+    const unsubTimeBankExpired = masterBus.subscribe('TIME_BANK_EXPIRED', persistTimeBankState);
 
     // STRADDLE_TOGGLED: Update straddle toggle UI
     const unsubStraddle = masterBus.subscribe('STRADDLE_TOGGLED', (event) => {
@@ -2083,6 +2084,7 @@ export default function TablePage({
       unsubTimeBank();
       unsubTimeBankStopped();
       unsubTimeBankDepleted();
+      unsubTimeBankExpired();
       unsubStraddle();
       unsubRakeback();
       unsubBalance();

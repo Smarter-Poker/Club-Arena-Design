@@ -6,7 +6,7 @@
  *  Quick links to: Alerts, Health, Disputes, Rate Audit, Settlements, Financials.
  */
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { masterBus } from '../core/MasterBus';
@@ -138,7 +138,7 @@ export default function FinancialAdminHub() {
     };
   }, []);
 
-  useVisibilityRefresh(() => loadStats());
+  useVisibilityRefresh(loadStats);
 
   const [stats, setStats] = useState<HubStats>({
     totalAlerts: 0,
@@ -154,37 +154,31 @@ export default function FinancialAdminHub() {
 
   useEffect(() => {
     loadStats();
-  }, []);
+  }, [loadStats]);
 
   // Bus listeners: refresh stats when financial events fire
   useEffect(() => {
-    const unsubBalance = masterBus.subscribeDebounced('BALANCE_UPDATED', () => loadStats(), 1000);
-    const unsubSettlement = masterBus.subscribeDebounced(
-      'SETTLEMENT_COMPLETED',
-      () => loadStats(),
-      1000
-    );
-    const unsubAlert = masterBus.subscribeDebounced('FINANCIAL_ALERT', () => loadStats(), 500);
+    const unsubBalance = masterBus.subscribeDebounced('BALANCE_UPDATED', loadStats, 1000);
+    const unsubSettlement = masterBus.subscribeDebounced('SETTLEMENT_COMPLETED', loadStats, 1000);
+    const unsubAlert = masterBus.subscribeDebounced('FINANCIAL_ALERT', loadStats, 500);
     return () => {
       unsubBalance();
       unsubSettlement();
       unsubAlert();
     };
-  }, []);
+  }, [loadStats]);
 
   // Real-time subscription: disputes table changes
   useEffect(() => {
     const channelKey = 'financial-admin-hub-disputes';
     const channel = masterBus.getOrCreateChannel(channelKey);
     channel
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'disputes' }, () =>
-        loadStats()
-      )
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'disputes' }, loadStats)
       .subscribe();
     return () => {
       masterBus.removeRegisteredChannel(channelKey);
     };
-  }, []);
+  }, [loadStats]);
 
   useEffect(() => {
     const timers: ReturnType<typeof setTimeout>[] = [];
@@ -202,98 +196,87 @@ export default function FinancialAdminHub() {
   const loadStats = async () => {
     setLoading(true);
     try {
-      // Count open disputes
-      let openDisputes = 0;
-      try {
-        const { count } = await supabase
-          .from('disputes')
-          .select('*', { count: 'exact', head: true })
-          .in('status', ['open', 'under_review', 'escalated']);
-        openDisputes = count || 0;
-      } catch {
-        /* table may not exist */
-      }
+      // ── Batch 1: All KPI counts in parallel ──
+      const [disputeResult, commResult, rakeResult, healthCountResult, alertResult] =
+        await Promise.all([
+          supabase
+            .from('disputes')
+            .select('*', { count: 'exact', head: true })
+            .in('status', ['open', 'under_review', 'escalated'])
+            .then((r) => r.count || 0)
+            .catch(() => 0),
+          supabase
+            .from('commission_rate_audit')
+            .select('*', { count: 'exact', head: true })
+            .then((r) => r.count || 0)
+            .catch(() => 0),
+          supabase
+            .from('rake_rate_audit')
+            .select('*', { count: 'exact', head: true })
+            .then((r) => r.count || 0)
+            .catch(() => 0),
+          supabase
+            .from('financial_health_checks')
+            .select('*', { count: 'exact', head: true })
+            .then((r) => r.count || 0)
+            .catch(() => 0),
+          supabase
+            .from('financial_alerts')
+            .select('*', { count: 'exact', head: true })
+            .eq('resolved', false)
+            .then((r) => r.count || 0)
+            .catch(() => 0),
+        ]);
 
-      // Count recent rate changes
-      let rateChanges = 0;
-      try {
-        const { count: commCount } = await supabase
-          .from('commission_rate_audit')
-          .select('*', { count: 'exact', head: true });
-        const { count: rakeCount } = await supabase
-          .from('rake_rate_audit')
-          .select('*', { count: 'exact', head: true });
-        rateChanges = (commCount || 0) + (rakeCount || 0);
-      } catch {
-        /* tables may not exist */
-      }
-
-      // Count health checks & last result
-      let healthChecks = 0;
-      let lastCheckPassed: boolean | null = null;
-      try {
-        const { count } = await supabase
-          .from('financial_health_checks')
-          .select('*', { count: 'exact', head: true });
-        healthChecks = count || 0;
-
-        const { data: lastCheck } = await supabase
+      // ── Batch 2: Last health check + revenue sparkline in parallel ──
+      const sevenDaysAgo = new Date(Date.now() - 7 * 86400000).toISOString();
+      const [lastCheckResult, rakeDataResult] = await Promise.all([
+        supabase
           .from('financial_health_checks')
           .select('passed')
           .order('created_at', { ascending: false })
           .limit(1)
-          .maybeSingle();
-        if (lastCheck) lastCheckPassed = lastCheck.passed;
-      } catch {
-        /* table may not exist */
-      }
-
-      // Count unresolved financial alerts from Supabase
-      let totalAlerts = 0;
-      try {
-        const { count: alertCount } = await supabase
-          .from('financial_alerts')
-          .select('*', { count: 'exact', head: true })
-          .eq('resolved', false);
-        totalAlerts = alertCount || 0;
-      } catch {
-        /* table may not exist */
-      }
-
-      if (!isMounted.current) return;
-      setStats({ totalAlerts, openDisputes, rateChanges, healthChecks, lastCheckPassed });
-
-      // Load 7-day revenue data for sparkline
-      try {
-        const sevenDaysAgo = new Date(Date.now() - 7 * 86400000).toISOString();
-        const { data: rakeData } = await supabase
+          .maybeSingle()
+          .then((r) => r.data)
+          .catch(() => null),
+        supabase
           .from('rake_records')
           .select('rake_amount, created_at')
           .gte('created_at', sevenDaysAgo)
           .order('created_at', { ascending: true })
-          .limit(5000);
+          .limit(5000)
+          .then((r) => r.data)
+          .catch(() => null),
+      ]);
 
-        if (rakeData && rakeData.length > 0) {
-          const dayLabels = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-          const grouped: Record<string, number> = {};
-          rakeData.forEach((r: any) => {
-            const d = new Date(r.created_at);
-            const label = `${dayLabels[d.getDay()]} ${d.getDate()}`;
-            grouped[label] = (grouped[label] || 0) + (r.rake_amount || 0);
-          });
-          // Build last 7 days in order
-          const days: { day: string; amount: number }[] = [];
-          for (let i = 6; i >= 0; i--) {
-            const d = new Date(Date.now() - i * 86400000);
-            const label = `${dayLabels[d.getDay()]} ${d.getDate()}`;
-            days.push({ day: label, amount: grouped[label] || 0 });
-          }
-          if (isMounted.current) setRevenueData(days);
-        } else {
-          if (isMounted.current) setRevenueData([]);
+      if (!isMounted.current) return;
+
+      setStats({
+        totalAlerts: alertResult,
+        openDisputes: disputeResult,
+        rateChanges: commResult + rakeResult,
+        healthChecks: healthCountResult,
+        lastCheckPassed: lastCheckResult?.passed ?? null,
+      });
+
+      // Process revenue sparkline
+      if (rakeDataResult && rakeDataResult.length > 0) {
+        const dayLabels = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+        const grouped: Record<string, number> = {};
+        rakeDataResult.forEach((r: any) => {
+          const d = new Date(r.created_at);
+          const label = `${dayLabels[d.getDay()]} ${d.getDate()}`;
+          grouped[label] = (grouped[label] || 0) + (r.rake_amount || 0);
+        });
+        const days: { day: string; amount: number }[] = [];
+        for (let i = 6; i >= 0; i--) {
+          const d = new Date(Date.now() - i * 86400000);
+          const label = `${dayLabels[d.getDay()]} ${d.getDate()}`;
+          days.push({ day: label, amount: grouped[label] || 0 });
         }
-      } catch {
-        /* ignore */
+        if (isMounted.current) setRevenueData(days);
+      } else {
+        if (isMounted.current) setRevenueData([]);
       }
     } catch (err) {
       console.error('[FinancialAdminHub] Stats load failed:', err);
