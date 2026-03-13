@@ -23,6 +23,7 @@ import { runItTwiceEngine } from './RunItTwiceEngine';
 import { insuranceEngine } from './InsuranceEngine';
 import { timeBankEngine } from './TimeBankEngine';
 import { disconnectEngine } from './DisconnectEngine';
+import { engineTelemetry } from './EngineTelemetry';
 import { HandPersistence } from '../services/HandPersistenceService';
 import { HorseLogic, type HorseStyle, type HorseDecision } from './HorseLogic';
 import { HorseBrainAdapter } from './HorseBrainAdapter';
@@ -212,6 +213,7 @@ export class HeadlessTableEngine {
     insuranceEngine.dispose(this.tableId);
     timeBankEngine.dispose(this.tableId);
     disconnectEngine.dispose(this.tableId);
+    engineTelemetry.removeTable(this.tableId);
   }
 
   /**
@@ -488,6 +490,8 @@ export class HeadlessTableEngine {
 
     this.handCount++;
     const handNumber = this.handCount;
+    const handStartTime = Date.now();
+    engineTelemetry.recordPlayerCount(this.tableId, players.length);
 
     // Reset per-hand rake tracking
     this.currentHandWentToFlop = false;

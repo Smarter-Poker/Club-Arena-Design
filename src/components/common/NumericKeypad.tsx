@@ -3,7 +3,7 @@
  *  NUMERIC KEYPAD — Cash App-style touch-optimized financial input
  * ═══════════════════════════════════════════════════════════════════════════════
  * Provides large, haptic-enabled number buttons with quick-amount presets
- * and real-time chip-to-dollar conversion display.
+ * and real-time chip value display.
  */
 
 import { useCallback } from 'react';
@@ -27,7 +27,7 @@ interface NumericKeypadProps {
   /** Quick-select presets shown above the keypad */
   quickAmounts?: number[];
   /** Conversion rate: chips per unit (e.g., 100 = 100 chips per 1 unit) */
-  chipsPerDollar?: number;
+  chipsPerUnit?: number;
   /** Whether to show the conversion display */
   showConversion?: boolean;
   /** Label shown above the value (e.g., "Deposit Amount") */
@@ -39,12 +39,12 @@ export default function NumericKeypad({
   onChange,
   maxAmount,
   quickAmounts = [50, 100, 500, 1000],
-  chipsPerDollar = 100,
+  chipsPerUnit = 100,
   showConversion = true,
   label = 'Amount',
 }: NumericKeypadProps) {
   const numericValue = parseFloat(value) || 0;
-  const dollarValue = chipsPerDollar > 0 ? numericValue / chipsPerDollar : 0;
+  const unitValue = chipsPerUnit > 0 ? numericValue / chipsPerUnit : 0;
 
   const handleKey = useCallback(
     (key: string) => {
@@ -90,7 +90,7 @@ export default function NumericKeypad({
           <span className="keypad-chips-label">chips</span>
         </div>
         {showConversion && numericValue > 0 && (
-          <span className="keypad-conversion">≈ ${dollarValue.toFixed(2)} USD</span>
+          <span className="keypad-conversion">≈ {unitValue.toFixed(2)} units</span>
         )}
       </div>
 
