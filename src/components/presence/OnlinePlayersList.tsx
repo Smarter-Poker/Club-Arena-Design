@@ -86,18 +86,53 @@ export const OnlinePlayersList: React.FC<OnlinePlayersListProps> = ({
         }
       }
 
-      let query = supabase
-        .from('player_presence')
-        .select('user_id, status, table_id', { count: 'exact' })
-        .in('status', ['online', 'playing'])
-        .order('last_seen_at', { ascending: false })
-        .limit(limit);
+      let allPresenceData: any[] = [];
+      let totalPresenceCount = 0;
 
-      if (clubId) {
-        query = query.in('user_id', userIdsFilter);
+      if (clubId && userIdsFilter.length > 0) {
+        // Chunk the filter array to prevent 414 URI Too Long errors in PostgREST on massive clubs
+        const chunkSize = 150;
+        const chunks = [];
+        for (let i = 0; i < userIdsFilter.length; i += chunkSize) {
+          chunks.push(userIdsFilter.slice(i, i + chunkSize));
+        }
+
+        const responses = await Promise.all(
+          chunks.map((chunk) =>
+            supabase
+              .from('player_presence')
+              .select('user_id, status, table_id, last_seen_at', { count: 'exact' })
+              .in('status', ['online', 'playing'])
+              .in('user_id', chunk)
+          )
+        );
+
+        responses.forEach(({ data, count }) => {
+          if (data) allPresenceData.push(...data);
+          if (count) totalPresenceCount += count;
+        });
+
+        // Sort combined results descending by last_seen_at and enforce limit locally
+        allPresenceData.sort(
+          (a, b) =>
+            new Date(b.last_seen_at || 0).getTime() - new Date(a.last_seen_at || 0).getTime()
+        );
+        allPresenceData = allPresenceData.slice(0, limit);
+      } else if (!clubId) {
+        // Global fetch
+        const { data, count } = await supabase
+          .from('player_presence')
+          .select('user_id, status, table_id, last_seen_at', { count: 'exact' })
+          .in('status', ['online', 'playing'])
+          .order('last_seen_at', { ascending: false })
+          .limit(limit);
+
+        allPresenceData = data || [];
+        totalPresenceCount = count || 0;
       }
 
-      const { data, count } = await query;
+      const data = allPresenceData;
+      const count = totalPresenceCount;
 
       if (data && data.length > 0) {
         // Fetch profiles separately

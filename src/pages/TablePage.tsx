@@ -3151,6 +3151,60 @@ export default function TablePage({
     });
   }, [tableId]);
 
+  // Unified Table Timer Logic (Phase M) - Moved out of the way of all earlier references
+  const isHeroTurnContext =
+    tableState.currentPlayerSeat === tableState.heroSeat && tableState.isHandInProgress;
+
+  const handleTimerAutoFold = useCallback(() => {
+    if (handControllerRef.current) {
+      try {
+        const foldResult = handControllerRef.current.performAction(tableState.heroSeat, 'fold');
+        if (foldResult !== false) {
+          sendAction('fold', { seat: tableState.heroSeat, autoFold: true });
+          soundService.playFold();
+
+          // Real-time broadcast
+          broadcastLocalHandState();
+          if (tableId) submitAction(tableId, userId || 'guest', 'fold').catch(() => {});
+        } else {
+          console.warn('[AutoFold] performAction returned false — fold may not have executed');
+        }
+      } catch (err) {
+        console.error('[AutoFold] Error during auto-fold:', err);
+      }
+    }
+  }, [tableState.heroSeat, tableId, userId, broadcastLocalHandState, sendAction]);
+
+  const { timeRemaining: actionTimeRemaining, resetTimer } = useTableTimer({
+    isHeroTurn: isHeroTurnContext && !timeBankActive,
+    isSoundEnabled,
+    onTimeout: () => {
+      // Auto-activate time bank if available
+      if (tableId && userId && timeBankEngine.hasTimeBank(tableId, userId)) {
+        const didActivate = timeBankEngine.onPrimaryTimerExpired(
+          tableId,
+          userId,
+          handleTimerAutoFold
+        );
+        if (!didActivate) {
+          handleTimerAutoFold();
+        }
+      } else {
+        handleTimerAutoFold();
+      }
+    },
+    initialTime: 15,
+  });
+
+  // Handle immediate UI Activation when button is clicked
+  const handleActivateTimeBank = useCallback(() => {
+    if (!tableId || !userId) return;
+    const activated = timeBankEngine.activate(tableId, userId, handleTimerAutoFold);
+    if (activated) {
+      soundService.playChips();
+    }
+  }, [tableId, userId, handleTimerAutoFold]);
+
   // Action handlers — LOCAL engine is authoritative → broadcast via Supabase Realtime (PRIMARY)
   // → fire-and-forget server call (SECONDARY, for when game server is deployed)
   const validateAndExecuteAction = (
