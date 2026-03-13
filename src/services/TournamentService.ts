@@ -875,19 +875,23 @@ class TournamentService {
 
             // Update table player count via authoritative recount (prevents race condition
             // if two late registrations happen simultaneously reading the same stale count)
-            const { count: lateRegCount } = await supabase
+            const { count: lateRegCount, error: countErr } = await supabase
               .from('table_seats')
               .select('*', { count: 'exact', head: true })
               .eq('table_id', openTable.id)
               .is('left_at', null);
 
-            const { error: tableErr } = await supabase
-              .from('tables')
-              .update({ current_players: lateRegCount || 0 })
-              .eq('id', openTable.id);
+            if (countErr) {
+              console.error(`[TournamentService] Late reg recount failed: ${countErr.message}`);
+            } else {
+              const { error: tableErr } = await supabase
+                .from('tables')
+                .update({ current_players: lateRegCount ?? 0 })
+                .eq('id', openTable.id);
 
-            if (tableErr)
-              console.error(`[TournamentService] Late reg table count failed: ${tableErr.message}`);
+              if (tableErr)
+                console.error(`[TournamentService] Late reg table count update failed: ${tableErr.message}`);
+            }
           }
         } else {
           console.warn(

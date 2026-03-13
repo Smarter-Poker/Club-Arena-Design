@@ -1526,19 +1526,23 @@ export class HeadlessTableEngine {
       );
 
       // Sync tables.current_players immediately so merge/balance reads correct count
-      const { count } = await this.supabaseClient
+      const { count, error: countErr } = await this.supabaseClient
         .from('table_seats')
         .select('*', { count: 'exact', head: true })
         .eq('table_id', this.tableId)
         .is('left_at', null);
 
-      await this.supabaseClient
-        .from('tables')
-        .update({ current_players: count || 0 })
-        .eq('id', this.tableId);
+      if (countErr) {
+        console.error(`[HeadlessTableEngine:${this.tableId}] Recount failed after horse left:`, countErr);
+      } else {
+        await this.supabaseClient
+          .from('tables')
+          .update({ current_players: count ?? 0 })
+          .eq('id', this.tableId);
 
-      // Emit bus event so lobby/UI updates the table player count in real-time
-      masterBus.emit('TABLE_UPDATED', { tableId: this.tableId });
+        // Emit bus event so lobby/UI updates the table player count in real-time
+        masterBus.emit('TABLE_UPDATED', { tableId: this.tableId });
+      }
     }
   }
 

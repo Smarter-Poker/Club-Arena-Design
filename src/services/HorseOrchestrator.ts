@@ -2081,17 +2081,22 @@ class HorseOrchestrator {
               });
               if (!seatError) {
                 // Authoritative recount (prevents race if multiple horses seat concurrently)
-                const { count: cashCount } = await supabase
+                const { count: cashCount, error: cashCountErr } = await supabase
                   .from('table_seats')
                   .select('*', { count: 'exact', head: true })
                   .eq('table_id', availableTable.id)
                   .is('left_at', null);
-                const freshCashCount = cashCount || 0;
-                await supabase
-                  .from('tables')
-                  .update({ current_players: freshCashCount })
-                  .eq('id', availableTable.id);
-                availableTable.current_players = freshCashCount;
+                if (!cashCountErr) {
+                  const freshCashCount = cashCount ?? 0;
+                  await supabase
+                    .from('tables')
+                    .update({ current_players: freshCashCount })
+                    .eq('id', availableTable.id);
+                  availableTable.current_players = freshCashCount;
+                } else {
+                  // Fallback: increment locally to keep loop consistent
+                  availableTable.current_players = (availableTable.current_players || 0) + 1;
+                }
                 this.updateHorseTableAssignment(horse.id, availableTable.id, true);
                 cashSeats++;
                 adjusted = true;
@@ -2126,17 +2131,22 @@ class HorseOrchestrator {
               });
               if (!regError) {
                 // Authoritative recount (prevents race with concurrent registrations)
-                const { count: regCount } = await supabase
+                const { count: regCount, error: regCountErr } = await supabase
                   .from('tournament_players')
                   .select('*', { count: 'exact', head: true })
                   .eq('tournament_id', availableTourney.id)
                   .in('status', ['registered', 'playing']);
-                const freshRegCount = regCount || 0;
-                await supabase
-                  .from('tournaments')
-                  .update({ current_players: freshRegCount })
-                  .eq('id', availableTourney.id);
-                availableTourney.current_players = freshRegCount;
+                if (!regCountErr) {
+                  const freshRegCount = regCount ?? 0;
+                  await supabase
+                    .from('tournaments')
+                    .update({ current_players: freshRegCount })
+                    .eq('id', availableTourney.id);
+                  availableTourney.current_players = freshRegCount;
+                } else {
+                  // Fallback: increment locally to keep loop consistent
+                  availableTourney.current_players = (availableTourney.current_players || 0) + 1;
+                }
                 tournamentRegs++;
                 adjusted = true;
               }
