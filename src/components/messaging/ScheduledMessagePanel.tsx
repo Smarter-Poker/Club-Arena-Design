@@ -6,7 +6,7 @@
  * Shows pending scheduled messages with cancel option.
  */
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { messagingService } from '../../services/MessagingService';
 import styles from './ScheduledMessagePanel.module.css';
 
@@ -32,14 +32,14 @@ export default function ScheduledMessagePanel({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
-  useEffect(() => {
-    loadScheduled();
-  }, [conversationId]);
-
-  const loadScheduled = async () => {
+  const loadScheduled = useCallback(async () => {
     const data = await messagingService.getScheduledMessages(conversationId);
     setScheduled(data);
-  };
+  }, [conversationId]);
+
+  useEffect(() => {
+    loadScheduled();
+  }, [loadScheduled]);
 
   const handleSchedule = async () => {
     if (!content.trim() || !sendDate || !sendTime) return;
@@ -74,7 +74,7 @@ export default function ScheduledMessagePanel({
   };
 
   const handleCancel = async (id: string) => {
-    await messagingService.cancelScheduledMessage(id);
+    await messagingService.cancelScheduledMessage(id, senderId);
     await loadScheduled();
   };
 

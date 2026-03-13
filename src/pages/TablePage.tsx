@@ -1818,6 +1818,12 @@ export default function TablePage({
             remainingSeconds: (heroSeatData as any)?.time_bank_remaining ?? undefined,
             usesRemaining: (heroSeatData as any)?.time_bank_uses_remaining ?? undefined,
           });
+          // Sync React state from engine
+          const bank = timeBankEngine.getPlayerBank(table.id, userId);
+          if (bank) {
+            setTimeBanksRemaining(bank.usesRemaining);
+            setTimeBankTimeRemaining(bank.remainingSeconds);
+          }
         }
       }
     }
