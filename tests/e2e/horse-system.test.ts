@@ -255,7 +255,7 @@ describe('RakeService.calculateRake() — Rake Calculation', () => {
     expect(result.bbjDrop).toBeGreaterThanOrEqual(0);
   });
 
-  it('should use integer arithmetic (cents, not floats)', () => {
+  it('should use integer arithmetic (scaled, not floats)', () => {
     const result = RakeService.calculateRake(999.99, 2, true);
 
     // Verify no floating point errors
@@ -396,12 +396,12 @@ describe('E2E Integration — Full Hand Flow', () => {
     const numPlayers = 3;
 
     // Simulate distribution
-    const baseCreditCents = Math.trunc((totalRake * 100) / numPlayers);
-    const remainderCents = totalRake * 100 - baseCreditCents * numPlayers;
+    const baseCreditScaled = Math.trunc((totalRake * 100) / numPlayers);
+    const remainderScaled = totalRake * 100 - baseCreditScaled * numPlayers;
 
     const attributions = Array.from({ length: numPlayers }, (_, i) => {
-      const extra = i < remainderCents ? 1 : 0;
-      return (baseCreditCents + extra) / 100;
+      const extra = i < remainderScaled ? 1 : 0;
+      return (baseCreditScaled + extra) / 100;
     });
 
     const total = attributions.reduce((a, b) => a + b, 0);
