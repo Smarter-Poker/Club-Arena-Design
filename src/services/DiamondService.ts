@@ -222,7 +222,7 @@ export const DiamondService = {
 
         return { success: false, error: intentData?.error || 'Payment failed' };
       } catch (stripeErr) {
-        console.warn('[DiamondService] Stripe flow unavailable, falling back to RPC:', stripeErr);
+        console.error('[DiamondService] Stripe flow unavailable, falling back to RPC:', stripeErr);
         // Fall through to legacy RPC
       }
     }
@@ -282,7 +282,7 @@ export const DiamondService = {
       }
 
       return { success: data?.success, newBalance: data?.newBalance };
-    } catch (err) {
+    } catch (err: unknown) {
       console.error('[DiamondService] verifyPayment error:', err);
       return { success: false, error: 'Verification error' };
     }

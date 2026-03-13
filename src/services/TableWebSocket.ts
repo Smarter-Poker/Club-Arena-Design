@@ -105,7 +105,7 @@ export class TableWebSocket {
 
   async connect(): Promise<boolean> {
     if (!this.supabase) {
-      console.warn('[TableWS] Supabase not configured, running in offline mode');
+      console.error('[TableWS] Supabase not configured, running in offline mode');
       return false;
     }
 
@@ -115,7 +115,7 @@ export class TableWebSocket {
         data: { session },
       } = await this.supabase.auth.getSession();
       if (!session) {
-        console.warn('[TableWS] No auth session, scheduling reconnect...');
+        console.error('[TableWS] No auth session, scheduling reconnect...');
         this.scheduleReconnect();
         return false;
       }
@@ -157,7 +157,7 @@ export class TableWebSocket {
 
             resolve();
           } else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
-            console.warn(`[TableWS] Channel ${status}, will retry...`);
+            console.error(`[TableWS] Channel ${status}, will retry...`);
             resolve(); // Don't reject — let reconnect handle it gracefully
           }
         });
@@ -167,8 +167,8 @@ export class TableWebSocket {
         this.scheduleReconnect();
       }
       return this.isConnected;
-    } catch (error) {
-      console.warn('[TableWS] Connection attempt failed, scheduling reconnect...');
+    } catch (error: unknown) {
+      console.error('[TableWS] Connection attempt failed, scheduling reconnect...');
       this.scheduleReconnect();
       return false;
     }
@@ -214,13 +214,13 @@ export class TableWebSocket {
 
     // Check sequence for ordering
     if (event.sequence <= this.lastSequence) {
-      console.warn('[TableWS] Ignoring out-of-order event:', event.sequence);
+      console.error('[TableWS] Ignoring out-of-order event:', event.sequence);
       return;
     }
 
     // Handle missing events (gap in sequence) — queue and request resync
     if (event.sequence > this.lastSequence + 1) {
-      console.warn(
+      console.error(
         '[TableWS] Missing events (expected:',
         this.lastSequence + 1,
         'got:',
@@ -243,7 +243,7 @@ export class TableWebSocket {
     this.eventHandlers.forEach((handler) => {
       try {
         handler(event);
-      } catch (error) {
+      } catch (error: unknown) {
         console.error('[TableWS] Event handler error:', error);
       }
     });
@@ -274,7 +274,7 @@ export class TableWebSocket {
     this.presenceHandlers.forEach((handler) => {
       try {
         handler(state);
-      } catch (error) {
+      } catch (error: unknown) {
         console.error('[TableWS] Presence handler error:', error);
       }
     });
@@ -305,7 +305,7 @@ export class TableWebSocket {
     this.connectionHandlers.forEach((handler) => {
       try {
         handler(connected);
-      } catch (error) {
+      } catch (error: unknown) {
         console.error('[TableWS] Connection handler error:', error);
       }
     });
@@ -317,7 +317,7 @@ export class TableWebSocket {
 
   async sendAction(action: string, data: Record<string, unknown>): Promise<boolean> {
     if (!this.channel || !this.isConnected) {
-      console.warn('[TableWS] Cannot send: not connected');
+      console.error('[TableWS] Cannot send: not connected');
       return false;
     }
 
@@ -337,7 +337,7 @@ export class TableWebSocket {
         payload: event,
       });
       return true;
-    } catch (error) {
+    } catch (error: unknown) {
       console.error('[TableWS] Send error:', error);
       return false;
     }
@@ -362,7 +362,7 @@ export class TableWebSocket {
         payload: event,
       });
       return true;
-    } catch (error) {
+    } catch (error: unknown) {
       console.error('[TableWS] Chat error:', error);
       return false;
     }
@@ -383,7 +383,7 @@ export class TableWebSocket {
     // Request full state from server via Supabase RPC
 
     if (!this.supabase) {
-      console.warn('[TableWS] Cannot resync: Supabase not configured');
+      console.error('[TableWS] Cannot resync: Supabase not configured');
       return;
     }
 
@@ -414,7 +414,7 @@ export class TableWebSocket {
         this.lastSequence = syncEvent.sequence;
         this.handleGameEvent(syncEvent);
       }
-    } catch (err) {
+    } catch (err: unknown) {
       console.error('[TableWS] Resync failed:', err);
     }
   }

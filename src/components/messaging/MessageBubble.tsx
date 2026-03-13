@@ -171,7 +171,7 @@ export default function MessageBubble({
 
           {/* Text */}
           {message.content &&
-            (message.content.startsWith('📇 Shared a contact:') ? (
+            (message.content.startsWith('📇 Shared contact card') ? (
               <div
                 className={styles.contactCard}
                 style={{
@@ -185,7 +185,7 @@ export default function MessageBubble({
               >
                 <span style={{ fontSize: '1.1rem' }}>📇</span>
                 <span style={{ fontWeight: 600, marginLeft: 6 }}>
-                  {message.content.split('@')[1]?.split('\n')[0] || 'Contact'}
+                  {message.content.replace('📇 Shared contact card — ', '').replace(/\/profile\/.*/, 'Profile Card') || 'Contact'}
                 </span>
                 <span style={{ display: 'block', fontSize: '0.75rem', opacity: 0.6, marginTop: 2 }}>
                   Tap to view profile

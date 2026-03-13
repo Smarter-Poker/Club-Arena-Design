@@ -115,7 +115,7 @@ class FriendSuggestionServiceClass {
       // Sort by score descending
       results.sort((a, b) => b.score - a.score);
       return results.slice(0, limit);
-    } catch (err) {
+    } catch (err: unknown) {
       console.error('[FriendSuggestions] getSuggestions error:', err);
       return [];
     }
@@ -282,7 +282,7 @@ class FriendSuggestionServiceClass {
         username: p.username,
         avatarUrl: p.avatar_url,
       }));
-    } catch (err) {
+    } catch (err: unknown) {
       console.error('[FriendSuggestions] getMutualFriends error:', err);
       return [];
     }

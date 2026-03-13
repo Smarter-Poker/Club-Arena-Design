@@ -87,9 +87,6 @@ class SessionStatsServiceClass {
         if (prev.userId === userId && Date.now() - prev.sessionStartTime < 3600_000) {
           // Resume session if same user and < 1 hour old
           Object.assign(session, prev, { tableId, userId, bigBlind, initialStack });
-          console.log(
-            `[SessionStats] Resumed session from localStorage — table: ${tableId.slice(0, 8)}`
-          );
         }
         localStorage.removeItem(this.STORAGE_PREFIX + tableId);
       }
@@ -99,10 +96,6 @@ class SessionStatsServiceClass {
 
     // Enhancement #8: Flush any queued offline sessions on startup
     this.flushOfflineQueue();
-
-    console.log(
-      `[SessionStats] Started tracking — table: ${tableId.slice(0, 8)}, stack: ${initialStack}`
-    );
   }
 
   /**
@@ -219,11 +212,6 @@ class SessionStatsServiceClass {
 
     const durationMs = Date.now() - session.sessionStartTime;
     const durationMinutes = Math.round(durationMs / 60_000);
-
-    console.log(
-      `[SessionStats] Session ended — table: ${tableId.slice(0, 8)}, P/L: ${session.profitLoss}, hands: ${session.handsPlayed}, duration: ${durationMinutes}m`
-    );
-
     // Feature 6: Persist to Supabase (fire-and-forget, non-blocking)
     if (session.handsPlayed > 0) {
       const insertPayload = {
@@ -250,11 +238,10 @@ class SessionStatsServiceClass {
         .insert(insertPayload)
         .then(({ error }) => {
           if (error) {
-            console.warn('[SessionStats] Failed to persist session:', error.message);
+            console.error('[SessionStats] Failed to persist session:', error.message);
             // Enhancement #8: Queue to localStorage for later retry
             this.queueOfflineSession(insertPayload);
           } else {
-            console.log(`[SessionStats] Session persisted to DB — table: ${tableId.slice(0, 8)}`);
           }
         });
     }
@@ -277,7 +264,7 @@ class SessionStatsServiceClass {
     try {
       const retryCount = (payload.retry_count as number) || 0;
       if (retryCount >= 3) {
-        console.warn(
+        console.error(
           `[SessionStats] Offline session dropped after ${retryCount} failures to prevent poison pill loop.`
         );
         return;
@@ -287,7 +274,6 @@ class SessionStatsServiceClass {
       const queue = existing ? JSON.parse(existing) : [];
       queue.push({ ...payload, queued_at: new Date().toISOString(), retry_count: retryCount + 1 });
       localStorage.setItem(this.OFFLINE_QUEUE_KEY, JSON.stringify(queue.slice(-20))); // Max 20 queued
-      console.log(`[SessionStats] Session queued offline (${queue.length} total)`);
     } catch {
       /* localStorage may be full — intentional no-op */
     }
@@ -304,7 +290,6 @@ class SessionStatsServiceClass {
       if (queue.length === 0) return;
 
       localStorage.removeItem(this.OFFLINE_QUEUE_KEY); // Clear queue immediately
-      console.log(`[SessionStats] Flushing ${queue.length} offline session(s)`);
 
       queue.forEach((payload) => {
         // Remove tracking fields before inserting
@@ -314,11 +299,10 @@ class SessionStatsServiceClass {
           .insert(insertData)
           .then(({ error }) => {
             if (error) {
-              console.warn('[SessionStats] Offline flush failed:', error.message);
+              console.error('[SessionStats] Offline flush failed:', error.message);
               // Re-queue if still failing (tracks retry_count natively)
               this.queueOfflineSession(payload);
             } else {
-              console.log('[SessionStats] Offline session flushed to DB ✅');
             }
           });
       });

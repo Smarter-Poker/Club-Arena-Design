@@ -50,7 +50,7 @@ class TournamentTimerServiceClass {
    */
   startTimer(tournamentId: string): void {
     if (this.activeTimers.has(tournamentId)) {
-      console.warn(`[TournamentTimer] Timer already running for ${tournamentId}`);
+      console.error(`[TournamentTimer] Timer already running for ${tournamentId}`);
       return;
     }
 
@@ -142,7 +142,7 @@ class TournamentTimerServiceClass {
       }
 
       timer.lastTick = Date.now();
-    } catch (error) {
+    } catch (error: unknown) {
       console.error(`[TournamentTimer] Error in tick for ${tournamentId}:`, error);
     } finally {
       // Always release the lock, even on error
@@ -287,7 +287,7 @@ class TournamentTimerServiceClass {
           console.info(`[TournamentTimer] Heads-up mode active for ${tournamentId}`);
         }
       }
-    } catch (err) {
+    } catch (err: unknown) {
       console.error('[TournamentTimer] checkTableSize error:', err);
     }
   }
@@ -362,7 +362,7 @@ class TournamentTimerServiceClass {
           ...payload,
         },
       });
-    } catch (error) {
+    } catch (error: unknown) {
       console.error(`[TournamentTimer] Broadcast error:`, error);
     }
   }

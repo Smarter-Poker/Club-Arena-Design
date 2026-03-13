@@ -154,7 +154,7 @@ export const HandValidationService = {
             created_at: new Date().toISOString(),
           }))
         );
-      } catch (err) {
+      } catch (err: unknown) {
         console.error('[HandValidation] Failed to log to Supabase:', err);
       }
 

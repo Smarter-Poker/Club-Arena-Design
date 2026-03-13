@@ -79,7 +79,7 @@ export async function submitAction(
 
     const result = await response.json();
     return result as ActionResult;
-  } catch (err) {
+  } catch (err: unknown) {
     console.error('[GameServerAPI] Failed to submit action:', err);
     return { success: false, error: 'Server unreachable' };
   }
@@ -111,7 +111,7 @@ export async function getAvailableActions(tableId: string, userId: string): Prom
 
     const result = await response.json();
     return result as PlayerActions;
-  } catch (err) {
+  } catch (err: unknown) {
     console.error('[GameServerAPI] Failed to get actions:', err);
     return {
       canAct: false,

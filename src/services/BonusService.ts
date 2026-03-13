@@ -310,13 +310,13 @@ class BonusServiceClass {
       );
 
       if (error) {
-        console.warn('[Bonus] increment_bonus_progress RPC not available - returning silently');
+        console.error('[Bonus] increment_bonus_progress RPC not available - returning silently');
         return 0;
       }
 
       return data ?? 0;
-    } catch (err) {
-      console.warn('[Bonus] Failed to update progress (non-critical):', err);
+    } catch (err: unknown) {
+      console.error('[Bonus] Failed to update progress (non-critical):', err);
       return 0;
     }
   }
@@ -358,7 +358,7 @@ class BonusServiceClass {
         }
         break;
       default:
-        console.warn(`[Bonus] Unknown reward type: ${type}`);
+        console.error(`[Bonus] Unknown reward type: ${type}`);
         return;
     }
 

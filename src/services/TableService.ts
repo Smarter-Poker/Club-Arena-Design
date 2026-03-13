@@ -363,7 +363,7 @@ class TableService {
       // Note: Transaction already logged via WalletService.logTransaction above
 
       return { success: true, chipsReturned: chipsToReturn };
-    } catch (err) {
+    } catch (err: unknown) {
       console.error('[TableService] Error leaving table:', err);
       return { success: false, chipsReturned: 0 };
     }

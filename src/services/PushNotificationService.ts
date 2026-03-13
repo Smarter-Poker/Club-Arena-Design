@@ -66,7 +66,7 @@ class PushNotificationServiceClass {
    */
   async init(): Promise<void> {
     if (this.initialized || !ONESIGNAL_APP_ID) {
-      console.warn('[PushService] OneSignal not configured or already initialized');
+      console.error('[PushService] OneSignal not configured or already initialized');
       return;
     }
 
@@ -84,7 +84,7 @@ class PushNotificationServiceClass {
         });
       }
       this.initialized = true;
-    } catch (error) {
+    } catch (error: unknown) {
       console.error('[PushService] Init failed:', error);
     }
   }
@@ -99,7 +99,7 @@ class PushNotificationServiceClass {
         // @ts-expect-error - OneSignal CDN types
         await window.OneSignal.login(userId);
       }
-    } catch (error) {
+    } catch (error: unknown) {
       console.error('[PushService] Failed to set external user ID:', error);
     }
   }
@@ -116,7 +116,7 @@ class PushNotificationServiceClass {
         return permission;
       }
       return false;
-    } catch (error) {
+    } catch (error: unknown) {
       console.error('[PushService] Permission request failed:', error);
       return false;
     }
@@ -169,7 +169,7 @@ class PushNotificationServiceClass {
 
       if (error) throw error;
       return true;
-    } catch (error) {
+    } catch (error: unknown) {
       console.error('[PushService] Send failed:', error);
       return false;
     }

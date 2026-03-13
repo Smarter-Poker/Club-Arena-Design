@@ -119,7 +119,7 @@ class CashoutServiceClass {
           cashout.id
         );
       } catch (notifyError) {
-        console.warn('[Cashout] Failed to notify agent:', notifyError);
+        console.error('[Cashout] Failed to notify agent:', notifyError);
         // Don't fail the cashout if notification fails
       }
     }
@@ -470,7 +470,7 @@ class CashoutServiceClass {
     });
 
     if (txError) {
-      console.warn('[Cashout] Failed to record reversal metadata (transfer succeeded):', txError);
+      console.error('[Cashout] Failed to record reversal metadata (transfer succeeded):', txError);
     }
 
     return true;
@@ -522,7 +522,7 @@ class CashoutServiceClass {
       .limit(1);
 
     if (reverseError) {
-      console.warn('[Cashout] Failed to mark reversal on column:', reverseError);
+      console.error('[Cashout] Failed to mark reversal on column:', reverseError);
     }
 
     // Record removal in chip_transactions for reversal tracking
@@ -536,7 +536,7 @@ class CashoutServiceClass {
     });
 
     if (txError) {
-      console.warn('[Cashout] Failed to record removal metadata:', txError);
+      console.error('[Cashout] Failed to record removal metadata:', txError);
     }
 
     return true;

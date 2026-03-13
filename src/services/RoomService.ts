@@ -267,7 +267,7 @@ class RoomService {
     for (const handler of handlers) {
       try {
         handler(message);
-      } catch (error) {
+      } catch (error: unknown) {
         console.error('Handler error:', error);
       }
     }

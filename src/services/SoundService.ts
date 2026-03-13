@@ -77,8 +77,8 @@ class SoundService {
         this.masterGain.gain.value = this.masterVolume * this.effectsVolume;
         this.masterGain.connect(this.ctx.destination);
       }
-    } catch (e) {
-      console.warn('[SoundService] Web Audio API not supported');
+    } catch (e: unknown) {
+      console.error('[SoundService] Web Audio API not supported');
     }
   }
 

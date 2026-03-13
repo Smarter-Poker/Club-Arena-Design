@@ -371,7 +371,7 @@ class AgentServiceClass {
     }
     if (input.isPrepaid && creditLimit > 0) {
       // Pre-paid agents don't get credit lines — force to 0
-      console.warn(`[AgentService] Pre-paid agent should not have credit limit, setting to 0`);
+      console.error(`[AgentService] Pre-paid agent should not have credit limit, setting to 0`);
     }
 
     // 1. Validate the user exists
@@ -868,7 +868,7 @@ class AgentServiceClass {
           // Agent → Sub-Agent: Get sub-agent's user_id
           const subAgent = await this.getAgent(dist.toId);
           if (!subAgent) {
-            console.warn(`[AgentService] Sub-agent ${dist.toId} not found, skipping`);
+            console.error(`[AgentService] Sub-agent ${dist.toId} not found, skipping`);
             continue;
           }
           await ChipFlowService.transfer(
@@ -889,7 +889,7 @@ class AgentServiceClass {
           );
         }
         distributed += amt;
-      } catch (err) {
+      } catch (err: unknown) {
         console.error(`[AgentService] Distribution to ${dist.toId} failed:`, err);
         // Continue with remaining distributions — partial failures are logged
       }

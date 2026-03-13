@@ -85,8 +85,8 @@ class PresenceServiceClass {
             ...presence,
             lastSeen: new Date().toISOString(),
           });
-        } catch (e) {
-          console.warn('[PresenceService] Track failed:', e);
+        } catch (e: unknown) {
+          console.error('[PresenceService] Track failed:', e);
         }
       }
     });

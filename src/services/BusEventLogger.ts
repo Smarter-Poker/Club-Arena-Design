@@ -76,12 +76,12 @@ class BusEventLoggerService {
       const { error } = await supabase.from('bus_event_log').insert(toFlush);
 
       if (error) {
-        console.warn('[BusEventLogger] Flush failed:', error.message);
+        console.error('[BusEventLogger] Flush failed:', error.message);
         // Re-queue failed entries (up to limit)
         this.batch = [...toFlush.slice(-10), ...this.batch].slice(0, MAX_BATCH_SIZE);
       }
-    } catch (e) {
-      console.warn('[BusEventLogger] Flush error:', e);
+    } catch (e: unknown) {
+      console.error('[BusEventLogger] Flush error:', e);
     }
   }
 

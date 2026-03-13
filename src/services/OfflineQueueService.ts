@@ -44,8 +44,8 @@ export const OfflineQueueService = {
   async init(): Promise<void> {
     try {
       this.db = await this.openDB();
-    } catch (err) {
-      console.warn('[OfflineQueue] IndexedDB not available:', err);
+    } catch (err: unknown) {
+      console.error('[OfflineQueue] IndexedDB not available:', err);
     }
 
     // Remove previous listener if re-initializing (prevent stacking)
@@ -86,7 +86,7 @@ export const OfflineQueueService = {
     // Check for duplicate operation
     const existing = await this.findByOperationId(mutation.operationId);
     if (existing) {
-      console.warn(`[OfflineQueue] Duplicate operation ${mutation.operationId} — skipping`);
+      console.error(`[OfflineQueue] Duplicate operation ${mutation.operationId} — skipping`);
       return false;
     }
 
@@ -127,7 +127,7 @@ export const OfflineQueueService = {
 
     // Concurrency guard — prevent double-execution from rapid 'online' events
     if (this._isReplaying) {
-      console.warn('[OfflineQueue] Replay already in progress — skipping');
+      console.error('[OfflineQueue] Replay already in progress — skipping');
       return { replayed: 0, failed: 0 };
     }
     this._isReplaying = true;
@@ -162,7 +162,7 @@ export const OfflineQueueService = {
               failed++;
             }
           }
-        } catch (err) {
+        } catch (err: unknown) {
           console.error(`[OfflineQueue] Error replaying ${mutation.id}:`, err);
           failed++;
         }
@@ -281,7 +281,7 @@ export const OfflineQueueService = {
         return !error;
       }
       default:
-        console.warn(`[OfflineQueue] Unknown action: ${mutation.action}`);
+        console.error(`[OfflineQueue] Unknown action: ${mutation.action}`);
         return false;
     }
   },

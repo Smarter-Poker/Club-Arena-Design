@@ -204,7 +204,6 @@ class HorseBrainAdapterClass {
 
       // Check if this is the stub or the real brain
       if (loadedBrain.STUB) {
-        console.log('[HorseBrainAdapter] HorsePokerBrain is a stub — using HorseLogic fallback');
         this.brainAvailable = false;
         return;
       }
@@ -219,9 +218,6 @@ class HorseBrainAdapterClass {
         this.horseIds = await this.brain!.loadHorseIds();
 
         this.brainAvailable = true;
-        console.log(
-          `[HorseBrainAdapter] HorsePokerBrain loaded — ${this.horseIds.size} horses registered`
-        );
       } catch (initErr) {
         console.error(
           '[HorseBrainAdapter] Brain initialization failed (GTO warmup, horse IDs, etc.):',
@@ -231,8 +227,7 @@ class HorseBrainAdapterClass {
         this.brain = null;
         // Fall through to HorseLogic fallback
       }
-    } catch (err) {
-      console.log('[HorseBrainAdapter] HorsePokerBrain not available — using HorseLogic fallback');
+    } catch (err: unknown) {
       this.brainAvailable = false;
     }
   }
@@ -300,7 +295,7 @@ class HorseBrainAdapterClass {
           amount: brainDecision.amount,
           thinkTime: brainDecision.delayMs || 500,
         };
-      } catch (err) {
+      } catch (err: unknown) {
         console.error(
           `[HorseBrainAdapter] Brain decision failed for ${horseId}, falling back to HorseLogic:`,
           err
@@ -371,7 +366,7 @@ class HorseBrainAdapterClass {
       };
 
       await this.brain.processHandResult(handData, bigBlind);
-    } catch (err) {
+    } catch (err: unknown) {
       // Non-blocking — never fail the hand pipeline
       console.error('[HorseBrainAdapter] processHandResult error:', err);
     }
@@ -384,7 +379,7 @@ class HorseBrainAdapterClass {
     if (!this.brain) return;
     try {
       await this.brain.evaluateSessions(gameController, tableManager);
-    } catch (err) {
+    } catch (err: unknown) {
       console.error('[HorseBrainAdapter] evaluateSessions error:', err);
     }
   }

@@ -260,7 +260,7 @@ export const HydraService = {
 
     if (profileError) {
       // If horse columns don't exist yet, silently return empty
-      console.warn('HydraService.getActiveHorses profile query error:', profileError);
+      console.error('HydraService.getActiveHorses profile query error:', profileError);
       return [];
     }
 
@@ -372,7 +372,7 @@ export const HydraService = {
               if (seatedHorse) {
                 seatedHorses.push(seatedHorse);
               }
-            } catch (err) {
+            } catch (err: unknown) {
               console.error(`Failed to seat horse ${horse.id}:`, err);
             }
             resolve();
@@ -430,7 +430,7 @@ export const HydraService = {
     }
 
     if (availableSeat === 0) {
-      console.warn('HydraService.seatHorse: No available seats at table', tableId);
+      console.error('HydraService.seatHorse: No available seats at table', tableId);
       return null;
     }
 
@@ -521,7 +521,7 @@ export const HydraService = {
     const horse = horses.find((h) => h.id === horseId);
 
     if (!horse) {
-      console.warn('Horse not found for removal:', horseId);
+      console.error('Horse not found for removal:', horseId);
       return;
     }
 
@@ -543,7 +543,7 @@ export const HydraService = {
       .maybeSingle();
 
     if (seatFetchErr || !seatData) {
-      console.warn(
+      console.error(
         `HydraService.removeHorse: Seat not found for horse ${horseId} at table ${tableId}`
       );
       return false;

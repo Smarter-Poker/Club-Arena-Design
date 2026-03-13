@@ -1017,7 +1017,7 @@ class TournamentRecurringService {
       }
 
       if (!horses || horses.length === 0) {
-        console.warn(`[TournamentRecurring] No available horses found`);
+        console.error(`[TournamentRecurring] No available horses found`);
         return 0;
       }
 

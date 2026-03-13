@@ -64,7 +64,7 @@ class AutoRebuyServiceCore {
    */
   start(): void {
     if (this.isRunning) {
-      console.warn('[AutoRebuy] Already running');
+      console.error('[AutoRebuy] Already running');
       return;
     }
 
@@ -85,7 +85,7 @@ class AutoRebuyServiceCore {
    */
   stop(): void {
     if (!this.isRunning) {
-      console.warn('[AutoRebuy] Not running');
+      console.error('[AutoRebuy] Not running');
       return;
     }
 
@@ -136,7 +136,7 @@ class AutoRebuyServiceCore {
           );
         }
       });
-    } catch (err) {
+    } catch (err: unknown) {
       console.error('[AutoRebuy] Fatal error in checkAllTables:', err);
     }
   }
@@ -185,7 +185,7 @@ class AutoRebuyServiceCore {
 
     // Skip if rebuy already in progress for this horse:table
     if (this.rebuyInProgress.has(rebuyKey)) {
-      console.warn('[AutoRebuy] Rebuy already in progress for ' + rebuyKey);
+      console.error('[AutoRebuy] Rebuy already in progress for ' + rebuyKey);
       return false;
     }
 
@@ -245,7 +245,7 @@ class AutoRebuyServiceCore {
         '[AutoRebuy] Rebought horse ' + horseId + ' for ' + amount + ' at table ' + tableId
       );
       return true;
-    } catch (err) {
+    } catch (err: unknown) {
       console.error('[AutoRebuy] Error in rebuyHorse:', err);
       return false;
     } finally {
@@ -262,7 +262,7 @@ class AutoRebuyServiceCore {
 
     // Skip if reseat already in progress for this horse:table
     if (this.rebuyInProgress.has(reseatKey)) {
-      console.warn('[AutoRebuy] Reseat already in progress for ' + reseatKey);
+      console.error('[AutoRebuy] Reseat already in progress for ' + reseatKey);
       return false;
     }
 
@@ -321,7 +321,7 @@ class AutoRebuyServiceCore {
 
       console.debug('[AutoRebuy] Reseated horse ' + horseId + ' at table ' + tableId);
       return true;
-    } catch (err) {
+    } catch (err: unknown) {
       console.error('[AutoRebuy] Error in reseatHorse:', err);
       return false;
     } finally {
@@ -365,7 +365,7 @@ class AutoRebuyServiceCore {
           console.debug('[AutoRebuy] Seeded ' + seeded.length + ' horses at table ' + tableId);
         }
       }
-    } catch (err) {
+    } catch (err: unknown) {
       console.error('[AutoRebuy] Error in ensureMinimumHorses:', err);
     }
   }
@@ -384,7 +384,7 @@ class AutoRebuyServiceCore {
         .maybeSingle();
 
       if (walletError) {
-        console.warn('[AutoRebuy] Could not fetch wallet for horse ' + horseId + ':', walletError);
+        console.error('[AutoRebuy] Could not fetch wallet for horse ' + horseId + ':', walletError);
         return false;
       }
 
@@ -452,7 +452,7 @@ class AutoRebuyServiceCore {
           ' credits (atomically logged)'
       );
       return true;
-    } catch (err) {
+    } catch (err: unknown) {
       console.error('[AutoRebuy] Error in topUpWallet:', err);
       return false;
     }
@@ -472,7 +472,7 @@ class AutoRebuyServiceCore {
         horseId: h.id,
         stack: h.stack,
       }));
-    } catch (err) {
+    } catch (err: unknown) {
       console.error('[AutoRebuy] Error in getTableHorseStacks:', err);
       return [];
     }

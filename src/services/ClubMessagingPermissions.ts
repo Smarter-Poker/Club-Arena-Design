@@ -63,7 +63,7 @@ class ClubMessagingPermissionsClass {
 
       // Check based on sender's role
       return this.checkPermission(senderRole, recipientRole);
-    } catch (error) {
+    } catch (error: unknown) {
       console.error('[ClubMessagingPermissions] Error checking permissions:', error);
       return { allowed: false, reason: 'Failed to verify permissions' };
     }

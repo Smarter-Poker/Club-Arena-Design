@@ -164,7 +164,7 @@ export const LeaderboardService = {
           level: profile.level || 1,
         };
       });
-    } catch (err) {
+    } catch (err: unknown) {
       console.error('LeaderboardService.getClubLeaderboard error:', err);
       return [];
     }
@@ -250,7 +250,7 @@ export const LeaderboardService = {
           level: profile.level || 1,
         };
       });
-    } catch (err) {
+    } catch (err: unknown) {
       console.error('LeaderboardService.getUnionLeaderboard error:', err);
       return [];
     }
@@ -327,7 +327,7 @@ export const LeaderboardService = {
           clubName: result.clubName,
           profit: result.profit,
         });
-      } catch (e) {
+      } catch (e: unknown) {
         // Silent fail for POY tracking
       }
     }
@@ -374,7 +374,7 @@ export const LeaderboardService = {
         rank: userIndex + 1,
         total: allStats.length,
       };
-    } catch (err) {
+    } catch (err: unknown) {
       console.error('LeaderboardService.getUserRank error:', err);
       return null;
     }
@@ -503,7 +503,7 @@ export const LeaderboardService = {
         }))
         .sort((a, b) => b.totalPrizes - a.totalPrizes)
         .slice(0, limit);
-    } catch (err) {
+    } catch (err: unknown) {
       console.error('LeaderboardService.getClubTournamentStats error:', err);
       return [];
     }

@@ -66,7 +66,7 @@ class BlockServiceClass {
       });
 
       return true;
-    } catch (err) {
+    } catch (err: unknown) {
       console.error('[BlockService] blockUser error:', err);
       return false;
     }
@@ -97,7 +97,7 @@ class BlockServiceClass {
       });
 
       return true;
-    } catch (err) {
+    } catch (err: unknown) {
       console.error('[BlockService] unblockUser error:', err);
       return false;
     }
@@ -135,7 +135,7 @@ class BlockServiceClass {
         reason: row.reason,
         createdAt: row.created_at,
       }));
-    } catch (err) {
+    } catch (err: unknown) {
       console.error('[BlockService] getBlockedUsers error:', err);
       return [];
     }

@@ -182,7 +182,7 @@ class RunItTwiceEngineClass {
     const runs = state.maxRuns || 2;
     const cardsNeeded = 5 - existingBoard.length;
     if (remainingDeck.length < cardsNeeded * runs) {
-      console.warn(`[RITEngine] Not enough cards for ${runs} runouts at ${tableId}`);
+      console.error(`[RITEngine] Not enough cards for ${runs} runouts at ${tableId}`);
       return null;
     }
 

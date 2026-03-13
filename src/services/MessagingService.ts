@@ -335,7 +335,7 @@ class MessagingServiceClass {
         return false;
       }
       return true;
-    } catch (err) {
+    } catch (err: unknown) {
       console.error('[Messaging] markAsRead error:', err);
       return false;
     }
@@ -357,7 +357,7 @@ class MessagingServiceClass {
         return 0;
       }
       return count || 0;
-    } catch (err) {
+    } catch (err: unknown) {
       console.error('[Messaging] getUnreadCount error:', err);
       return 0;
     }
@@ -417,7 +417,7 @@ class MessagingServiceClass {
       });
 
       if (error) {
-        console.warn('[Messaging] get_message_reactions RPC not available - returning empty array');
+        console.error('[Messaging] get_message_reactions RPC not available - returning empty array');
         return [];
       }
 
@@ -426,8 +426,8 @@ class MessagingServiceClass {
         count: r.count,
         userReacted: r.user_reacted,
       }));
-    } catch (err) {
-      console.warn('[Messaging] Failed to get reactions:', err);
+    } catch (err: unknown) {
+      console.error('[Messaging] Failed to get reactions:', err);
       return [];
     }
   }
@@ -850,7 +850,7 @@ class MessagingServiceClass {
       .from('messages')
       .select('created_at, sender_id')
       .eq('id', messageId)
-      .single();
+      .maybeSingle();
 
     if (!msg || msg.sender_id !== senderId) return false;
 

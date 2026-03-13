@@ -34,8 +34,6 @@ export class TournamentOrchestrator {
   async start() {
     if (this.isRunning) return;
     this.isRunning = true;
-    console.log('[TournamentOrchestrator] Starting global tournament engine...');
-
     // 1. Initial spin up of all running/starting tournaments
     await this.syncActiveTournaments();
 
@@ -77,9 +75,6 @@ export class TournamentOrchestrator {
                 ['FINISHED', 'CANCELLED'].includes(status) &&
                 this.activeEngines.has(tournamentId)
               ) {
-                console.log(
-                  `[TournamentOrchestrator] Realtime: ${tournamentId} ${status}, stopping engine`
-                );
                 const engine = this.activeEngines.get(tournamentId)!;
                 engine.stop();
                 this.activeEngines.delete(tournamentId);
@@ -88,9 +83,8 @@ export class TournamentOrchestrator {
           }
         )
         .subscribe();
-      console.log('[TournamentOrchestrator] Supabase Realtime subscription active on tournaments');
-    } catch (err) {
-      console.warn(
+    } catch (err: unknown) {
+      console.error(
         '[TournamentOrchestrator] Realtime subscription failed, relying on polling:',
         err
       );
@@ -114,11 +108,6 @@ export class TournamentOrchestrator {
       supabase.removeChannel(this.realtimeChannel);
       this.realtimeChannel = null;
     }
-
-    console.log(
-      `[TournamentOrchestrator] Stopping ${this.activeEngines.size} active tournament engines...`
-    );
-
     for (const [tournamentId, engine] of this.activeEngines.entries()) {
       engine.stop(); // Synchronous stop
       this.activeEngines.delete(tournamentId);
@@ -184,9 +173,6 @@ export class TournamentOrchestrator {
       // 2. Stop and remove engines for closed tournaments
       for (const [tournamentId, engine] of Array.from(this.activeEngines.entries())) {
         if (!currentTournaments.has(tournamentId) || !engine.isRunning()) {
-          console.log(
-            `[TournamentOrchestrator] Tournament ${tournamentId} finished. Cleaning up...`
-          );
           engine.stop();
           this.activeEngines.delete(tournamentId);
         }
@@ -194,13 +180,12 @@ export class TournamentOrchestrator {
 
       // 3. Check for upcoming tournament notification windows (24h / 1h)
       await this.checkNotificationHooks();
-    } catch (err) {
+    } catch (err: unknown) {
       console.error('[TournamentOrchestrator] Error syncing active tournaments:', err);
     }
   }
 
   private spinUpTournament(tournamentId: string) {
-    console.log(`[TournamentOrchestrator] Spinning up TournamentEngine for: ${tournamentId}`);
     const engine = new TournamentEngine(tournamentId, supabase);
     this.activeEngines.set(tournamentId, engine);
 
@@ -222,7 +207,7 @@ export class TournamentOrchestrator {
   async handleMultiDayFlight(tournamentId: string): Promise<void> {
     const engine = this.activeEngines.get(tournamentId);
     if (!engine) {
-      console.warn(`[TournamentOrchestrator] No active engine for ${tournamentId}`);
+      console.error(`[TournamentOrchestrator] No active engine for ${tournamentId}`);
       return;
     }
 
@@ -237,7 +222,7 @@ export class TournamentOrchestrator {
       if (error) throw error;
 
       if (!players || players.length === 0) {
-        console.warn(`[TournamentOrchestrator] No active players to bag for ${tournamentId}`);
+        console.error(`[TournamentOrchestrator] No active players to bag for ${tournamentId}`);
         return;
       }
 
@@ -269,11 +254,6 @@ export class TournamentOrchestrator {
       // 4. Stop the engine for this tournament
       engine.stop();
       this.activeEngines.delete(tournamentId);
-
-      console.log(
-        `[TournamentOrchestrator] Day 1 bagged for ${tournamentId}: ${players.length} players`
-      );
-
       // 5. Emit bus event
       try {
         const { masterBus } = await import('../core/MasterBus');
@@ -287,7 +267,7 @@ export class TournamentOrchestrator {
       } catch {
         /* best effort */
       }
-    } catch (err) {
+    } catch (err: unknown) {
       console.error(`[TournamentOrchestrator] Error bagging flight ${tournamentId}:`, err);
     }
   }
@@ -306,7 +286,7 @@ export class TournamentOrchestrator {
 
       if (error) throw error;
       if (!flights || flights.length === 0) {
-        console.warn(`[TournamentOrchestrator] No bagged players for ${tournamentId}`);
+        console.error(`[TournamentOrchestrator] No bagged players for ${tournamentId}`);
         return;
       }
 
@@ -334,11 +314,6 @@ export class TournamentOrchestrator {
 
       // 5. Spin up the engine
       this.spinUpTournament(tournamentId);
-
-      console.log(
-        `[TournamentOrchestrator] Day 2 started for ${tournamentId}: ${flights.length} players restored`
-      );
-
       // 6. Emit bus event
       try {
         const { masterBus } = await import('../core/MasterBus');
@@ -349,7 +324,7 @@ export class TournamentOrchestrator {
       } catch {
         /* best effort */
       }
-    } catch (err) {
+    } catch (err: unknown) {
       console.error(`[TournamentOrchestrator] Error starting Day 2 for ${tournamentId}:`, err);
     }
   }
@@ -410,7 +385,7 @@ export class TournamentOrchestrator {
           });
         }
       }
-    } catch (err) {
+    } catch (err: unknown) {
       console.error('[TournamentOrchestrator] Error checking notification hooks:', err);
     }
   }
@@ -459,9 +434,6 @@ export class TournamentOrchestrator {
 
       const moves = tableBalancer.calculateMoves(balancerTables);
       if (moves.length === 0) return;
-
-      console.log(`[TournamentOrchestrator] Rebalancing ${tournamentId}: ${moves.length} moves`);
-
       // Execute each move in Supabase: vacate old seat, insert at new seat
       for (const move of moves) {
         try {
@@ -486,18 +458,14 @@ export class TournamentOrchestrator {
             stack: playerData?.stack || 0,
             joined_at: new Date().toISOString(),
           });
-        } catch (moveErr) {
+        } catch (moveErr: unknown) {
           console.error(
             `[TournamentOrchestrator] Failed to move ${move.playerId}: ${move.fromTableId} → ${move.toTableId}`,
             moveErr
           );
         }
       }
-
-      console.log(
-        `[TournamentOrchestrator] Rebalance complete for ${tournamentId}: ${moves.length} players moved`
-      );
-    } catch (err) {
+    } catch (err: unknown) {
       console.error(`[TournamentOrchestrator] Rebalance error for ${tournamentId}:`, err);
     }
   }

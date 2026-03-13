@@ -87,7 +87,7 @@ class MixedGameEngineClass {
   ): void {
     const variants = MIXED_GAME_PRESETS[presetName];
     if (!variants) {
-      console.warn(`[MixedGameEngine] Unknown preset: ${presetName}`);
+      console.error(`[MixedGameEngine] Unknown preset: ${presetName}`);
       return;
     }
 

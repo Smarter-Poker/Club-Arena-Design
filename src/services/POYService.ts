@@ -81,7 +81,7 @@ export const POYService = {
     data: TournamentResultPayload
   ): Promise<{ success: boolean; points_awarded?: number }> {
     if (!POY_API_KEY) {
-      console.warn('POYService: No API key configured, skipping submission');
+      console.error('POYService: No API key configured, skipping submission');
       return { success: false };
     }
 
@@ -106,7 +106,7 @@ export const POYService = {
 
       const result = await response.json();
       return { success: true, points_awarded: result.points_awarded };
-    } catch (error) {
+    } catch (error: unknown) {
       console.error('POYService: Tournament submit error:', error);
       return { success: false };
     }
@@ -120,7 +120,7 @@ export const POYService = {
     data: CashSessionPayload
   ): Promise<{ success: boolean; points_awarded?: number }> {
     if (!POY_API_KEY) {
-      console.warn('POYService: No API key configured, skipping submission');
+      console.error('POYService: No API key configured, skipping submission');
       return { success: false };
     }
 
@@ -145,7 +145,7 @@ export const POYService = {
 
       const result = await response.json();
       return { success: true, points_awarded: result.points_awarded };
-    } catch (error) {
+    } catch (error: unknown) {
       console.error('POYService: Cash session submit error:', error);
       return { success: false };
     }
@@ -233,7 +233,7 @@ export const POYService = {
 
       const data = await response.json();
       return data.leaderboard || [];
-    } catch (error) {
+    } catch (error: unknown) {
       console.error('POYService: Leaderboard fetch error:', error);
       return [];
     }
@@ -253,7 +253,7 @@ export const POYService = {
 
       const data = await response.json();
       return data.player_ranking || null;
-    } catch (error) {
+    } catch (error: unknown) {
       console.error('POYService: Player ranking fetch error:', error);
       return null;
     }

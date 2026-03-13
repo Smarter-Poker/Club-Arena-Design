@@ -154,7 +154,7 @@ class PlayerPositionStatsServiceClass {
           });
         }
       }
-    } catch (err) {
+    } catch (err: unknown) {
       console.error('[PositionStats] Processing error:', err);
     }
   }

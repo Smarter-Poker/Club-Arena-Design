@@ -128,12 +128,12 @@ export default function SettlementDashboardPage() {
           setPeriodHistory(
             (history || []).map((p: any) => ({
               id: p.id,
-              start: p.periodStart || p.period_start,
-              end: p.periodEnd || p.period_end,
+              start: p.startAt || (p as any).period_start || (p as any).start_at,
+              end: p.endAt || (p as any).period_end || (p as any).end_at,
               status: p.status,
-              totalDisbursed: p.totalDisbursed || p.total_disbursed || 0,
-              agentsPaid: p.agentsPaid || p.agents_paid || 0,
-              createdAt: p.createdAt || p.created_at || '',
+              totalDisbursed: (p as any).totalDisbursed || (p as any).total_disbursed || 0,
+              agentsPaid: (p as any).agentsPaid || (p as any).agents_paid || 0,
+              createdAt: (p as any).createdAt || (p as any).created_at || '',
             }))
           );
         }

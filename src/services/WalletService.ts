@@ -495,7 +495,7 @@ export const WalletService = {
           { userId, walletType, amount, type, category, description, rpcError: error.message }
         );
       }
-    } catch (err) {
+    } catch (err: unknown) {
       console.error('[WalletService] Transaction log error:', err);
       FinancialAlertService.logCritical(
         'WalletService.logTransaction',

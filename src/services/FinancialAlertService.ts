@@ -85,7 +85,7 @@ export const FinancialAlertService = {
           insertErr
         );
       }
-    } catch (err) {
+    } catch (err: unknown) {
       // If the table doesn't exist yet, log to console as fallback
       console.error(
         `[FinancialAlert] DB insert failed — ${severity.toUpperCase()}: ${source}: ${message}`,

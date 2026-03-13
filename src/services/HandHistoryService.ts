@@ -440,7 +440,7 @@ class HandHistoryServiceClass {
         .maybeSingle();
 
       if (handErr || !handRecord) {
-        console.warn('[HandHistory] Failed to save hand:', handErr?.message);
+        console.error('[HandHistory] Failed to save hand:', handErr?.message);
         return;
       }
 
@@ -479,9 +479,9 @@ class HandHistoryServiceClass {
       }
 
       console.debug(`[HandHistory] Saved hand #${handData.handNumber} to Supabase (id: ${handId})`);
-    } catch (err) {
+    } catch (err: unknown) {
       // Non-critical — localStorage is the primary store
-      console.warn('[HandHistory] Supabase save failed (non-critical):', err);
+      console.error('[HandHistory] Supabase save failed (non-critical):', err);
     }
   }
 

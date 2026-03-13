@@ -406,7 +406,7 @@ export const RakeService = {
           totalContributions > 0 ? totalContributions : calculation.cappedRake
         );
       } catch (rbErr) {
-        console.warn('[RakeService] RakebackEngine recording failed:', rbErr);
+        console.error('[RakeService] RakebackEngine recording failed:', rbErr);
       }
     }
 
@@ -456,7 +456,7 @@ export const RakeService = {
               `Manual reconciliation required.`
           );
         }
-      } catch (e) {
+      } catch (e: unknown) {
         console.error(`[RakeService] BBJ contribution failed for hand ${handId}:`, e);
       }
     }
@@ -501,8 +501,8 @@ export const RakeService = {
             }
           }
         }
-      } catch (e) {
-        console.warn(`[RakeService] Failed to update union total_rake for ${unionId}:`, e);
+      } catch (e: unknown) {
+        console.error(`[RakeService] Failed to update union total_rake for ${unionId}:`, e);
       }
     }
 
@@ -627,8 +627,8 @@ export const RakeService = {
               );
             }
           }
-        } catch (e) {
-          console.warn(
+        } catch (e: unknown) {
+          console.error(
             `[RakeService] Failed to update rake_generated for ${attr.userId.substring(0, 8)}:`,
             e
           );
@@ -714,14 +714,14 @@ export const RakeService = {
               );
             }
           }
-        } catch (e) {
+        } catch (e: unknown) {
           // Non-blocking: commission tracking should never break the hand pipeline
-          console.warn(`[RakeService] Failed to credit agent ${agentId.substring(0, 8)}:`, e);
+          console.error(`[RakeService] Failed to credit agent ${agentId.substring(0, 8)}:`, e);
         }
       }
 
       return true;
-    } catch (err) {
+    } catch (err: unknown) {
       console.error('[RakeService] Commission queue error:', err);
       return false;
     }
@@ -837,17 +837,13 @@ export const RakeService = {
         );
 
         if (rpcError) {
-          console.warn('[RakeService] increment_club_rake RPC failed (may not exist):', rpcError);
+          console.error('[RakeService] increment_club_rake RPC failed (may not exist):', rpcError);
         }
       } catch {
         /* RPC may not exist — non-blocking */
       }
-
-      console.log(
-        `[RakeService] Recorded tournament rake: ${params.totalBuyInFees} from ${params.playerCount} players`
-      );
       return true;
-    } catch (err) {
+    } catch (err: unknown) {
       console.error('[RakeService] recordTournamentRake error:', err);
       return false;
     }
@@ -879,7 +875,7 @@ export const RakeService = {
         created_at: new Date().toISOString(),
       });
     } catch {
-      console.warn('[RakeService] rake_rate_audit insert failed (table may not exist)');
+      console.error('[RakeService] rake_rate_audit insert failed (table may not exist)');
     }
   },
 };

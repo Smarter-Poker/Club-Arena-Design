@@ -166,7 +166,7 @@ export const FinancialCronService = {
       }
 
       return reconciliationResult;
-    } catch (err) {
+    } catch (err: unknown) {
       console.error('[FinancialCron] Reconciliation failed:', err);
       return { isBalanced: false, difference: -1, checkedAt: new Date().toISOString() };
     }
@@ -195,7 +195,7 @@ export const FinancialCronService = {
         .gt('credit_limit', 0);
 
       if (error || !agents) {
-        console.warn('[FinancialCron] Failed to fetch credit agents:', error);
+        console.error('[FinancialCron] Failed to fetch credit agents:', error);
         return { agentsChecked: 0, agentsSuspended: 0, agentsWarned: 0 };
       }
 
@@ -227,15 +227,15 @@ export const FinancialCronService = {
               );
             }
           }
-        } catch (e) {
-          console.warn(`[FinancialCron] Suspension check failed for agent ${agent.id}:`, e);
+        } catch (e: unknown) {
+          console.error(`[FinancialCron] Suspension check failed for agent ${agent.id}:`, e);
         }
       }
 
       const result: SuspensionCheckResult = { agentsChecked, agentsSuspended, agentsWarned };
       this._lastSuspensionCheck = result;
       return result;
-    } catch (err) {
+    } catch (err: unknown) {
       console.error('[FinancialCron] Suspension check failed:', err);
       return { agentsChecked, agentsSuspended, agentsWarned };
     }
@@ -269,7 +269,7 @@ export const FinancialCronService = {
       });
     } catch {
       // Non-blocking — table may not exist yet
-      console.warn('[FinancialCron] commission_rate_audit insert failed (table may not exist)');
+      console.error('[FinancialCron] commission_rate_audit insert failed (table may not exist)');
     }
   },
 
@@ -314,15 +314,14 @@ export const FinancialCronService = {
             `Dispute ${dispute.id.substring(0, 8)} auto-escalated (72h SLA breach)`,
             { disputeId: dispute.id, clubId: dispute.club_id }
           );
-        } catch (e) {
-          console.warn(`[FinancialCron] Dispute escalation failed for ${dispute.id}:`, e);
+        } catch (e: unknown) {
+          console.error(`[FinancialCron] Dispute escalation failed for ${dispute.id}:`, e);
         }
       }
 
       if (escalated > 0) {
-        console.log(`[FinancialCron] Auto-escalated ${escalated} stale disputes`);
       }
-    } catch (err) {
+    } catch (err: unknown) {
       console.error('[FinancialCron] Dispute escalation check failed:', err);
     }
     return escalated;

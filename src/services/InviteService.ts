@@ -129,7 +129,7 @@ export const InviteService = {
         .eq('id', invite.id);
 
       return true;
-    } catch (error) {
+    } catch (error: unknown) {
       console.error('Failed to send email invite:', error);
       throw error;
     }

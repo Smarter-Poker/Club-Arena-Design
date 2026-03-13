@@ -89,7 +89,7 @@ class ReferralService {
         uses: data.uses,
         maxUses: data.max_uses,
       };
-    } catch (err) {
+    } catch (err: unknown) {
       console.error('[ReferralService] getOrCreateCode exception:', err);
       return null;
     }
@@ -148,7 +148,7 @@ class ReferralService {
         totalReferrals,
         totalChipsEarned,
       };
-    } catch (err) {
+    } catch (err: unknown) {
       console.error('[ReferralService] getStats exception:', err);
       return { code: '', totalReferrals: 0, totalChipsEarned: 0 };
     }
@@ -188,7 +188,7 @@ class ReferralService {
           }
 
           masterBus.emit('BALANCE_UPDATED', { source: 'referral_milestone', userId });
-        } catch (err) {
+        } catch (err: unknown) {
           console.error(`[ReferralService] milestone ${m.count} award failed:`, err);
         }
       }

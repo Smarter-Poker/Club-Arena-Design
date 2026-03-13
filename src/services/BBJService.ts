@@ -215,7 +215,7 @@ export const BBJService = {
     if (error) {
       // No pool found is not a critical error — return a default empty pool
       if (error.code === 'PGRST116') {
-        console.warn('BBJService.getPool: No pool found, returning default');
+        console.error('BBJService.getPool: No pool found, returning default');
         return null;
       }
       console.error('BBJService.getPool error:', error);
@@ -537,7 +537,7 @@ export const BBJService = {
   }): Promise<boolean> {
     // Guard: no recipients = nothing to distribute
     if (params.recipientUserIds.length === 0) {
-      console.warn('BBJService.executePromoPayout: No recipients — nothing to distribute');
+      console.error('BBJService.executePromoPayout: No recipients — nothing to distribute');
       return true;
     }
 

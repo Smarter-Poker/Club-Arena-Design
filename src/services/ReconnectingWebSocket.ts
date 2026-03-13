@@ -95,7 +95,7 @@ export class ReconnectingWebSocket {
       console.debug(`[ReconnectingWS] Queued message (${this.pendingMessages.length} pending)`);
       return true;
     }
-    console.warn('[ReconnectingWS] Pending queue full — dropping message');
+    console.error('[ReconnectingWS] Pending queue full — dropping message');
     return false;
   }
 
@@ -180,12 +180,12 @@ export class ReconnectingWebSocket {
           for (const handler of this.messageHandlers) {
             try {
               handler(msg);
-            } catch (err) {
+            } catch (err: unknown) {
               console.error('[ReconnectingWS] Handler error:', err);
             }
           }
         } catch {
-          console.warn('[ReconnectingWS] Non-JSON message received');
+          console.error('[ReconnectingWS] Non-JSON message received');
         }
       };
 
@@ -202,7 +202,7 @@ export class ReconnectingWebSocket {
         console.error('[ReconnectingWS] Error:', error);
         // onclose will fire after onerror — reconnect handled there
       };
-    } catch (err) {
+    } catch (err: unknown) {
       console.error('[ReconnectingWS] Failed to create WebSocket:', err);
       if (!this.intentionalClose) {
         this.attemptReconnect();
@@ -267,7 +267,7 @@ export class ReconnectingWebSocket {
     for (const handler of this.statusHandlers) {
       try {
         handler(status);
-      } catch (err) {
+      } catch (err: unknown) {
         console.error('[ReconnectingWS] Status handler error:', err);
       }
     }

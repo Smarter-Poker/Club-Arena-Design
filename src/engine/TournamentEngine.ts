@@ -191,21 +191,15 @@ export class TournamentEngine {
       .maybeSingle();
 
     if (statusErr || !statusCheck) {
-      console.log(
-        `[TournamentEngine:${this.tournamentId.slice(0, 8)}] Cannot start — tournament not found`
-      );
       this.running = false;
       return;
     }
 
     if (statusCheck.status === 'RUNNING') {
       // Already running — resume tracking instead of starting fresh
-      console.log(
-        `[TournamentEngine:${this.tournamentId.slice(0, 8)}] Resuming RUNNING tournament...`
-      );
       try {
         await this.resumeRunning();
-      } catch (err) {
+      } catch (err: unknown) {
         console.error(`[TournamentEngine:${this.tournamentId.slice(0, 8)}] Failed to resume:`, err);
         this.running = false;
       }
@@ -214,14 +208,10 @@ export class TournamentEngine {
 
     if (statusCheck.status !== 'REGISTERING' && statusCheck.status !== 'ANNOUNCED') {
       // COMPLETED or CANCELLED — nothing to do
-      console.log(
-        `[TournamentEngine:${this.tournamentId.slice(0, 8)}] Cannot start — current status: ${statusCheck.status}`
-      );
       this.running = false;
       return;
     }
 
-    console.log(`[TournamentEngine:${this.tournamentId.slice(0, 8)}] Starting tournament...`);
 
     try {
       // Step 1: Load tournament info
@@ -233,9 +223,6 @@ export class TournamentEngine {
 
       // Step 2b: Enforce minimum 3 players
       if (this.players.size < 3) {
-        console.log(
-          `[TournamentEngine:${this.tournamentId.slice(0, 8)}] Only ${this.players.size} player(s) — cancelling (minimum 3 required)`
-        );
         // Use TournamentService for proper refund + cancel flow
         const { tournamentService } = await import('../services/TournamentService');
         await tournamentService.cancelTournament(
@@ -269,9 +256,6 @@ export class TournamentEngine {
           .eq('id', this.tournamentId);
 
         this.tournamentInfo.prize_pool = prizePool;
-        console.log(
-          `[TournamentEngine:${this.tournamentId.slice(0, 8)}] SPIN MULTIPLIER: ${spinResult.multiplier}x — Prize Pool: ${prizePool}`
-        );
       }
 
       // Step 3: Create tournament tables
@@ -287,7 +271,7 @@ export class TournamentEngine {
       for (const table of this.tables) {
         try {
           await table.engine.start();
-        } catch (err) {
+        } catch (err: unknown) {
           console.error(
             `[TournamentEngine:${this.tournamentId.slice(0, 8)}] Failed to start table engine ${table.tableId.slice(0, 8)}:`,
             err
@@ -300,11 +284,7 @@ export class TournamentEngine {
 
       // Step 8: Start elimination checker
       this.startEliminationChecker();
-
-      console.log(
-        `[TournamentEngine:${this.tournamentId.slice(0, 8)}] Tournament RUNNING — ${this.players.size} players, ${this.tables.length} tables`
-      );
-    } catch (err) {
+    } catch (err: unknown) {
       console.error(`[TournamentEngine:${this.tournamentId.slice(0, 8)}] Failed to start:`, err);
       this.running = false;
       throw err;
@@ -323,7 +303,6 @@ export class TournamentEngine {
     for (const table of this.tables) {
       table.engine.stop();
     }
-    console.log(`[TournamentEngine:${this.tournamentId.slice(0, 8)}] Stopped`);
   }
 
   isRunning(): boolean {
@@ -372,15 +351,8 @@ export class TournamentEngine {
     }
 
     const activePlayers = Array.from(this.players.values()).filter((p) => p.status === 'playing');
-    console.log(
-      `[TournamentEngine:${this.tournamentId.slice(0, 8)}] Loaded ${this.players.size} players (${activePlayers.length} active)`
-    );
-
     // If no active players left, mark as COMPLETED
     if (activePlayers.length === 0) {
-      console.log(
-        `[TournamentEngine:${this.tournamentId.slice(0, 8)}] No active players — marking COMPLETED`
-      );
       await this.supabase
         .from('tournaments')
         .update({ status: 'COMPLETED', ended_at: new Date().toISOString() })
@@ -398,9 +370,6 @@ export class TournamentEngine {
 
     if (!existingTables || existingTables.length === 0) {
       // No tables exist — need to create them and seat players
-      console.log(
-        `[TournamentEngine:${this.tournamentId.slice(0, 8)}] No tables found — creating and seating`
-      );
       await this.createTournamentTables();
       await this.seatPlayers();
     } else {
@@ -414,10 +383,6 @@ export class TournamentEngine {
           playerCount: t.current_players || 0,
         });
       }
-      console.log(
-        `[TournamentEngine:${this.tournamentId.slice(0, 8)}] Attached to ${this.tables.length} existing tables`
-      );
-
       // Check if tables have seats — if not, seat players
       const { data: anySeats } = await this.supabase
         .from('table_seats')
@@ -426,9 +391,6 @@ export class TournamentEngine {
         .limit(1);
 
       if (!anySeats || anySeats.length === 0) {
-        console.log(
-          `[TournamentEngine:${this.tournamentId.slice(0, 8)}] Tables have no seats — seating players`
-        );
         await this.seatPlayers();
       }
     }
@@ -440,7 +402,7 @@ export class TournamentEngine {
     for (const table of this.tables) {
       try {
         await table.engine.start();
-      } catch (err) {
+      } catch (err: unknown) {
         console.error(
           `[TournamentEngine:${this.tournamentId.slice(0, 8)}] Failed to start table engine ${table.tableId.slice(0, 8)}:`,
           err
@@ -453,10 +415,6 @@ export class TournamentEngine {
 
     // Step 7: Start elimination checker
     this.startEliminationChecker();
-
-    console.log(
-      `[TournamentEngine:${this.tournamentId.slice(0, 8)}] Resumed — ${activePlayers.length} active players, ${this.tables.length} tables`
-    );
   }
 
   // ═══════════════════════════════════════════════════════════════════════════
@@ -512,10 +470,6 @@ export class TournamentEngine {
       is_mystery_bounty: data.is_mystery_bounty || false,
       bounty_amount: data.bounty_amount || 0,
     };
-
-    console.log(
-      `[TournamentEngine:${this.tournamentId.slice(0, 8)}] Loaded: ${data.name}, ${playerCount} players, ${blinds.length} blind levels`
-    );
   }
 
   // ═══════════════════════════════════════════════════════════════════════════
@@ -532,10 +486,6 @@ export class TournamentEngine {
       .eq('tournament_id', this.tournamentId);
 
     if (existingPlayers && existingPlayers.length > 0) {
-      console.log(
-        `[TournamentEngine:${this.tournamentId.slice(0, 8)}] Already has ${existingPlayers.length} tournament_players — activating`
-      );
-
       // Activate any 'registered' players to 'playing' (they haven't been seated yet)
       await this.supabase
         .from('tournament_players')
@@ -571,10 +521,6 @@ export class TournamentEngine {
         .from('tournaments')
         .update({ prize_pool: actualPrizePool, current_players: existingPlayers.length })
         .eq('id', this.tournamentId);
-
-      console.log(
-        `[TournamentEngine:${this.tournamentId.slice(0, 8)}] Activated ${activeCount} players — prize pool: ${actualPrizePool.toFixed(2)}`
-      );
       return;
     }
 
@@ -587,7 +533,7 @@ export class TournamentEngine {
 
     if (error || !registrations || registrations.length === 0) {
       // No registrations — mark tournament as COMPLETED and bail
-      console.warn(
+      console.error(
         `[TournamentEngine:${this.tournamentId.slice(0, 8)}] No registrations found — marking COMPLETED`
       );
       await this.supabase
@@ -599,7 +545,7 @@ export class TournamentEngine {
 
     // Need at least 2 players for a tournament
     if (registrations.length < 2) {
-      console.warn(
+      console.error(
         `[TournamentEngine:${this.tournamentId.slice(0, 8)}] Only ${registrations.length} registration — marking COMPLETED`
       );
       await this.supabase
@@ -610,11 +556,6 @@ export class TournamentEngine {
         `Not enough players (${registrations.length}) for tournament ${this.tournamentId}`
       );
     }
-
-    console.log(
-      `[TournamentEngine:${this.tournamentId.slice(0, 8)}] Activating ${registrations.length} registered players`
-    );
-
     // Update tournament_players status to 'playing' and set starting chips
     const { error: updateError } = await this.supabase
       .from('tournament_players')
@@ -649,10 +590,6 @@ export class TournamentEngine {
         current_players: registrations.length,
       })
       .eq('id', this.tournamentId);
-
-    console.log(
-      `[TournamentEngine:${this.tournamentId.slice(0, 8)}] Migrated ${registrations.length} players — prize pool: ${actualPrizePool.toFixed(2)}`
-    );
   }
 
   private getTableCapacity(): number {
@@ -687,11 +624,6 @@ export class TournamentEngine {
       bigBlind: 20,
       ante: 0,
     };
-
-    console.log(
-      `[TournamentEngine:${this.tournamentId.slice(0, 8)}] Creating ${numTables} tournament tables`
-    );
-
     // Map game_type to game_variant
     const gameVariant = this.mapGameVariant(this.tournamentInfo.game_type);
 
@@ -730,10 +662,6 @@ export class TournamentEngine {
         playerCount: 0,
       });
     }
-
-    console.log(
-      `[TournamentEngine:${this.tournamentId.slice(0, 8)}] Created ${this.tables.length} tables`
-    );
   }
 
   // ═══════════════════════════════════════════════════════════════════════════
@@ -744,10 +672,6 @@ export class TournamentEngine {
     if (!this.tournamentInfo) return;
 
     const activePlayers = Array.from(this.players.values()).filter((p) => p.status === 'playing');
-    console.log(
-      `[TournamentEngine:${this.tournamentId.slice(0, 8)}] seatPlayers: ${activePlayers.length} active out of ${this.players.size} total`
-    );
-
     if (activePlayers.length === 0) {
       console.error(
         `[TournamentEngine:${this.tournamentId.slice(0, 8)}] No active players to seat!`
@@ -815,10 +739,6 @@ export class TournamentEngine {
         .update({ current_players: table.playerCount })
         .eq('id', table.tableId);
     }
-
-    console.log(
-      `[TournamentEngine:${this.tournamentId.slice(0, 8)}] Seated ${activePlayers.length} players across ${this.tables.length} tables`
-    );
   }
 
   // ═══════════════════════════════════════════════════════════════════════════
@@ -849,7 +769,6 @@ export class TournamentEngine {
       .eq('tournament_id', this.tournamentId)
       .eq('status', 'registered');
 
-    console.log(`[TournamentEngine:${this.tournamentId.slice(0, 8)}] Tournament now RUNNING`);
   }
 
   // ═══════════════════════════════════════════════════════════════════════════
@@ -893,10 +812,6 @@ export class TournamentEngine {
       const prevLevel = this.currentLevel;
       this.currentLevel = newLevel;
       const level = blinds[newLevel];
-      console.log(
-        `[TournamentEngine:${this.tournamentId.slice(0, 8)}] BLIND LEVEL UP → Level ${level.level}: ${level.smallBlind}/${level.bigBlind} ante ${level.ante}`
-      );
-
       // Update all tournament tables with new blinds
       this.updateTableBlinds(level);
 
@@ -922,9 +837,6 @@ export class TournamentEngine {
             const player = this.players.get(pid);
             if (player) player.chips = newStack;
           }
-          console.log(
-            `[TournamentEngine:${this.tournamentId.slice(0, 8)}] Chip race: removed ${oldSmallest} denomination, ${raceResult.players.length} players affected`
-          );
         }
       }
 
@@ -980,11 +892,6 @@ export class TournamentEngine {
 
     const addonCost = this.tournamentInfo.addon_cost || this.tournamentInfo.buy_in_amount;
     const addonChips = this.tournamentInfo.addon_chips || this.tournamentInfo.starting_chips;
-
-    console.log(
-      `[TournamentEngine:${this.tournamentId.slice(0, 8)}] ADD-ON PERIOD STARTED — 60 seconds, cost: ${addonCost}, chips: ${addonChips}`
-    );
-
     // Pause all table engines during add-on period
     for (const table of this.tables) {
       if (table.engine.setHandForHand) table.engine.setHandForHand(true);
@@ -1001,7 +908,7 @@ export class TournamentEngine {
           durationSeconds: 60,
         },
       });
-    } catch (e) {
+    } catch (e: unknown) {
       console.error(
         `[TournamentEngine:${this.tournamentId.slice(0, 8)}] Failed to broadcast addon period:`,
         e
@@ -1031,7 +938,7 @@ export class TournamentEngine {
           /* best effort */
         }
       }, 3000);
-    } catch (e) {
+    } catch (e: unknown) {
       /* noop */
     }
 
@@ -1059,11 +966,6 @@ export class TournamentEngine {
 
     // Add-on period ended — resume tournament
     this.addOnPeriodActive = false;
-
-    console.log(
-      `[TournamentEngine:${this.tournamentId.slice(0, 8)}] ADD-ON PERIOD ENDED — resuming tournament`
-    );
-
     // Release all table engines
     for (const table of this.tables) {
       if (table.engine.setHandForHand) table.engine.setHandForHand(false);
@@ -1075,7 +977,7 @@ export class TournamentEngine {
       const { tournamentService } = await import('../services/TournamentService');
       await tournamentService.finalizePrizePool(this.tournamentId);
       if (this.tournamentInfo) this.tournamentInfo.prize_pool_finalized = true;
-    } catch (e) {
+    } catch (e: unknown) {
       console.error(
         `[TournamentEngine:${this.tournamentId.slice(0, 8)}] Failed to finalize after addon:`,
         e
@@ -1089,7 +991,7 @@ export class TournamentEngine {
         type: 'ADDON_PERIOD_END' as any,
         payload: {},
       });
-    } catch (e) {
+    } catch (e: unknown) {
       /* noop */
     }
   }
@@ -1122,9 +1024,6 @@ export class TournamentEngine {
           .eq('id', this.tournamentId)
           .maybeSingle();
         if (freshT && freshT.prize_pool !== this.tournamentInfo.prize_pool) {
-          console.log(
-            `[TournamentEngine:${this.tournamentId.slice(0, 8)}] Prize pool updated: ${this.tournamentInfo.prize_pool} → ${freshT.prize_pool} (late reg)`
-          );
           this.tournamentInfo.prize_pool = freshT.prize_pool;
           this.tournamentInfo.current_players = freshT.current_players;
         }
@@ -1138,14 +1037,11 @@ export class TournamentEngine {
         if (!this.tournamentInfo.prize_pool_finalized && lateRegLevelCap > 0) {
           const currentLevel = this.tournamentInfo.current_level || 0;
           if (currentLevel >= lateRegLevelCap) {
-            console.log(
-              `[TournamentEngine:${this.tournamentId.slice(0, 8)}] Late registration closed at level ${currentLevel} — finalizing prize pool`
-            );
             try {
               const { tournamentService } = await import('../services/TournamentService');
               await tournamentService.finalizePrizePool(this.tournamentId);
               this.tournamentInfo.prize_pool_finalized = true;
-            } catch (e) {
+            } catch (e: unknown) {
               console.error(
                 `[TournamentEngine:${this.tournamentId.slice(0, 8)}] Failed to finalize prize pool:`,
                 e
@@ -1227,9 +1123,6 @@ export class TournamentEngine {
             this.handForHandActive = true;
             if (!this.handForHandAnnounced) {
               this.handForHandAnnounced = true;
-              console.log(
-                `[TournamentEngine:${this.tournamentId.slice(0, 8)}] HAND-FOR-HAND MODE ACTIVATED — ${playingNow} players, ${payoutCount} paid`
-              );
               // Broadcast bubble event
               try {
                 const { realtimeChannelService } =
@@ -1242,7 +1135,7 @@ export class TournamentEngine {
                     paidPositions: payoutCount,
                   },
                 });
-              } catch (e) {
+              } catch (e: unknown) {
                 /* noop */
               }
             }
@@ -1258,9 +1151,6 @@ export class TournamentEngine {
           } else if (this.handForHandActive && playingNow <= payoutCount) {
             // Bubble burst — someone busted, now in the money
             this.handForHandActive = false;
-            console.log(
-              `[TournamentEngine:${this.tournamentId.slice(0, 8)}] BUBBLE BURST — Hand-for-hand deactivated, ${playingNow} players ITM`
-            );
             // Disable hand-for-hand on all table engines
             for (const table of this.tables) {
               if (table.engine.setHandForHand) table.engine.setHandForHand(false);
@@ -1271,7 +1161,7 @@ export class TournamentEngine {
                 type: 'hand_for_hand',
                 payload: { active: false, playersRemaining: playingNow, bubbleBurst: true },
               });
-            } catch (e) {
+            } catch (e: unknown) {
               /* noop */
             }
           }
@@ -1343,16 +1233,11 @@ export class TournamentEngine {
           .select('id');
 
         if (claimErr || !claimedRows || claimedRows.length === 0) {
-          console.warn(
+          console.error(
             `[TournamentEngine:${this.tournamentId.slice(0, 8)}] Alternate ${player.username} unregister race condition prevented. Skipping seating.`
           );
           continue;
         }
-
-        console.log(
-          `[TournamentEngine:${this.tournamentId.slice(0, 8)}] Seating alternate ${player.username} at table ${openTable.tableId.slice(0, 8)} (Seat ${seatNumber})`
-        );
-
         // 2. Safely Insert seat now that we own the state transition
         const { error: seatErr } = await this.supabase.from('table_seats').insert({
           table_id: openTable.tableId,
@@ -1391,7 +1276,7 @@ export class TournamentEngine {
             .update({ current_players: openTable.playerCount })
             .eq('id', openTable.tableId);
         }
-      } catch (err) {
+      } catch (err: unknown) {
         console.error(`[TournamentEngine] Failed to seat alternate ${player.user_id}:`, err);
       }
     }
@@ -1461,11 +1346,6 @@ export class TournamentEngine {
 
     // Calculate prize
     const prize = this.calculatePrize(position);
-
-    console.log(
-      `[TournamentEngine:${this.tournamentId.slice(0, 8)}] ELIMINATED: ${player.username} in ${position}${this.getOrdinal(position)} place${prize > 0 ? ` — wins ${prize.toFixed(2)}` : ''}`
-    );
-
     // Update tournament_players
     await this.supabase
       .from('tournament_players')
@@ -1567,12 +1447,8 @@ export class TournamentEngine {
           } catch (statsErr) {
             console.error(`[TournamentEngine] Bounty stats update failed:`, statsErr);
           }
-
-          console.log(
-            `[TournamentEngine:${this.tournamentId.slice(0, 8)}] BOUNTY: ${knockerId.slice(0, 8)} collected ${bountyResult.bountyAmount} bounty from ${player.username}`
-          );
         }
-      } catch (err) {
+      } catch (err: unknown) {
         console.error(
           `[TournamentEngine:${this.tournamentId.slice(0, 8)}] Bounty collection failed:`,
           err
@@ -1611,7 +1487,7 @@ export class TournamentEngine {
       userId.length < 8 ||
       userId.replace(/0/g, '').replace(/-/g, '').length === 0
     ) {
-      console.warn(
+      console.error(
         `[TournamentEngine:${this.tournamentId.slice(0, 8)}] Skipping prize credit — invalid userId: ${userId}`
       );
       return;
@@ -1641,11 +1517,6 @@ export class TournamentEngine {
       );
       return;
     }
-
-    console.log(
-      `[TournamentEngine:${this.tournamentId.slice(0, 8)}] Credited ${amount} chips to Player Wallet for ${userId.slice(0, 8)}`
-    );
-
     // Log in chip_transactions for club accounting
     await this.supabase.from('chip_transactions').insert({
       club_id: clubId,
@@ -1655,10 +1526,6 @@ export class TournamentEngine {
       transaction_type: 'cash_out',
       notes: `Tournament prize: ${this.tournamentInfo.name}`,
     });
-
-    console.log(
-      `[TournamentEngine:${this.tournamentId.slice(0, 8)}] Credited ${amount.toFixed(2)} prize to ${userId.slice(0, 8)}`
-    );
   }
 
   // ═══════════════════════════════════════════════════════════════════════════
@@ -1717,10 +1584,6 @@ export class TournamentEngine {
   }
 
   private async mergeTable(sourceTable: TournamentTable): Promise<void> {
-    console.log(
-      `[TournamentEngine:${this.tournamentId.slice(0, 8)}] Merging table ${sourceTable.tableId.slice(0, 8)} (${sourceTable.playerCount} players)`
-    );
-
     // Stop the source table engine immediately to prevent new hands
     sourceTable.engine.stop();
 
@@ -1851,10 +1714,6 @@ export class TournamentEngine {
       .from('tables')
       .update({ status: 'closed', current_players: 0 })
       .eq('id', sourceTable.tableId);
-
-    console.log(
-      `[TournamentEngine:${this.tournamentId.slice(0, 8)}] Merge complete. Moved ${result.totalMoved} players via TableBreakEngine.`
-    );
   }
 
   private removeTable(table: TournamentTable): void {
@@ -1873,7 +1732,6 @@ export class TournamentEngine {
     this.finishing = true;
     this.running = false;
 
-    console.log(`[TournamentEngine:${this.tournamentId.slice(0, 8)}] TOURNAMENT COMPLETE!`);
 
     // Stop all table engines
     for (const table of this.tables) {
@@ -1884,11 +1742,6 @@ export class TournamentEngine {
     if (winner) {
       winner.status = 'winner';
       const firstPrize = this.calculatePrize(1);
-
-      console.log(
-        `[TournamentEngine:${this.tournamentId.slice(0, 8)}] WINNER: ${winner.username} — ${firstPrize.toFixed(2)}`
-      );
-
       await this.supabase
         .from('tournament_players')
         .update({
@@ -1930,10 +1783,6 @@ export class TournamentEngine {
     // Clear intervals
     if (this.blindCheckInterval) clearInterval(this.blindCheckInterval);
     if (this.eliminationCheckInterval) clearInterval(this.eliminationCheckInterval);
-
-    console.log(
-      `[TournamentEngine:${this.tournamentId.slice(0, 8)}] All cleanup complete. Total hands: ${this.handsDealt}`
-    );
   }
 
   // ═══════════════════════════════════════════════════════════════════════════

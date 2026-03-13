@@ -178,7 +178,7 @@ class PostgresSyncHooksService {
             });
             break;
           case 'TIMED_OUT':
-            console.warn(`[PostgresSync] ⏱️ Channel timed out — will auto-reconnect.`);
+            console.error(`[PostgresSync] ⏱️ Channel timed out — will auto-reconnect.`);
             masterBus.emit('REALTIME_DISCONNECTED', {
               channelName,
               reason: 'Connection timed out',

@@ -180,7 +180,7 @@ export const SettlementCronService = {
               },
             });
           } catch {
-            console.warn(
+            console.error(
               '[SettlementCron] Edge function send-canary-alert unavailable — relying on DB alert'
             );
           }
@@ -220,7 +220,7 @@ export const SettlementCronService = {
           status: 'closed_pending_payout',
         });
       }
-    } catch (err) {
+    } catch (err: unknown) {
       console.error('[SettlementCron] Error during settlement cycle:', err);
     } finally {
       this.isRunning = false;
@@ -262,7 +262,7 @@ export const SettlementCronService = {
       const passed = difference < 0.01;
 
       return { passed, totalCredits, totalDebits, difference };
-    } catch (err) {
+    } catch (err: unknown) {
       // FAIL-CLOSED: Unexpected errors also block settlement
       console.error(
         '[SettlementCron] Canary check error — BLOCKING settlement (fail-closed):',

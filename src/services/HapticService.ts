@@ -48,8 +48,8 @@ export function triggerHaptic(type: HapticType = 'light'): boolean {
     const pattern = HAPTIC_PATTERNS[type];
     navigator.vibrate(pattern);
     return true;
-  } catch (error) {
-    console.warn('Haptic feedback failed:', error);
+  } catch (error: unknown) {
+    console.error('Haptic feedback failed:', error);
     return false;
   }
 }

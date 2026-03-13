@@ -79,8 +79,8 @@ class CreditRequestServiceClass {
         profile?.username || 'An agent',
         request.requestedAmount
       );
-    } catch (e) {
-      console.warn('[CreditRequest] Notification failed:', e);
+    } catch (e: unknown) {
+      console.error('[CreditRequest] Notification failed:', e);
     }
 
     return this.mapRequest(data);
@@ -179,8 +179,8 @@ class CreditRequestServiceClass {
         category: 'wallet_credit',
         url: '/wallet',
       });
-    } catch (e) {
-      console.warn('[CreditRequest] Notification failed:', e);
+    } catch (e: unknown) {
+      console.error('[CreditRequest] Notification failed:', e);
     }
 
     return this.mapRequest(data);
@@ -220,8 +220,8 @@ class CreditRequestServiceClass {
         message: notes || 'Your credit request was not approved',
         category: 'wallet_credit',
       });
-    } catch (e) {
-      console.warn('[CreditRequest] Notification failed:', e);
+    } catch (e: unknown) {
+      console.error('[CreditRequest] Notification failed:', e);
     }
 
     return this.mapRequest(data);

@@ -66,7 +66,7 @@ class HorseLifecycleManagerCore {
    */
   start(): void {
     if (this.isRunning) {
-      console.warn('[LifecycleManager] Already running');
+      console.error('[LifecycleManager] Already running');
       return;
     }
 
@@ -89,7 +89,7 @@ class HorseLifecycleManagerCore {
    */
   stop(): void {
     if (!this.isRunning) {
-      console.warn('[LifecycleManager] Not running');
+      console.error('[LifecycleManager] Not running');
       return;
     }
 
@@ -122,7 +122,7 @@ class HorseLifecycleManagerCore {
       ]);
 
       console.debug('[LifecycleManager] Maintenance cycle completed');
-    } catch (err) {
+    } catch (err: unknown) {
       console.error('[LifecycleManager] Fatal error in maintenance cycle:', err);
     }
   }
@@ -203,7 +203,7 @@ class HorseLifecycleManagerCore {
               'user_id',
               profiles.map((p) => p.id)
             );
-        } catch (err) {
+        } catch (err: unknown) {
           console.error(
             '[LifecycleManager] Error processing tournament ' + tournament.id + ':',
             err
@@ -230,7 +230,7 @@ class HorseLifecycleManagerCore {
           '[LifecycleManager] Reset ' + horsesReset + ' horses from finished tournaments'
         );
       }
-    } catch (err) {
+    } catch (err: unknown) {
       console.error('[LifecycleManager] Error in cleanupFinishedTournaments:', err);
     }
   }
@@ -323,7 +323,7 @@ class HorseLifecycleManagerCore {
               },
             });
           }
-        } catch (err) {
+        } catch (err: unknown) {
           console.error('[LifecycleManager] Error processing stuck horse ' + horse.id + ':', err);
         }
       }
@@ -331,7 +331,7 @@ class HorseLifecycleManagerCore {
       if (forcedResets > 0) {
         console.debug('[LifecycleManager] Force-reset ' + forcedResets + ' stuck horses');
       }
-    } catch (err) {
+    } catch (err: unknown) {
       console.error('[LifecycleManager] Error in detectStuckHorses:', err);
     }
   }
@@ -394,7 +394,7 @@ class HorseLifecycleManagerCore {
 
       console.debug('[LifecycleManager] Reset horse ' + horseId + ' to available');
       return true;
-    } catch (err) {
+    } catch (err: unknown) {
       console.error('[LifecycleManager] Error in resetHorse:', err);
       return false;
     }
@@ -449,7 +449,7 @@ class HorseLifecycleManagerCore {
         '[LifecycleManager] Credited ' + amount + ' tournament winnings to horse ' + horseId
       );
       return true;
-    } catch (err) {
+    } catch (err: unknown) {
       console.error('[LifecycleManager] Error in processWinnings:', err);
       return false;
     }
@@ -490,7 +490,7 @@ class HorseLifecycleManagerCore {
 
       console.debug('[LifecycleManager] Processed elimination for horse ' + horseId);
       return reset;
-    } catch (err) {
+    } catch (err: unknown) {
       console.error('[LifecycleManager] Error in processElimination:', err);
       return false;
     }
@@ -586,7 +586,7 @@ class HorseLifecycleManagerCore {
           cancelled++;
 
           console.debug('[LifecycleManager] Cancelled stale SNG ' + sng.name);
-        } catch (err) {
+        } catch (err: unknown) {
           console.error('[LifecycleManager] Error cancelling SNG ' + sng.id + ':', err);
         }
       }
@@ -612,7 +612,7 @@ class HorseLifecycleManagerCore {
 
         console.debug('[LifecycleManager] Cancelled ' + cancelled + ' stale SNGs');
       }
-    } catch (err) {
+    } catch (err: unknown) {
       console.error('[LifecycleManager] Error in cleanupStaleSNGs:', err);
     }
   }
@@ -781,7 +781,7 @@ class HorseLifecycleManagerCore {
         stuck,
         busted,
       };
-    } catch (err) {
+    } catch (err: unknown) {
       console.error('[LifecycleManager] Error in getFleetHealth:', err);
       return {
         total: 0,

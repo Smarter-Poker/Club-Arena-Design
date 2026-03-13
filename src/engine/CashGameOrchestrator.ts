@@ -33,8 +33,6 @@ export class CashGameOrchestrator {
   async start() {
     if (this.isRunning) return;
     this.isRunning = true;
-    console.log('[CashGameOrchestrator] Starting global cash game engine...');
-
     // 1. Initial spin up of all existing active tables
     await this.syncActiveTables();
 
@@ -63,9 +61,6 @@ export class CashGameOrchestrator {
                 !isDeleted &&
                 !this.activeEngines.has(tableId)
               ) {
-                console.log(
-                  `[CashGameOrchestrator] Realtime: new table ${tableId}, spinning up engine`
-                );
                 const engine = new HeadlessTableEngine(tableId, supabase);
                 this.activeEngines.set(tableId, engine);
                 engine.start().catch((err) => {
@@ -80,9 +75,6 @@ export class CashGameOrchestrator {
                 (status === 'closed' || isDeleted) &&
                 this.activeEngines.has(tableId)
               ) {
-                console.log(
-                  `[CashGameOrchestrator] Realtime: table ${tableId} closed, stopping engine`
-                );
                 const engine = this.activeEngines.get(tableId)!;
                 engine.stop().catch(() => {});
                 this.activeEngines.delete(tableId);
@@ -98,9 +90,8 @@ export class CashGameOrchestrator {
           }
         )
         .subscribe();
-      console.log('[CashGameOrchestrator] Supabase Realtime subscription active on tables');
-    } catch (err) {
-      console.warn('[CashGameOrchestrator] Realtime subscription failed, relying on polling:', err);
+    } catch (err: unknown) {
+      console.error('[CashGameOrchestrator] Realtime subscription failed, relying on polling:', err);
     }
 
     // 3. Keep 60s polling as fallback (resilience against Realtime drops)
@@ -127,11 +118,6 @@ export class CashGameOrchestrator {
       supabase.removeChannel(this.realtimeChannel);
       this.realtimeChannel = null;
     }
-
-    console.log(
-      `[CashGameOrchestrator] Stopping ${this.activeEngines.size} active table engines...`
-    );
-
     for (const [tableId, engine] of this.activeEngines.entries()) {
       await engine.stop();
       this.activeEngines.delete(tableId);
@@ -175,9 +161,6 @@ export class CashGameOrchestrator {
       // 1. Start engines for new tables
       for (const tableId of currentTableIds) {
         if (!this.activeEngines.has(tableId)) {
-          console.log(
-            `[CashGameOrchestrator] Spinning up HeadlessTableEngine for table: ${tableId}`
-          );
           const engine = new HeadlessTableEngine(tableId, supabase);
           this.activeEngines.set(tableId, engine);
 
@@ -192,18 +175,14 @@ export class CashGameOrchestrator {
       // 2. Stop and remove engines for closed tables
       for (const [tableId, engine] of Array.from(this.activeEngines.entries())) {
         if (!currentTableIds.has(tableId)) {
-          console.log(
-            `[CashGameOrchestrator] Table ${tableId} is no longer active. Stopping engine...`
-          );
           await engine.stop();
           this.activeEngines.delete(tableId);
         } else if (!engine.isRunning()) {
           // Engine crashed or stopped internally, restart it
-          console.log(`[CashGameOrchestrator] Engine for ${tableId} died. Restarting...`);
           engine.start().catch((err) => console.error(err));
         }
       }
-    } catch (err) {
+    } catch (err: unknown) {
       console.error('[CashGameOrchestrator] Error syncing active tables:', err);
     }
   }
@@ -227,7 +206,6 @@ export class CashGameOrchestrator {
             .maybeSingle();
 
           if (tableData?.big_blind) {
-            console.log(`[CashGameOrchestrator] Table ${tableId} needs horses. Seeding...`);
             await HydraService.seedTable(tableId, tableData.big_blind);
           }
         }
@@ -239,13 +217,10 @@ export class CashGameOrchestrator {
           const horseToRemove = horses.find((h) => !h.leavingAfterOrbit);
 
           if (horseToRemove) {
-            console.log(
-              `[CashGameOrchestrator] Table ${tableId} has too many horses. Scheduling recede...`
-            );
             await HydraService.scheduleHorseRemoval(tableId, horseToRemove.id);
           }
         }
-      } catch (err) {
+      } catch (err: unknown) {
         console.error(`[CashGameOrchestrator] Error managing liquidity for table ${tableId}:`, err);
       }
     }

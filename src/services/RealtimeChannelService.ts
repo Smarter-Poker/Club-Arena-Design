@@ -118,7 +118,7 @@ class RealtimeChannelService {
         });
 
         if (staleKeys.length > 0) {
-          console.warn(
+          console.error(
             `[RealtimeChannelService] Found ${staleKeys.length} stale subscriptions (>30 min old). Cleaning up...`
           );
           staleKeys.forEach((key) => {
@@ -126,7 +126,7 @@ class RealtimeChannelService {
             if (sub) {
               sub.channel
                 .unsubscribe()
-                .catch((e) => console.warn('[RealtimeChannel] Cleanup failed:', e));
+                .catch((e) => console.error('[RealtimeChannel] Cleanup failed:', e));
               this.subscriptions.delete(key);
               this.subscriptionTimestamps.delete(key);
               subscriptionMonitor.unregister(key);
@@ -160,11 +160,11 @@ class RealtimeChannelService {
         if (oldest) {
           oldest.channel
             .unsubscribe()
-            .catch((e) => console.warn('[RealtimeChannel] Cleanup failed:', e));
+            .catch((e) => console.error('[RealtimeChannel] Cleanup failed:', e));
           this.subscriptions.delete(oldestKey);
           this.subscriptionTimestamps.delete(oldestKey);
           subscriptionMonitor.unregister(oldestKey);
-          console.warn(
+          console.error(
             `[RealtimeChannelService] Max subscriptions (${MAX_CONCURRENT_SUBSCRIPTIONS}) reached. ` +
               `Removed oldest subscription: ${oldestKey}`
           );
@@ -281,7 +281,7 @@ class RealtimeChannelService {
     const subscription = this.subscriptions.get(channelName);
 
     if (!subscription) {
-      console.warn(`Not subscribed to ${channelName}`);
+      console.error(`Not subscribed to ${channelName}`);
       return;
     }
 
@@ -411,8 +411,8 @@ class RealtimeChannelService {
           event: 'tournament_event',
           payload: { ...event, timestamp: new Date().toISOString() },
         });
-      } catch (e) {
-        console.warn(
+      } catch (e: unknown) {
+        console.error(
           `[RealtimeChannelService] Tournament broadcast failed for ${tournamentId}:`,
           e
         );
@@ -420,8 +420,8 @@ class RealtimeChannelService {
         // Always clean up — prevents orphaned channels
         try {
           await channel.unsubscribe();
-        } catch (e) {
-          console.warn('[RealtimeChannel] Cleanup failed:', e);
+        } catch (e: unknown) {
+          console.error('[RealtimeChannel] Cleanup failed:', e);
         }
       }
       return;
@@ -505,14 +505,14 @@ class RealtimeChannelService {
           payload: event,
         });
       }
-    } catch (e) {
+    } catch (e: unknown) {
       console.error(`[RealtimeChannelService] Hand replay stream failed for ${handId}:`, e);
     } finally {
       // Always clean up — prevents orphaned channels
       try {
         await channel.unsubscribe();
-      } catch (e) {
-        console.warn('[RealtimeChannel] Cleanup failed:', e);
+      } catch (e: unknown) {
+        console.error('[RealtimeChannel] Cleanup failed:', e);
       }
     }
   }

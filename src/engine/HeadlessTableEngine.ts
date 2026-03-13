@@ -110,7 +110,6 @@ export class HeadlessTableEngine {
     this.tableId = tableId;
     this.supabaseClient = supabaseClient;
     this.persistence = new HandPersistence(tableId);
-    console.log(`[HeadlessTableEngine] Created for table ${tableId}`);
   }
 
   /**
@@ -118,13 +117,11 @@ export class HeadlessTableEngine {
    */
   async start(): Promise<void> {
     if (this.running) {
-      console.warn(`[HeadlessTableEngine:${this.tableId}] Already running`);
+      console.error(`[HeadlessTableEngine:${this.tableId}] Already running`);
       return;
     }
 
     this.running = true;
-    console.log(`[HeadlessTableEngine:${this.tableId}] Starting...`);
-
     try {
       // Initialize Horse AI Brain (loads HorsePokerBrain.js if available, else uses HorseLogic)
       await HorseBrainAdapter.initialize();
@@ -141,9 +138,6 @@ export class HeadlessTableEngine {
         if (this.seatedPlayers.length >= 2) {
           break;
         }
-        console.log(
-          `[HeadlessTableEngine:${this.tableId}] Waiting for players... (${this.seatedPlayers.length}/2)`
-        );
         await new Promise((resolve) => setTimeout(resolve, 10000));
       }
 
@@ -152,7 +146,7 @@ export class HeadlessTableEngine {
 
       // Start dealing loop
       this.startDealingLoop();
-    } catch (err) {
+    } catch (err: unknown) {
       console.error(`[HeadlessTableEngine:${this.tableId}] Failed to start:`, err);
       this.running = false;
     }
@@ -165,8 +159,6 @@ export class HeadlessTableEngine {
     if (!this.running) return;
 
     this.running = false;
-    console.log(`[HeadlessTableEngine:${this.tableId}] Stopping...`);
-
     // Cancel dealing loop
     if (this.dealingLoopTimer !== null) {
       clearTimeout(this.dealingLoopTimer as any);
@@ -259,9 +251,6 @@ export class HeadlessTableEngine {
       this.handForHandResolve();
       this.handForHandResolve = null;
     }
-    console.log(
-      `[HeadlessTableEngine:${this.tableId.slice(0, 8)}] Hand-for-hand: ${active ? 'ACTIVE' : 'OFF'}`
-    );
   }
 
   /**
@@ -283,9 +272,6 @@ export class HeadlessTableEngine {
       this.tableInfo.small_blind = smallBlind;
       this.tableInfo.big_blind = bigBlind;
       if (ante !== undefined) this.tableInfo.ante = ante;
-      console.log(
-        `[HeadlessTableEngine:${this.tableId.slice(0, 8)}] Blinds updated: ${smallBlind}/${bigBlind}${ante ? ` ante ${ante}` : ''}`
-      );
     }
   }
 
@@ -308,9 +294,6 @@ export class HeadlessTableEngine {
 
     this.tableInfo = data as TableInfo;
     const mode = data.tournament_id ? 'TOURNAMENT' : 'CASH';
-    console.log(
-      `[HeadlessTableEngine:${this.tableId}] Loaded table [${mode}]: ${data.small_blind}/${data.big_blind} ${data.game_variant}`
-    );
   }
 
   /**
@@ -433,7 +416,6 @@ export class HeadlessTableEngine {
 
         const activePlayers = this.seatedPlayers.filter((p) => p.stack > 0);
         if (activePlayers.length < 2) {
-          console.log(`[HeadlessTableEngine:${this.tableId}] Not enough players, waiting...`);
           this.dealingLoopTimer = setTimeout(dealNextHand, 5000) as any;
           return;
         }
@@ -444,9 +426,6 @@ export class HeadlessTableEngine {
 
         // Hand-for-hand mode: pause after hand until released by TournamentEngine
         if (this.handForHandMode && this.running) {
-          console.log(
-            `[HeadlessTableEngine:${this.tableId.slice(0, 8)}] Hand-for-hand: waiting for sync...`
-          );
           await new Promise<void>((resolve) => {
             this.handForHandResolve = resolve;
             // Safety timeout: auto-release after 60s to prevent deadlock
@@ -464,7 +443,7 @@ export class HeadlessTableEngine {
           const jitter = 3000 + Math.floor(Math.random() * 2000);
           this.dealingLoopTimer = setTimeout(dealNextHand, jitter) as any;
         }
-      } catch (err) {
+      } catch (err: unknown) {
         this.consecutiveErrors++;
         const backoffMs = Math.min(5000 * Math.pow(2, this.consecutiveErrors - 1), 60000);
         console.error(
@@ -501,11 +480,6 @@ export class HeadlessTableEngine {
 
     // Capture initial stacks BEFORE hand begins — critical for accurate chip delta
     this.currentHandInitialStacks = new Map(players.map((p) => [p.user_id, p.stack]));
-
-    console.log(
-      `[HeadlessTableEngine:${this.tableId}] Dealing hand ${handNumber} with ${players.length} players`
-    );
-
     // Convert to SeatPlayer format — use actual seat numbers from DB
     const hcPlayers: SeatPlayer[] = players.map((p) => ({
       seat: p.seat_number,
@@ -635,7 +609,7 @@ export class HeadlessTableEngine {
     );
     return new Promise<void>((resolve) => {
       const handCompleteTimeout = setTimeout(() => {
-        console.warn(
+        console.error(
           `[HeadlessTableEngine:${this.tableId}] Hand ${handNumber} timed out after 120s`
         );
         this.handInvalidated = true; // Mark hand as invalidated
@@ -675,7 +649,7 @@ export class HeadlessTableEngine {
             }));
             try {
               this.handCompleteCallback(this.tableId, finalStacks);
-            } catch (e) {
+            } catch (e: unknown) {
               console.error(`[HeadlessTableEngine:${this.tableId}] handCompleteCallback error:`, e);
             }
           }
@@ -705,8 +679,8 @@ export class HeadlessTableEngine {
               );
               // Note: StateVerifier.verify() already emits STATE_INTEGRITY_VIOLATION to masterBus
             }
-          } catch (verifyErr) {
-            console.warn(`[HeadlessTableEngine:${this.tableId}] StateVerifier error:`, verifyErr);
+          } catch (verifyErr: unknown) {
+            console.error(`[HeadlessTableEngine:${this.tableId}] StateVerifier error:`, verifyErr);
           }
 
           resolve();
@@ -775,7 +749,7 @@ export class HeadlessTableEngine {
             }
           })();
         }
-      } catch (err) {
+      } catch (err: unknown) {
         console.error(`[HeadlessTableEngine:${this.tableId}] Failed to start hand:`, err);
         clearTimeout(handCompleteTimeout);
         this.handController = null;
@@ -965,7 +939,7 @@ export class HeadlessTableEngine {
 
               // Guard: if either board has no winners, fall back to normal runout
               if (w1.length === 0 || w2.length === 0) {
-                console.warn(
+                console.error(
                   `[HeadlessTableEngine:${this.tableId}] RIT board evaluation produced no winners — falling back`
                 );
                 this.handController.resumeRunout();
@@ -1066,13 +1040,12 @@ export class HeadlessTableEngine {
           // Sync stacks back to database — MUST complete before next hand loads from DB
           try {
             await this.syncStacksToDatabase(players);
-          } catch (err) {
+          } catch (err: unknown) {
             console.error(`[HeadlessTableEngine:${this.tableId}] Failed to sync stacks:`, err);
             // Retry once after brief delay
             try {
               await new Promise((r) => setTimeout(r, 500));
               await this.syncStacksToDatabase(players);
-              console.log(`[HeadlessTableEngine:${this.tableId}] Stack sync retry succeeded`);
             } catch (retryErr) {
               console.error(
                 `[HeadlessTableEngine:${this.tableId}] Stack sync retry ALSO failed:`,
@@ -1086,7 +1059,7 @@ export class HeadlessTableEngine {
           if (this.isTournamentTable() && this.tableInfo?.tournament_id) {
             try {
               await this.syncTournamentPlayerChips(players);
-            } catch (err) {
+            } catch (err: unknown) {
               console.error(
                 `[HeadlessTableEngine:${this.tableId}] Tournament chip sync error:`,
                 err
@@ -1185,13 +1158,9 @@ export class HeadlessTableEngine {
 
         // Auto-action logic: Check if possible, otherwise Fold
         const action = toCall === 0 ? 'check' : 'fold';
-        console.log(
-          `[HeadlessTableEngine:${this.tableId}] Human player ${player.username} timed out. Auto-${action}.`
-        );
-
         try {
           this.handController.performAction(player.seat_number, action as any);
-        } catch (err) {
+        } catch (err: unknown) {
           console.error(
             `[HeadlessTableEngine:${this.tableId}] Auto-action failed for ${player.username}:`,
             err
@@ -1440,7 +1409,7 @@ export class HeadlessTableEngine {
    */
   private async syncTournamentPlayerChips(_players: SeatedPlayer[]): Promise<void> {
     if (!this.tableInfo?.tournament_id) {
-      console.warn(
+      console.error(
         `[HeadlessTableEngine:${this.tableId}] syncTournamentPlayerChips skipped — no tournament_id`
       );
       return;
@@ -1455,7 +1424,7 @@ export class HeadlessTableEngine {
       .is('left_at', null);
 
     if (seatErr || !seats || seats.length === 0) {
-      console.warn(
+      console.error(
         `[HeadlessTableEngine:${this.tableId}] syncTournamentPlayerChips — no seats found or error: ${seatErr?.message}`
       );
       return;
@@ -1500,7 +1469,7 @@ export class HeadlessTableEngine {
           .maybeSingle();
 
         if (walletError || !walletData) {
-          console.warn(
+          console.error(
             `[HeadlessTableEngine:${this.tableId}] Horse ${horse.username} has no Player Wallet — cannot rebuy`
           );
           await this.markHorseAsLeft(horse.user_id, 'no_wallet');
@@ -1509,7 +1478,7 @@ export class HeadlessTableEngine {
 
         const walletBalance = walletData.balance || 0;
         if (walletBalance < rebuyAmount) {
-          console.warn(
+          console.error(
             `[HeadlessTableEngine:${this.tableId}] Horse ${horse.username} insufficient funds: ` +
               `wallet ${walletBalance} < rebuy ${rebuyAmount} — stays busted`
           );
@@ -1551,12 +1520,7 @@ export class HeadlessTableEngine {
 
         // Track rebuy in Horse AI Brain
         HorseBrainAdapter.recordRebuy(this.tableId, horse.user_id, rebuyAmount);
-
-        console.log(
-          `[HeadlessTableEngine:${this.tableId}] Auto-rebuy: ${horse.username} → ${rebuyAmount} chips ` +
-            `(wallet: ${walletBalance} → ${walletBalance - rebuyAmount})`
-        );
-      } catch (err) {
+      } catch (err: unknown) {
         console.error(
           `[HeadlessTableEngine:${this.tableId}] Auto-rebuy failed for ${horse.username}:`,
           err
@@ -1613,12 +1577,6 @@ export class HeadlessTableEngine {
           userId: seat.user_id,
           amount: returnedChips,
         });
-
-        console.log(
-          `[HeadlessTableEngine:${this.tableId}] Processed leave_pending for ${seat.user_id} — ` +
-            `returned ${returnedChips} chips, seat cleared atomically`
-        );
-
         // Try to log in chip_transactions for club accounting (fire-and-forget)
         if (clubId && returnedChips > 0) {
           // Fire-and-forget (Supabase JS client executes when not awaited but then/catch causes TS issues)
@@ -1633,13 +1591,13 @@ export class HeadlessTableEngine {
                 transaction_type: 'cashout',
                 notes: `Cash-out from table (leave_pending after hand) ${this.tableId}`,
               });
-            } catch (e) {
+            } catch (e: unknown) {
               // silent
             }
           };
           logChipRx();
         }
-      } catch (err) {
+      } catch (err: unknown) {
         console.error(
           `[HeadlessTableEngine:${this.tableId}] Error processing leave_pending for ${seat.user_id}:`,
           err
@@ -1678,10 +1636,6 @@ export class HeadlessTableEngine {
     if (error) {
       console.error(`[HeadlessTableEngine:${this.tableId}] Failed to mark horse as left:`, error);
     } else {
-      console.log(
-        `[HeadlessTableEngine:${this.tableId}] Horse ${userId} left table — reason: ${reason}`
-      );
-
       // Sync tables.current_players immediately so merge/balance reads correct count
       const { count, error: countErr } = await this.supabaseClient
         .from('table_seats')
@@ -1752,12 +1706,8 @@ export class HeadlessTableEngine {
       });
 
       if (result.calculation.cappedRake > 0) {
-        console.log(
-          `[HeadlessTableEngine:${this.tableId}] Rake: ${result.calculation.cappedRake.toFixed(2)} ` +
-            `(pot ${potSize.toFixed(2)}, BBJ ${result.calculation.bbjDrop.toFixed(2)})`
-        );
       }
-    } catch (err) {
+    } catch (err: unknown) {
       console.error(
         `[HeadlessTableEngine:${this.tableId}] RakeService.executeWaterfall failed:`,
         err
@@ -1805,7 +1755,7 @@ export class HeadlessTableEngine {
       });
 
       if (!pool) {
-        console.warn(
+        console.error(
           `[HeadlessTableEngine:${this.tableId}] BBJ pool not found for club ${this.tableInfo?.club_id}`
         );
         return;
@@ -1820,14 +1770,14 @@ export class HeadlessTableEngine {
       const loserPlayer = players.find((p) => p.user_id === loser.userId);
 
       if (!winnerPlayer || !loserPlayer) {
-        console.warn(
+        console.error(
           `[HeadlessTableEngine:${this.tableId}] Could not find winner or loser in players`
         );
         return;
       }
 
       if (!this.tableInfo) {
-        console.warn(`[HeadlessTableEngine:${this.tableId}] Table info is missing`);
+        console.error(`[HeadlessTableEngine:${this.tableId}] Table info is missing`);
         return;
       }
 
@@ -1862,13 +1812,6 @@ export class HeadlessTableEngine {
         loserDisplayName: loserPlayer.username,
         dealtInPlayerIds,
       });
-
-      console.log(
-        `[HeadlessTableEngine:${this.tableId}] BBJ TRIGGERED! ` +
-          `${loserPlayer.username} (${loser.hand.name}) lost to ` +
-          `${winnerPlayer.username} (${winner.hand.name})`
-      );
-
       // Broadcast BBJ_HIT event for UI notification via table channel
       try {
         supabase
@@ -1884,15 +1827,15 @@ export class HeadlessTableEngine {
             },
           })
           .catch((err: unknown) => {
-            console.warn(
+            console.error(
               `[HeadlessTableEngine:${this.tableId}] Failed to broadcast BBJ event:`,
               err
             );
           });
-      } catch (broadcastErr) {
-        console.warn(`[HeadlessTableEngine:${this.tableId}] BBJ broadcast error:`, broadcastErr);
+      } catch (broadcastErr: unknown) {
+        console.error(`[HeadlessTableEngine:${this.tableId}] BBJ broadcast error:`, broadcastErr);
       }
-    } catch (err) {
+    } catch (err: unknown) {
       console.error(`[HeadlessTableEngine:${this.tableId}] BBJ payout execution failed:`, err);
     }
   }

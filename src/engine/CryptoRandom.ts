@@ -47,7 +47,7 @@ export function secureRandomInt(exclusiveMax: number): number {
   // Fallback: Math.random() (non-crypto, log warning once)
   if (!_warnedFallback) {
     _warnedFallback = true;
-    console.warn('[CryptoRandom] No crypto API available — falling back to Math.random()');
+    console.error('[CryptoRandom] No crypto API available — falling back to Math.random()');
   }
   return Math.floor(Math.random() * exclusiveMax);
 }

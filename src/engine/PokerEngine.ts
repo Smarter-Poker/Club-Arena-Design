@@ -433,7 +433,7 @@ export function evaluateOmahaHand(holeCards: Card[], communityCards: Card[]): Ev
   if (holeCards.length < 4) {
     // Graceful fallback: if fewer than 4 hole cards (edge case from mid-hand join
     // or card dealing glitch), use standard evaluator with available cards
-    console.warn(
+    console.error(
       `[PokerEngine] evaluateOmahaHand called with ${holeCards.length} hole cards — using fallback`
     );
     if (holeCards.length >= 2 && communityCards.length >= 3) {
@@ -483,7 +483,7 @@ export function evaluateOmahaLowHand(
   communityCards: Card[]
 ): EvaluatedHand | null {
   if (holeCards.length < 4) {
-    console.warn(
+    console.error(
       `[PokerEngine] evaluateOmahaLowHand called with ${holeCards.length} hole cards — skipping`
     );
     return null;

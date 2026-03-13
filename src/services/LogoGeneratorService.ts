@@ -93,7 +93,7 @@ export async function generateClubLogo(
       success: true,
       logoUrl: resizedDataUrl,
     };
-  } catch (error) {
+  } catch (error: unknown) {
     console.error('[LogoGenerator] Logo generation failed:', error);
     return {
       success: false,

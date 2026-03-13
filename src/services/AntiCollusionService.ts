@@ -193,7 +193,7 @@ export const AntiCollusionService = {
         evidence: event.evidence,
         created_at: new Date(event.timestamp).toISOString(),
       });
-    } catch (err) {
+    } catch (err: unknown) {
       console.error('[AntiCollusion] Failed to log event:', err);
     }
 

@@ -62,7 +62,7 @@ export class DeltaSyncService<T extends Record<string, unknown>> {
     if (message.type === 'DELTA') {
       // Version gap check — request full snapshot if we missed updates
       if (message.version > this.state.version + 1) {
-        console.warn(
+        console.error(
           `[DeltaSync] Version gap: local=${this.state.version}, received=${message.version}. Requesting snapshot.`
         );
         this.requestSnapshot();
@@ -193,7 +193,7 @@ export class DeltaSyncService<T extends Record<string, unknown>> {
     for (const listener of this.changeListeners) {
       try {
         listener(this.state.data, changedKeys);
-      } catch (err) {
+      } catch (err: unknown) {
         console.error('[DeltaSync] Listener error:', err);
       }
     }

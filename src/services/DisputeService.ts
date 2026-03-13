@@ -111,8 +111,8 @@ export const DisputeService = {
           url: '/commander/disputes',
         });
       }
-    } catch (e) {
-      console.warn('[DisputeService] Notification failed:', e);
+    } catch (e: unknown) {
+      console.error('[DisputeService] Notification failed:', e);
     }
 
     return this.mapDispute(data);
@@ -264,8 +264,8 @@ export const DisputeService = {
           category: 'settlement' as any,
           url: '/wallet',
         });
-      } catch (e) {
-        console.warn('[DisputeService] Notification failed:', e);
+      } catch (e: unknown) {
+        console.error('[DisputeService] Notification failed:', e);
       }
     }
 

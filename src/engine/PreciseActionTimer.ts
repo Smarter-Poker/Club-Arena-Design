@@ -203,7 +203,7 @@ class PreciseActionTimerClass {
           if (dl.onExpiry) {
             try {
               dl.onExpiry();
-            } catch (err) {
+            } catch (err: unknown) {
               console.error(`[PreciseActionTimer] Expiry callback error:`, err);
             }
           }

@@ -90,7 +90,7 @@ class AchievementTriggerServiceClass {
     for (const ach of result.triggeredAchievements) {
       pushNotificationService
         .notifyAchievement(userId, ach.name)
-        .catch((err) => console.warn('[Achievements] Push notification failed:', err));
+        .catch((err) => console.error('[Achievements] Push notification failed:', err));
     }
 
     return result;

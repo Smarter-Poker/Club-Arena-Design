@@ -339,7 +339,7 @@ export class HandController {
 
     const validation = validateAction(action, amount, player.stack, bettingState);
     if (!validation.valid) {
-      console.warn(`[HC] Action rejected (seat ${seat}): ${validation.error}`);
+      console.error(`[HC] Action rejected (seat ${seat}): ${validation.error}`);
       return false;
     }
 

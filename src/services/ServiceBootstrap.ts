@@ -54,7 +54,7 @@ export async function bootServices(options?: {
     await OfflineQueueService.init();
     result.offlineQueue = true;
     console.debug('[ServiceBootstrap] ✓ OfflineQueueService initialized');
-  } catch (err) {
+  } catch (err: unknown) {
     console.error('[ServiceBootstrap] ✗ OfflineQueueService failed:', err);
   }
 
@@ -64,7 +64,7 @@ export async function bootServices(options?: {
       SettlementCronService.start({ checkIntervalMs: 60 * 60 * 1000 });
       result.settlementCron = true;
       console.debug('[ServiceBootstrap] ✓ SettlementCronService started');
-    } catch (err) {
+    } catch (err: unknown) {
       console.error('[ServiceBootstrap] ✗ SettlementCronService failed:', err);
     }
   }
@@ -74,7 +74,7 @@ export async function bootServices(options?: {
     AutoRebuyService.start();
     result.autoRebuy = true;
     console.debug('[ServiceBootstrap] ✓ AutoRebuyService started');
-  } catch (err) {
+  } catch (err: unknown) {
     console.error('[ServiceBootstrap] ✗ AutoRebuyService failed:', err);
   }
 
@@ -87,7 +87,7 @@ export async function bootServices(options?: {
     });
     result.financialCron = true;
     console.debug('[ServiceBootstrap] ✓ FinancialCronService started');
-  } catch (err) {
+  } catch (err: unknown) {
     console.error('[ServiceBootstrap] ✗ FinancialCronService failed:', err);
   }
 

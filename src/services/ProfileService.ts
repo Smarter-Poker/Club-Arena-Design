@@ -78,7 +78,7 @@ class ProfileServiceClass {
       if (error || !data) return null;
 
       return this.mapProfile(data);
-    } catch (err) {
+    } catch (err: unknown) {
       console.error('[Profile] getProfile error:', err);
       return null;
     }
@@ -98,7 +98,7 @@ class ProfileServiceClass {
       if (error || !data) return null;
 
       return this.mapProfile(data);
-    } catch (err) {
+    } catch (err: unknown) {
       console.error('[Profile] getProfileByUsername error:', err);
       return null;
     }
@@ -125,7 +125,7 @@ class ProfileServiceClass {
 
       if (error || !data) return null;
       return this.mapProfile(data);
-    } catch (err) {
+    } catch (err: unknown) {
       console.error('[Profile] getPublicProfile error:', err);
       return null;
     }
@@ -321,7 +321,7 @@ class ProfileServiceClass {
 
       if (error || !data) return false;
       return !!data.club_arena_tos_accepted_at;
-    } catch (err) {
+    } catch (err: unknown) {
       console.error('[Profile] hasTOSAccepted error:', err);
       return false;
     }

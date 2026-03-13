@@ -234,7 +234,7 @@ export const SettlementService = {
       );
 
       if (error) {
-        console.warn(
+        console.error(
           '[Settlement] calculate_agent_settlement not available, trying calculate_agent_spread'
         );
         // Fall back to calculate_agent_spread if available
@@ -252,7 +252,7 @@ export const SettlementService = {
         }
 
         // Return default if both fail
-        console.warn('[Settlement] Falling back to default settlement');
+        console.error('[Settlement] Falling back to default settlement');
         return {
           id: `${agentId}-${periodId}`,
           periodId,
@@ -269,8 +269,8 @@ export const SettlementService = {
         };
       }
       return data;
-    } catch (err) {
-      console.warn('[Settlement] Error calculating agent settlement:', err);
+    } catch (err: unknown) {
+      console.error('[Settlement] Error calculating agent settlement:', err);
       throw err;
     }
   },
@@ -310,7 +310,7 @@ export const SettlementService = {
         .select('id');
 
       if (claimError || !claimData || claimData.length === 0) {
-        console.warn(
+        console.error(
           `[Settlement] Skipping agent ${settlement.agent_id}: ` +
             `already claimed by another instance or status changed`
         );
@@ -319,7 +319,7 @@ export const SettlementService = {
 
       // Skip agents with zero or negative settlements (e.g. excess credit extended)
       if (settlement.net_settlement <= 0) {
-        console.warn(
+        console.error(
           `[Settlement] Skipping agent ${settlement.agent_id}: ` +
             `net_settlement=${settlement.net_settlement} (non-positive)`
         );
@@ -354,11 +354,11 @@ export const SettlementService = {
         // Send push notification to agent
         pushNotificationService
           .notifySettlement(settlement.agent_id, settlement.net_settlement, 'Weekly Commission')
-          .catch((err) => console.warn('[Settlement] Agent push failed:', err));
+          .catch((err) => console.error('[Settlement] Agent push failed:', err));
 
         agentsPaid++;
         totalDisbursed += settlement.net_settlement;
-      } catch (err) {
+      } catch (err: unknown) {
         console.error(`[Settlement] CRITICAL: Failed to pay agent ${settlement.agent_id}:`, err);
         // Do NOT revert to 'approved' if it was a network drop. The atomic RPC guarantees consistency.
         // It stays in 'processing' so it doesn't get double-paid and can be manually reconciled.
@@ -432,11 +432,11 @@ export const SettlementService = {
         // Send push notification to player
         pushNotificationService
           .notifySettlement(snapshot.player_id, snapshot.rakeback_earned, 'Weekly Rakeback')
-          .catch((err) => console.warn('[Settlement] Player push failed:', err));
+          .catch((err) => console.error('[Settlement] Player push failed:', err));
 
         playersWithRakeback++;
         totalDisbursed += snapshot.rakeback_earned;
-      } catch (err) {
+      } catch (err: unknown) {
         console.error(`Failed rakeback for player ${snapshot.player_id}:`, err);
       }
     }

@@ -1118,7 +1118,7 @@ class HorseOrchestrator {
     configs: TableConfig[] = DEFAULT_TABLES
   ): Promise<{ success: boolean; tablesCreated: number; horsesSeated: number }> {
     if (this.isRunning) {
-      console.warn('[Orchestrator] Already running');
+      console.error('[Orchestrator] Already running');
       return { success: false, tablesCreated: 0, horsesSeated: 0 };
     }
 
@@ -1257,7 +1257,7 @@ class HorseOrchestrator {
         // Multi-table enforcement: check if horse can sit at another table
         const canSit = await this.canHorseSitAtTable(horse.id, tableType);
         if (!canSit) {
-          console.warn(
+          console.error(
             `[Orchestrator] Horse ${horse.name} cannot sit at another ${tableType} table (limit reached)`
           );
           continue;
@@ -1275,7 +1275,7 @@ class HorseOrchestrator {
         });
 
         if (seatError) {
-          console.warn(`[Orchestrator] Failed to seat horse ${horse.name}: ${seatError.message}`);
+          console.error(`[Orchestrator] Failed to seat horse ${horse.name}: ${seatError.message}`);
           continue;
         }
 
@@ -1286,7 +1286,7 @@ class HorseOrchestrator {
 
         seated++;
       } catch (err: any) {
-        console.warn(`[Orchestrator] Horse seating error: ${err.message}`);
+        console.error(`[Orchestrator] Horse seating error: ${err.message}`);
       }
     }
 
@@ -1777,7 +1777,7 @@ class HorseOrchestrator {
 
       // Only enforce the 4-total limit. Horses can play any mix of cash/tournament.
       if (activeTables.length >= MAX_TABLES_PER_HORSE) {
-        console.warn(
+        console.error(
           `[Orchestrator] Horse ${horseId} already at ${activeTables.length} tables (max: ${MAX_TABLES_PER_HORSE})`
         );
         return false;
@@ -2161,7 +2161,7 @@ class HorseOrchestrator {
           }
         } catch (err: any) {
           // Continue to next horse on error
-          console.warn(
+          console.error(
             `[Orchestrator] ensureHorsesAt4Tables error for ${horse.display_name}: ${err.message}`
           );
         }

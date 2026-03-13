@@ -659,8 +659,8 @@ class TournamentService {
           num_players: 1,
           bbj_contribution: 0,
         });
-      } catch (e) {
-        console.warn(`[TournamentService] Failed to insert tournament rake_record:`, e);
+      } catch (e: unknown) {
+        console.error(`[TournamentService] Failed to insert tournament rake_record:`, e);
       }
 
       // Update tournament total_rake field
@@ -676,8 +676,8 @@ class TournamentService {
             .update({ total_rake: (tData.total_rake || 0) + rake })
             .eq('id', tournamentId);
         }
-      } catch (e) {
-        console.warn(`[TournamentService] Failed to update tournament total_rake:`, e);
+      } catch (e: unknown) {
+        console.error(`[TournamentService] Failed to update tournament total_rake:`, e);
       }
 
       // Track at union level if club belongs to a union
@@ -694,8 +694,8 @@ class TournamentService {
               .update({ total_rake: (unionData.total_rake || 0) + rake })
               .eq('id', tournament.union_id);
           }
-        } catch (e) {
-          console.warn(`[TournamentService] Failed to update union total_rake:`, e);
+        } catch (e: unknown) {
+          console.error(`[TournamentService] Failed to update union total_rake:`, e);
         }
       }
     }
@@ -846,7 +846,7 @@ class TournamentService {
               console.error(`[TournamentService] Late reg table count failed: ${tableErr.message}`);
           }
         } else {
-          console.warn(
+          console.error(
             `[TournamentService] Late reg: no open table found for ${tournamentId.slice(0, 8)} — adding to alternate list`
           );
           // No table available — DO NOT refund. Player enters the alternate waitlist.
@@ -1280,8 +1280,8 @@ class TournamentService {
         won: position === 1,
         prizeAmount: prize,
       });
-    } catch (err) {
-      console.warn('[Achievements] Tournament trigger failed:', err);
+    } catch (err: unknown) {
+      console.error('[Achievements] Tournament trigger failed:', err);
     }
   }
 
@@ -1509,8 +1509,8 @@ class TournamentService {
         type: 'player_registered', // Using existing event type
         payload: { type: 'rebuy', userId, chips: rebuyChips },
       });
-    } catch (e) {
-      console.warn('Failed to broadcast rebuy event:', e);
+    } catch (e: unknown) {
+      console.error('Failed to broadcast rebuy event:', e);
     }
 
     return { success: true, newStack: data?.new_stack || rebuyChips };
@@ -1623,8 +1623,8 @@ class TournamentService {
         type: 'player_registered',
         payload: { type: 'addon', userId, chips: addonChips },
       });
-    } catch (e) {
-      console.warn('Failed to broadcast add-on event:', e);
+    } catch (e: unknown) {
+      console.error('Failed to broadcast add-on event:', e);
     }
 
     return { success: true, newStack: data?.new_stack };
@@ -1670,8 +1670,8 @@ class TournamentService {
           else rebuyTotal += cost;
         }
       }
-    } catch (e) {
-      console.warn('[TournamentService] Could not query rebuy/addon transactions:', e);
+    } catch (e: unknown) {
+      console.error('[TournamentService] Could not query rebuy/addon transactions:', e);
     }
 
     // Calculate total prize pool
@@ -1726,8 +1726,8 @@ class TournamentService {
         type: 'prize_pool_finalized',
         payload: { prizePool: finalPool },
       });
-    } catch (e) {
-      console.warn('Failed to broadcast prize pool finalization:', e);
+    } catch (e: unknown) {
+      console.error('Failed to broadcast prize pool finalization:', e);
     }
 
     return finalPool;
@@ -1870,8 +1870,8 @@ class TournamentService {
           type: 'final_table',
           payload: { tableId: finalTable.id, playerCount: count },
         });
-      } catch (e) {
-        console.warn('Failed to broadcast final table event:', e);
+      } catch (e: unknown) {
+        console.error('Failed to broadcast final table event:', e);
       }
     }
 
@@ -1897,8 +1897,8 @@ class TournamentService {
           ante: newLevel.ante,
         },
       });
-    } catch (e) {
-      console.warn('Failed to broadcast level up:', e);
+    } catch (e: unknown) {
+      console.error('Failed to broadcast level up:', e);
     }
   }
 
@@ -1915,8 +1915,8 @@ class TournamentService {
         type: 'player_eliminated',
         payload: eliminatedPlayer,
       });
-    } catch (e) {
-      console.warn('Failed to broadcast elimination:', e);
+    } catch (e: unknown) {
+      console.error('Failed to broadcast elimination:', e);
     }
   }
 
@@ -1933,8 +1933,8 @@ class TournamentService {
         type: 'winner',
         payload: winner,
       });
-    } catch (e) {
-      console.warn('Failed to broadcast winner:', e);
+    } catch (e: unknown) {
+      console.error('Failed to broadcast winner:', e);
     }
   }
 
@@ -1997,8 +1997,8 @@ class TournamentService {
           });
         }
       }
-    } catch (e) {
-      console.warn('[TournamentService] Failed to submit to POY:', e);
+    } catch (e: unknown) {
+      console.error('[TournamentService] Failed to submit to POY:', e);
     }
 
     return { success: true };

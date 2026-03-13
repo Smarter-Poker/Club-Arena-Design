@@ -147,7 +147,7 @@ export class HandPersistence {
     this.eventQueue = this.eventQueue.then(async () => {
       try {
         await this.handleEvent(event, config);
-      } catch (err) {
+      } catch (err: unknown) {
         console.error(
           `[HandPersistence:${this.tableId}] Event handler error for ${event.type}:`,
           err
@@ -189,7 +189,7 @@ export class HandPersistence {
     // Guard: if a previous hand is still in progress, finalize it first.
     // With serialized events this should be rare, but handle it defensively.
     if (this.currentHand) {
-      console.warn(
+      console.error(
         `[HandPersistence:${this.tableId}] Previous hand #${this.currentHand.hand_number} still open — finalizing before hand #${handNumber}`
       );
       await this.onHandComplete(this.currentHand.hand_number, 0);
@@ -272,7 +272,7 @@ export class HandPersistence {
             (this.currentHand as any)._localOnly = true;
           }
         }
-      } catch (e) {
+      } catch (e: unknown) {
         console.error(`[HandPersistence:${this.tableId}] Retry exception:`, e);
         if (this.currentHand) {
           this.currentHand.id = crypto.randomUUID();
@@ -316,7 +316,7 @@ export class HandPersistence {
 
   private async onHandComplete(handNumber: number, rake: number): Promise<void> {
     if (!this.currentHand) {
-      console.warn(
+      console.error(
         `[HandPersistence:${this.tableId}] HAND_COMPLETE for #${handNumber} but no currentHand`
       );
       return;
@@ -373,7 +373,7 @@ export class HandPersistence {
               `[HandPersistence:${this.tableId}] Retry update also failed: ${retryErr.message || retryErr.code}`
             );
           }
-        } catch (e) {
+        } catch (e: unknown) {
           console.error(`[HandPersistence:${this.tableId}] Retry update exception:`, e);
         }
       }

@@ -61,7 +61,7 @@ export const FinancialExportService = {
       this.downloadCSV(csv, filename);
 
       return { success: true, filename, rowCount: rows.length };
-    } catch (err) {
+    } catch (err: unknown) {
       console.error('[FinancialExport] Export failed:', err);
       return { success: false, error: err instanceof Error ? err.message : 'Export failed' };
     }

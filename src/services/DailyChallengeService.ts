@@ -543,9 +543,8 @@ class DailyChallengeServiceClass {
       if (lastReminder !== today) {
         masterBus.emit('DAILY_RESET_AVAILABLE', { date: today });
         localStorage.setItem('last_daily_reset_reminder', today);
-        console.log('[DailyChallenge] Emitted DAILY_RESET_AVAILABLE push event');
       }
-    } catch (e) {
+    } catch (e: unknown) {
       // Ignore localStorage errors (e.g. strict privacy settings)
     }
   }
