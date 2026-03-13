@@ -24,6 +24,7 @@ import { PlayerAvatar } from '../components/avatars/PlayerAvatar';
 import type { VipTier } from '../components/avatars/PlayerAvatar';
 import './LeaderboardPage.css';
 import { useVisibilityRefresh } from '../hooks/useVisibilityRefresh';
+import PageSkeleton from '../components/common/PageSkeleton';
 
 const podiumAnimationStyle = {
   opacity: 0,

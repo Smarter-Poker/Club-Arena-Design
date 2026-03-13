@@ -24,6 +24,7 @@ import {
   type DisputeResolution,
 } from '../services/DisputeService';
 import './DisputeManagementPage.css';
+import PageSkeleton from '../components/common/PageSkeleton';
 
 type FilterTab = 'all' | 'open' | 'under_review' | 'resolved' | 'escalated';
 
@@ -201,7 +202,7 @@ export default function DisputeManagementPage() {
       {/* Disputes List */}
       {loading ? (
         <div className="loading-state">
-          <div className="spinner" />
+          <PageSkeleton variant="list" />
           <p>Loading disputes...</p>
         </div>
       ) : filtered.length === 0 ? (

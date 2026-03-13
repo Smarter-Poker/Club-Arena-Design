@@ -365,7 +365,7 @@ class NotificationServiceClass {
    * Group similar notifications for collapsed display.
    * E.g. "3 new friend requests" instead of 3 individual entries.
    */
-  static groupNotifications(
+  groupNotifications(
     notifications: Notification[]
   ): Array<Notification & { groupCount?: number; groupIds?: string[] }> {
     const groups = new Map<string, Notification[]>();

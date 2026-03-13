@@ -15,8 +15,10 @@ import InviteToTable from '../components/social/InviteToTable';
 import FriendChallengeModal from '../components/social/FriendChallengeModal';
 import FriendSuggestions from '../components/social/FriendSuggestions';
 import { useSwipeAction } from '../hooks/useSwipeAction';
+import { playerStatusService } from '../services/PlayerStatusService';
 import './FriendsPage.css';
 import { useVisibilityRefresh } from '../hooks/useVisibilityRefresh';
+import PageSkeleton from '../components/common/PageSkeleton';
 
 interface Friend {
   id: string;

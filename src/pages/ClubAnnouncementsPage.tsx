@@ -14,6 +14,7 @@ import ConfirmModal from '../components/common/ConfirmModal';
 import { useVisibilityRefresh } from '../hooks/useVisibilityRefresh';
 import { resolveClubUUID } from '../utils/clubIdResolver';
 import './ClubAnnouncementsPage.css';
+import PageSkeleton from '../components/common/PageSkeleton';
 
 const announcementAnimationStyle = (index: number) => ({
   opacity: 0,
@@ -280,7 +281,7 @@ export default function ClubAnnouncementsPage() {
       <div className="announcements-list">
         {loading ? (
           <div className="loading-state">
-            <div className="spinner" />
+            <PageSkeleton variant="list" />
           </div>
         ) : announcements.length === 0 ? (
           <div className="empty-state">

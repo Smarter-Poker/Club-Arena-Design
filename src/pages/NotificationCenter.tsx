@@ -18,6 +18,7 @@ import { useAuthUser } from '../hooks/useAuthUser';
 import { masterBus } from '../core/MasterBus';
 import { useToast } from '../components/common/Toast';
 import './NotificationCenter.css';
+import PageSkeleton from '../components/common/PageSkeleton';
 
 interface Notification {
   id: string;

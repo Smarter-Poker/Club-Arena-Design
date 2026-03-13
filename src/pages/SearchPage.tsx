@@ -10,6 +10,7 @@ import { masterBus } from '../core/MasterBus';
 import { useToast } from '../components/common/Toast';
 import { useAuthUser } from '../hooks/useAuthUser';
 import './SearchPage.css';
+import PageSkeleton from '../components/common/PageSkeleton';
 
 type SearchCategory = 'all' | 'clubs' | 'players' | 'tables';
 

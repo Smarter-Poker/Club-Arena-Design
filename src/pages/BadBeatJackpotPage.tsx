@@ -12,6 +12,7 @@ import ClubBottomNav from '../components/club/ClubBottomNav';
 import './BadBeatJackpotPage.css';
 import { useVisibilityRefresh } from '../hooks/useVisibilityRefresh';
 import { resolveClubUUID } from '../utils/clubIdResolver';
+import PageSkeleton from '../components/common/PageSkeleton';
 
 interface JackpotInfo {
   id: string;
@@ -196,7 +197,7 @@ export default function BadBeatJackpotPage() {
     return (
       <div className="bbj-page">
         <div className="loading-state">
-          <div className="spinner" />
+          <PageSkeleton variant="stats" />
         </div>
         {clubId && <ClubBottomNav clubId={clubId} />}
       </div>

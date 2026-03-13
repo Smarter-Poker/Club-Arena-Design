@@ -14,6 +14,7 @@ import { useAuthUser } from '../hooks/useAuthUser';
 import { masterBus } from '../core/MasterBus';
 import { useVisibilityRefresh } from '../hooks/useVisibilityRefresh';
 import './SessionHistoryPage.css';
+import PageSkeleton from '../components/common/PageSkeleton';
 
 interface SessionRecord {
   id: string;

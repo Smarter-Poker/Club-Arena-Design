@@ -11,6 +11,7 @@ import { useToast } from '../components/common/Toast';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts';
 import './RakebackPage.css';
 import { useVisibilityRefresh } from '../hooks/useVisibilityRefresh';
+import PageSkeleton from '../components/common/PageSkeleton';
 
 interface RakebackPeriod {
   id: string;
@@ -367,7 +368,7 @@ export default function RakebackPage() {
         <h3>History</h3>
         {loading ? (
           <div className="loading-state">
-            <div className="spinner" />
+            <PageSkeleton variant="financial" />
           </div>
         ) : periods.length === 0 ? (
           <div className="empty-state">

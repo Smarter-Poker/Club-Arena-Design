@@ -16,6 +16,7 @@ import ClubBottomNav from '../components/club/ClubBottomNav';
 import MessageThread from '../components/messaging/MessageThread';
 import './ClubMessagesPage.css';
 import { useVisibilityRefresh } from '../hooks/useVisibilityRefresh';
+import PageSkeleton from '../components/common/PageSkeleton';
 
 interface ClubConversation {
   id: string;
@@ -225,7 +226,7 @@ export default function ClubMessagesPage() {
       <div className="club-messages-list">
         {loading ? (
           <div className="loading-state">
-            <div className="spinner" />
+            <PageSkeleton variant="list" />
           </div>
         ) : conversations.length === 0 ? (
           <div className="empty-state">

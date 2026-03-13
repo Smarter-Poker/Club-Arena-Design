@@ -15,6 +15,7 @@ import ClubBottomNav from '../components/club/ClubBottomNav';
 import { sanitizeInput } from '../utils/sanitizeInput';
 import { resolveClubIdFilter, resolveClubUUID } from '../utils/clubIdResolver';
 import './ClubRulesPage.css';
+import PageSkeleton from '../components/common/PageSkeleton';
 
 const rulesLineAnimationStyle = (index: number) => ({
   opacity: 0,
@@ -131,7 +132,7 @@ export default function ClubRulesPage() {
     return (
       <div className="club-rules-page">
         <div className="loading-state">
-          <div className="spinner" />
+          <PageSkeleton variant="settings" />
         </div>
       </div>
     );

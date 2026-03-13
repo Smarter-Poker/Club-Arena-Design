@@ -18,6 +18,7 @@ import { useAuthUser } from '../hooks/useAuthUser';
 import { useToast } from '../components/common/Toast';
 import IntroVideo from '../components/IntroVideo';
 import './ClubCarouselPage.css';
+import PageSkeleton from '../components/common/PageSkeleton';
 
 interface UserClub {
   id: string;

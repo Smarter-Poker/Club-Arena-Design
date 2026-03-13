@@ -16,6 +16,7 @@ import ClubBottomNav from '../components/club/ClubBottomNav';
 import './PromotionsPage.css';
 import { useVisibilityRefresh } from '../hooks/useVisibilityRefresh';
 import { resolveClubUUID } from '../utils/clubIdResolver';
+import PageSkeleton from '../components/common/PageSkeleton';
 
 interface Promotion {
   id: string;

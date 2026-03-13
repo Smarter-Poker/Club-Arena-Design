@@ -12,6 +12,7 @@ import { masterBus } from '../core/MasterBus';
 import { FinancialAlertService, FinancialAlert } from '../services/FinancialAlertService';
 import { useAuthUser } from '../hooks/useAuthUser';
 import './FinancialAlertsPage.css';
+import PageSkeleton from '../components/common/PageSkeleton';
 
 export default function FinancialAlertsPage() {
   const { user } = useAuthUser();
@@ -133,7 +134,7 @@ export default function FinancialAlertsPage() {
           <h2>🔔 Financial Alerts</h2>
         </div>
         <div className="loading-state">
-          <div className="spinner" />
+          <PageSkeleton variant="financial" />
           <p>Loading alerts...</p>
         </div>
       </div>

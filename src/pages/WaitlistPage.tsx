@@ -11,6 +11,7 @@ import { useAuthUser } from '../hooks/useAuthUser';
 import { useToast } from '../components/common/Toast';
 import { haptic } from '../services/HapticService';
 import './WaitlistPage.css';
+import PageSkeleton from '../components/common/PageSkeleton';
 
 const waitlistCardAnimationStyle = (index: number) => ({
   opacity: 0,

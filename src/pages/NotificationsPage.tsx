@@ -239,10 +239,14 @@ export default function NotificationsPage() {
 
   const unreadCount = notifications.filter((n) => !n.read).length;
 
-  // Filter by category
+  // Filter by category, then apply notification grouping
   const filteredNotifications = useMemo(() => {
-    if (activeCategory === 'all') return notifications;
-    return notifications.filter((n) => categorizeNotification(n) === activeCategory);
+    const catFiltered =
+      activeCategory === 'all'
+        ? notifications
+        : notifications.filter((n) => categorizeNotification(n) === activeCategory);
+    // Q3: Collapse similar notifications (3+ of same type within 30min → summary)
+    return notificationService.groupNotifications(catFiltered as any) as unknown as Notification[];
   }, [notifications, activeCategory]);
 
   // Category counts

@@ -13,6 +13,7 @@ import { masterBus } from '../core/MasterBus';
 import './InvitePage.css';
 import { retryAsync } from '../utils/retryAsync';
 import { resolveClubIdFilter } from '../utils/clubIdResolver';
+import PageSkeleton from '../components/common/PageSkeleton';
 
 const inviteStepAnimationStyle = {
   opacity: 0,
@@ -208,7 +209,7 @@ export default function InvitePage() {
     return (
       <div className="invite-page">
         <div className="loading-state">
-          <div className="spinner" />
+          <PageSkeleton variant="default" />
         </div>
       </div>
     );

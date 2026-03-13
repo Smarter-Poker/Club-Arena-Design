@@ -7,6 +7,7 @@
 
 import { supabase } from '@/lib/supabase';
 import { retryAsync } from '../utils/retryAsync';
+import { resolveClubUUID } from '../utils/clubIdResolver';
 import type {
   Club,
   ClubWithDistance,
@@ -216,10 +217,12 @@ export async function leaveClub(clubId: string): Promise<void> {
   const { data: user } = await supabase.auth.getUser();
   if (!user.user) throw new Error('Authentication required');
 
+  const resolvedId = await resolveClubUUID(clubId);
+
   const { error } = await supabase
     .from('club_members')
     .delete()
-    .eq('club_id', clubId)
+    .eq('club_id', resolvedId)
     .eq('user_id', user.user.id);
 
   if (error) {
@@ -257,6 +260,7 @@ export async function getUserMemberships(): Promise<(ClubMember & { club: Club }
  * Get club members with profiles
  */
 export async function getClubMembers(clubId: string): Promise<ClubMember[]> {
+  const resolvedId = await resolveClubUUID(clubId);
   const { data, error } = await supabase
     .from('club_members')
     .select(
@@ -265,7 +269,7 @@ export async function getClubMembers(clubId: string): Promise<ClubMember[]> {
       profile:profiles(username, avatar_url)
     `
     )
-    .eq('club_id', clubId)
+    .eq('club_id', resolvedId)
     .order('reputation_xp', { ascending: false })
     .limit(500);
 
@@ -285,10 +289,11 @@ export async function getClubMembers(clubId: string): Promise<ClubMember[]> {
  * Get active challenges for a club
  */
 export async function getClubChallenges(clubId: string): Promise<ClubChallenge[]> {
+  const resolvedId = await resolveClubUUID(clubId);
   const { data, error } = await supabase
     .from('club_challenges')
     .select('*')
-    .eq('club_id', clubId)
+    .eq('club_id', resolvedId)
     .eq('status', 'active')
     .order('ends_at', { ascending: true });
 
@@ -311,6 +316,7 @@ export async function getClubLeaderboard(
   clubId: string,
   period: 'daily' | 'weekly' | 'monthly' | 'all_time' = 'weekly'
 ): Promise<ClubMember[]> {
+  const resolvedId = await resolveClubUUID(clubId);
   const { data, error } = await supabase
     .from('club_members')
     .select(
@@ -319,7 +325,7 @@ export async function getClubLeaderboard(
       profile:profiles(username, avatar_url)
     `
     )
-    .eq('club_id', clubId)
+    .eq('club_id', resolvedId)
     .order('reputation_xp', { ascending: false })
     .limit(50);
 
@@ -359,7 +365,8 @@ export async function deleteClub(clubId: string): Promise<void> {
   }
 
   // Delete all members first (cascade should handle this, but explicit is safer)
-  await supabase.from('club_members').delete().eq('club_id', clubId);
+  const resolvedId = await resolveClubUUID(clubId);
+  await supabase.from('club_members').delete().eq('club_id', resolvedId);
 
   // Delete the club
   const { error } = await supabase.from('clubs').delete().eq('id', clubId);

@@ -12,7 +12,7 @@ import { masterBus } from '../core/MasterBus';
 import { BBJService } from './BBJService';
 import type { Club, ClubMember, ClubSettings, MemberRole } from '../types/database.types';
 import { retryAsync } from '../utils/retryAsync';
-import { resolveClubIdFilter } from '../utils/clubIdResolver';
+import { resolveClubIdFilter, resolveClubUUID } from '../utils/clubIdResolver';
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // SERVICE
@@ -184,6 +184,7 @@ class ClubServiceClass {
    * Get all members of a club
    */
   async getMembers(clubId: string): Promise<ClubMember[]> {
+    const resolvedId = await resolveClubUUID(clubId);
     const { data, error } = await supabase
       .from('club_members')
       .select(
@@ -195,7 +196,7 @@ class ClubServiceClass {
                 )
             `
       )
-      .eq('club_id', clubId)
+      .eq('club_id', resolvedId)
       .order('role', { ascending: true })
       .limit(5000);
 
@@ -362,11 +363,12 @@ class ClubServiceClass {
   async getOnlineCount(clubId: string): Promise<number> {
     // Try to get actual online count from members who were active in last 15 minutes
     const fifteenMinAgo = new Date(Date.now() - 15 * 60 * 1000).toISOString();
+    const resolvedId = await resolveClubUUID(clubId);
 
     const { count: onlineCount, error: onlineError } = await supabase
       .from('club_members')
       .select('*', { count: 'exact', head: true })
-      .eq('club_id', clubId)
+      .eq('club_id', resolvedId)
       .in('status', ['active', 'approved'])
       .gte('last_active_at', fifteenMinAgo);
 
@@ -378,7 +380,7 @@ class ClubServiceClass {
     const { count, error } = await supabase
       .from('club_members')
       .select('*', { count: 'exact', head: true })
-      .eq('club_id', clubId)
+      .eq('club_id', resolvedId)
       .in('status', ['active', 'approved']);
 
     if (error) throw error;
@@ -389,10 +391,11 @@ class ClubServiceClass {
    * Get member count by club
    */
   async getMemberCount(clubId: string): Promise<number> {
+    const resolvedId = await resolveClubUUID(clubId);
     const { count, error } = await supabase
       .from('club_members')
       .select('*', { count: 'exact', head: true })
-      .eq('club_id', clubId)
+      .eq('club_id', resolvedId)
       .in('status', ['active', 'approved']);
 
     if (error) throw error;

@@ -11,6 +11,7 @@ import { useToast } from '../components/common/Toast';
 import { exportToCSV } from '../lib/export';
 import './TransactionHistoryPage.css';
 import { useVisibilityRefresh } from '../hooks/useVisibilityRefresh';
+import PageSkeleton from '../components/common/PageSkeleton';
 
 interface Transaction {
   id: string;
@@ -414,7 +415,7 @@ export default function TransactionHistoryPage() {
       <div className="transactions-list">
         {loading ? (
           <div className="loading-state">
-            <div className="spinner" />
+            <PageSkeleton variant="financial" />
           </div>
         ) : displayTransactions.length === 0 ? (
           <div className="empty-state">

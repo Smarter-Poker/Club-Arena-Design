@@ -108,8 +108,8 @@ class DisconnectEngineClass {
    */
   unregisterPlayer(tableId: string, playerId: string): void {
     const key = `${tableId}:${playerId}`;
-    const state = this.playerStates.get(key);
-    if (state?.timeoutTimer) clearTimeout(state.timeoutTimer);
+    // Cancel PreciseActionTimer deadline for this player
+    preciseActionTimer.cancelTimer(tableId, `disconnect:${playerId}`);
     this.playerStates.delete(key);
   }
 
@@ -181,11 +181,8 @@ class DisconnectEngineClass {
 
     // Player is connected — they can act normally
     if (state.isConnected) {
-      // Clear any lingering timeout
-      if (state.timeoutTimer) {
-        clearTimeout(state.timeoutTimer);
-        state.timeoutTimer = undefined;
-      }
+      // Cancel any lingering disconnect timeout (PreciseActionTimer is sole timer)
+      preciseActionTimer.cancelTimer(tableId, `disconnect:${playerId}`);
       return true;
     }
 
@@ -198,12 +195,8 @@ class DisconnectEngineClass {
    * Cancel any active timeout for a player (e.g., they reconnected and acted)
    */
   cancelTimeout(tableId: string, playerId: string): void {
-    const key = `${tableId}:${playerId}`;
-    const state = this.playerStates.get(key);
-    if (state?.timeoutTimer) {
-      clearTimeout(state.timeoutTimer);
-      state.timeoutTimer = undefined;
-    }
+    // Cancel the PreciseActionTimer deadline (sole timer mechanism)
+    preciseActionTimer.cancelTimer(tableId, `disconnect:${playerId}`);
   }
 
   // ═══════════════════════════════════════════════════════════════════════════
@@ -279,9 +272,10 @@ class DisconnectEngineClass {
    * Remove all state for a table
    */
   dispose(tableId: string): void {
+    // Cancel all PreciseActionTimer deadlines for this table's disconnect timers
     for (const [key, state] of this.playerStates) {
       if (key.startsWith(`${tableId}:`)) {
-        if (state.timeoutTimer) clearTimeout(state.timeoutTimer);
+        preciseActionTimer.cancelTimer(tableId, `disconnect:${state.playerId}`);
         this.playerStates.delete(key);
       }
     }

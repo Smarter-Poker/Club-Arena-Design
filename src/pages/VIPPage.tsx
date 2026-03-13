@@ -22,6 +22,7 @@ import { RewardsMarketplace, Reward } from '../components/vip/RewardsMarketplace
 import { VIPActivityHistory, VIPActivity } from '../components/vip/VIPActivityHistory';
 import { useToast } from '../components/common/Toast';
 import './VIPPage.css';
+import PageSkeleton from '../components/common/PageSkeleton';
 
 export default function VIPPage() {
   const { user } = useAuthUser();
@@ -213,7 +214,7 @@ export default function VIPPage() {
     return (
       <div className="vip-page">
         <div className="loading-state">
-          <div className="spinner" />
+          <PageSkeleton variant="stats" />
         </div>
       </div>
     );

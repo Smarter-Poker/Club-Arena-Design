@@ -23,6 +23,7 @@ import { masterBus } from '../core/MasterBus';
 import { PlayerAvatar } from '../components/avatars/PlayerAvatar';
 import PlayerBlockModal from '../components/social/PlayerBlockModal';
 import './PublicProfilePage.css';
+import PageSkeleton from '../components/common/PageSkeleton';
 
 // VIP tier colors
 const VIP_COLORS: Record<string, string> = {
@@ -245,7 +246,7 @@ export default function PublicProfilePage() {
     return (
       <div className="public-profile-page">
         <div className="public-profile-loading">
-          <div className="spinner" />
+          <PageSkeleton variant="default" />
           <p>Loading profile...</p>
         </div>
       </div>
