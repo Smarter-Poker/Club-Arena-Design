@@ -9,6 +9,7 @@ import { supabase } from '../lib/supabase';
 import { WalletService } from './WalletService';
 import { masterBus } from '../core/MasterBus';
 import { retryAsync } from '../utils/retryAsync';
+import { resolveClubUUID } from '../utils/clubIdResolver';
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // TYPES
@@ -81,7 +82,7 @@ class PromotionServiceClass {
     let query = supabase.from('promotions').select('*').order('start_date', { ascending: false });
 
     if (clubId) {
-      query = query.eq('club_id', clubId);
+      query = query.eq('club_id', await resolveClubUUID(clubId));
     }
 
     const now = new Date().toISOString();

@@ -19,6 +19,7 @@
 
 import { supabase } from '../lib/supabase';
 import { masterBus } from '../core/MasterBus';
+import { resolveClubUUID } from '../utils/clubIdResolver';
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // TYPES
@@ -351,7 +352,7 @@ export const PermissionService = {
       const { data } = await supabase
         .from('union_members')
         .select('union_id')
-        .eq('club_id', clubId)
+        .eq('club_id', await resolveClubUUID(clubId))
         .in('union_id', userPerms.contexts.unionIds);
 
       if (data && data.length > 0) return true;

@@ -443,11 +443,11 @@ export default function PublicProfilePage() {
       )}
 
       {/* Q3: Achievement Showcase */}
-      {profile.achievements && profile.achievements.length > 0 && (
+      {(profile as any).achievements && (profile as any).achievements.length > 0 && (
         <div className="achievement-showcase">
           <h3>🏆 Achievement Showcase</h3>
           <div className="achievement-grid">
-            {profile.achievements.slice(0, 5).map((achievement: any, i: number) => (
+            {(profile as any).achievements.slice(0, 5).map((achievement: any, i: number) => (
               <div key={i} className="achievement-card">
                 <span className="achievement-icon">{achievement.icon || '🏅'}</span>
                 <span className="achievement-name">{achievement.name}</span>

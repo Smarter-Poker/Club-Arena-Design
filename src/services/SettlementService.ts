@@ -18,6 +18,7 @@ import { CommissionService } from './CommissionService';
 import { WalletService } from './WalletService';
 import { pushNotificationService } from './PushNotificationService';
 import { masterBus } from '../core/MasterBus';
+import { resolveClubUUID } from '../utils/clubIdResolver';
 import { retryAsync } from '../utils/retryAsync';
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -632,7 +633,7 @@ export const SettlementService = {
     const { data, error } = await supabase
       .from('club_settlements')
       .select('*')
-      .eq('club_id', clubId)
+      .eq('club_id', await resolveClubUUID(clubId))
       .eq('period_id', periodId || (await this.getCurrentPeriod()).id)
       .maybeSingle();
 

@@ -5,6 +5,7 @@
  */
 
 import { supabase } from '../lib/supabase';
+import { resolveClubUUID } from '../utils/clubIdResolver';
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // TYPES
@@ -141,7 +142,7 @@ export const InviteService = {
     const { data, error } = await supabase
       .from('club_invites')
       .select('*')
-      .eq('club_id', clubId)
+      .eq('club_id', await resolveClubUUID(clubId))
       .eq('status', 'pending')
       .order('created_at', { ascending: false })
       .limit(200);

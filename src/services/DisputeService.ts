@@ -15,6 +15,7 @@ import { pushNotificationService } from './PushNotificationService';
 import { FinancialAlertService } from './FinancialAlertService';
 import { masterBus } from '../core/MasterBus';
 import { retryAsync } from '../utils/retryAsync';
+import { resolveClubUUID } from '../utils/clubIdResolver';
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // TYPES
@@ -124,7 +125,7 @@ export const DisputeService = {
     let query = supabase
       .from('disputes')
       .select('*')
-      .eq('club_id', clubId)
+      .eq('club_id', await resolveClubUUID(clubId))
       .order('created_at', { ascending: false })
       .limit(200);
 
@@ -157,7 +158,7 @@ export const DisputeService = {
     const { count, error } = await supabase
       .from('disputes')
       .select('*', { count: 'exact', head: true })
-      .eq('club_id', clubId)
+      .eq('club_id', await resolveClubUUID(clubId))
       .in('status', ['open', 'under_review']);
 
     if (error) return 0;

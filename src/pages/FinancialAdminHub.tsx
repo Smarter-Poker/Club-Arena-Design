@@ -59,6 +59,42 @@ const NAV_ITEMS = [
     border: 'rgba(139,92,246,0.3)',
   },
   {
+    icon: '🏧',
+    label: 'Agent Portal',
+    description: 'Triple wallet, credit lines, commissions',
+    path: '/agent-portal',
+    color: '#0ea5e9',
+    bg: 'rgba(14,165,233,0.1)',
+    border: 'rgba(14,165,233,0.3)',
+  },
+  {
+    icon: '🎰',
+    label: 'Rakeback Dashboard',
+    description: 'Player rakeback tiers & pending payouts',
+    path: '/rakeback',
+    color: '#d946ef',
+    bg: 'rgba(217,70,239,0.1)',
+    border: 'rgba(217,70,239,0.3)',
+  },
+  {
+    icon: '💳',
+    label: 'Credit Admin',
+    description: 'Set & adjust agent credit limits',
+    path: '/credit-admin',
+    color: '#f97316',
+    bg: 'rgba(249,115,22,0.1)',
+    border: 'rgba(249,115,22,0.3)',
+  },
+  {
+    icon: '📅',
+    label: 'Settlement History',
+    description: 'Weekly settlement cycles & revenue trends',
+    path: '/settlement-history',
+    color: '#14b8a6',
+    bg: 'rgba(20,184,166,0.1)',
+    border: 'rgba(20,184,166,0.3)',
+  },
+  {
     icon: '⚖️',
     label: 'Settlements',
     description: 'Club & agent settlement management',
@@ -69,7 +105,7 @@ const NAV_ITEMS = [
   },
   {
     icon: '📥',
-    label: 'Transaction History',
+    label: 'CSV Exports',
     description: 'Financial reports & data exports',
     path: '/transactions',
     color: '#06b6d4',
@@ -92,6 +128,7 @@ export default function FinancialAdminHub() {
   });
   const [visibleCards, setVisibleCards] = useState<Set<number>>(new Set());
   const [visibleNavs, setVisibleNavs] = useState<Set<number>>(new Set());
+  const [revenueData, setRevenueData] = useState<{day: string; amount: number}[]>([]);
 
   useEffect(() => {
     loadStats();
@@ -199,6 +236,37 @@ export default function FinancialAdminHub() {
       }
 
       setStats({ totalAlerts, openDisputes, rateChanges, healthChecks, lastCheckPassed });
+
+      // Load 7-day revenue data for sparkline
+      try {
+        const sevenDaysAgo = new Date(Date.now() - 7 * 86400000).toISOString();
+        const { data: rakeData } = await supabase
+          .from('rake_records')
+          .select('rake_amount, created_at')
+          .gte('created_at', sevenDaysAgo)
+          .order('created_at', { ascending: true })
+          .limit(5000);
+
+        if (rakeData && rakeData.length > 0) {
+          const dayLabels = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+          const grouped: Record<string, number> = {};
+          rakeData.forEach((r: any) => {
+            const d = new Date(r.created_at);
+            const label = `${dayLabels[d.getDay()]} ${d.getDate()}`;
+            grouped[label] = (grouped[label] || 0) + (r.rake_amount || 0);
+          });
+          // Build last 7 days in order
+          const days: {day: string; amount: number}[] = [];
+          for (let i = 6; i >= 0; i--) {
+            const d = new Date(Date.now() - i * 86400000);
+            const label = `${dayLabels[d.getDay()]} ${d.getDate()}`;
+            days.push({ day: label, amount: grouped[label] || 0 });
+          }
+          setRevenueData(days);
+        } else {
+          setRevenueData([]);
+        }
+      } catch { /* ignore */ }
     } catch (err) {
       console.error('[FinancialAdminHub] Stats load failed:', err);
     }

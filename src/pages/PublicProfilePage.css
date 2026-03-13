@@ -308,6 +308,74 @@
   object-fit: cover;
 }
 
+/* Q3: Achievement Showcase */
+.achievement-showcase {
+  padding: 16px;
+}
+
+.achievement-showcase h3 {
+  font-size: 0.9rem;
+  font-weight: 700;
+  margin-bottom: 12px;
+}
+
+.achievement-grid {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.achievement-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 10px 12px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 12px;
+  min-width: 72px;
+}
+
+.achievement-icon {
+  font-size: 1.5rem;
+}
+
+.achievement-name {
+  font-size: 0.65rem;
+  color: var(--text-secondary, #8b9dc3);
+  text-align: center;
+  font-weight: 600;
+}
+
+/* Q3: Profile QR Code */
+.profile-qr-section {
+  padding: 16px;
+  text-align: center;
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.profile-qr-section h3 {
+  font-size: 0.9rem;
+  font-weight: 700;
+  margin-bottom: 12px;
+}
+
+.profile-qr-image {
+  width: 160px;
+  height: 160px;
+  border-radius: 12px;
+  border: 2px solid rgba(255, 255, 255, 0.1);
+  background: #fff;
+  padding: 6px;
+}
+
+.qr-hint {
+  font-size: 0.7rem;
+  color: var(--text-secondary, #8b9dc3);
+  margin-top: 8px;
+}
+
 /* ── Responsive ── */
 
 @media (max-width: 480px) {

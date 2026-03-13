@@ -7,6 +7,7 @@
 
 import { supabase } from '@/lib/supabase';
 import { retryAsync } from '../utils/retryAsync';
+import { resolveClubUUID } from '../utils/clubIdResolver';
 import type {
   ClubTrafficData,
   StakeInfo,
@@ -104,7 +105,7 @@ export async function getClubStakes(clubId: string): Promise<StakeInfo[]> {
   const { data, error } = await supabase
     .from('tables')
     .select('*')
-    .eq('club_id', clubId)
+    .eq('club_id', await resolveClubUUID(clubId))
     .eq('status', 'active')
     .order('small_blind', { ascending: true });
 
