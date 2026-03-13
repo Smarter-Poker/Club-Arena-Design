@@ -16,6 +16,7 @@ import { FinancialCronService } from '../services/FinancialCronService';
 import { masterBus } from '../core/MasterBus';
 import { useAuthUser } from '../hooks/useAuthUser';
 import { useVisibilityRefresh } from '../hooks/useVisibilityRefresh';
+import { useToast } from '../components/common/Toast';
 import './FinancialHealthPage.css';
 
 interface CronStatus {
@@ -40,6 +41,7 @@ interface CronStatus {
 export default function FinancialHealthPage() {
   const navigate = useNavigate();
   const { user } = useAuthUser();
+  const toast = useToast();
   const [status, setStatus] = useState<CronStatus | null>(null);
   const [refreshing, setRefreshing] = useState(false);
   const [manualReconciling, setManualReconciling] = useState(false);
@@ -81,6 +83,7 @@ export default function FinancialHealthPage() {
       loadStatus();
     } catch (err) {
       console.error('Manual reconciliation failed:', err);
+      toast.error('Reconciliation failed');
     }
     setManualReconciling(false);
   };
@@ -92,6 +95,7 @@ export default function FinancialHealthPage() {
       loadStatus();
     } catch (err) {
       console.error('Suspension check failed:', err);
+      toast.error('Suspension check failed');
     }
     setRefreshing(false);
   };

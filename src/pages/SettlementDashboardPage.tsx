@@ -57,7 +57,7 @@ interface PeriodHistoryItem {
 
 export default function SettlementDashboardPage() {
   const navigate = useNavigate();
-  const { user } = useAuthUser();
+  useAuthUser(); // Ensures user is authenticated (admin page)
   const toast = useToast();
   const isMounted = useRef(true);
 
@@ -189,16 +189,18 @@ export default function SettlementDashboardPage() {
   // Stagger animations
   useEffect(() => {
     setVisibleCards(new Set());
-    [0, 1, 2, 3].forEach((i) => {
-      setTimeout(() => setVisibleCards((prev) => new Set(prev).add(i)), i * 80);
-    });
+    const timers = [0, 1, 2, 3].map((i) =>
+      setTimeout(() => setVisibleCards((prev) => new Set(prev).add(i)), i * 80)
+    );
+    return () => timers.forEach(clearTimeout);
   }, []);
 
   useEffect(() => {
     setVisibleRows(new Set());
-    agentPayouts.forEach((_, i) => {
-      setTimeout(() => setVisibleRows((prev) => new Set(prev).add(i)), i * 40);
-    });
+    const timers = agentPayouts.map((_, i) =>
+      setTimeout(() => setVisibleRows((prev) => new Set(prev).add(i)), i * 40)
+    );
+    return () => timers.forEach(clearTimeout);
   }, [agentPayouts.length]);
 
   // ─── Actions ────────────────────────────────────────────────────────────────
@@ -363,10 +365,14 @@ export default function SettlementDashboardPage() {
                 fontSize: '0.7rem',
                 fontWeight: 700,
                 textTransform: 'uppercase',
-                ...getStatusColor(currentPeriod.status),
-                background: getStatusColor(currentPeriod.status).bg,
-                color: getStatusColor(currentPeriod.status).text,
-                border: `1px solid ${getStatusColor(currentPeriod.status).border}`,
+                ...(() => {
+                  const s = getStatusColor(currentPeriod.status);
+                  return {
+                    background: s.bg,
+                    color: s.text,
+                    border: `1px solid ${s.border}`,
+                  };
+                })(),
               }}
             >
               {currentPeriod.status}

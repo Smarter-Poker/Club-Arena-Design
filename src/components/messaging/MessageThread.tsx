@@ -367,6 +367,8 @@ export default function MessageThread({ conversationId, onBack }: MessageThreadP
         .eq('sender_id', user?.id);
       if (error) throw error;
       setMessages((prev) => prev.filter((m) => m.id !== messageId));
+      // Emit bus event for cross-tab sync
+      masterBus.emit('MESSAGE_DELETED', { messageId });
     } catch (error) {
       console.error('Failed to delete:', error);
     }
@@ -687,7 +689,11 @@ export default function MessageThread({ conversationId, onBack }: MessageThreadP
           <div className={styles.replyContent}>
             <span className={styles.replyLabel}>Replying to {replyingToMessage.userFullname}</span>
             <p className={styles.replyText}>
-              {replyingToMessage.content || replyingToMessage.imageUrl ? '📷 Image' : ''}
+              {replyingToMessage.content
+                ? replyingToMessage.content.substring(0, 80)
+                : replyingToMessage.imageUrl
+                  ? '📷 Image'
+                  : ''}
             </p>
           </div>
           <button className={styles.replyCancel} onClick={cancelReply}>

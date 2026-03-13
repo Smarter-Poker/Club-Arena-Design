@@ -14,10 +14,12 @@ import { useAuthUser } from '../hooks/useAuthUser';
 import './FinancialAlertsPage.css';
 import PageSkeleton from '../components/common/PageSkeleton';
 import { useVisibilityRefresh } from '../hooks/useVisibilityRefresh';
+import { useToast } from '../components/common/Toast';
 
 export default function FinancialAlertsPage() {
   const { user } = useAuthUser();
   useVisibilityRefresh(() => loadAlerts());
+  const toast = useToast();
   const [alerts, setAlerts] = useState<FinancialAlert[]>([]);
   const [loading, setLoading] = useState(true);
   const [resolving, setResolving] = useState<string | null>(null);
@@ -32,6 +34,7 @@ export default function FinancialAlertsPage() {
     } catch (err) {
       if (getIsMounted && !getIsMounted()) return;
       console.error('[FinancialAlerts] Failed to load alerts:', err);
+      toast.error('Failed to load financial alerts');
     }
     if (getIsMounted && !getIsMounted()) return;
     setLoading(false);
