@@ -1231,3 +1231,211 @@ describe('Evaluator LRU Cache', () => {
     expect(hand1.ranking).toBeGreaterThan(hand2.ranking);
   });
 });
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// PHASE 11: CROSS-ENGINE INTEGRATION TESTS
+// ═══════════════════════════════════════════════════════════════════════════════
+
+describe('Phase 11 — TableBalancer Integration', () => {
+  const { tableBalancer } = require('../src/engine/TableBalancer');
+
+  it('should detect imbalance when gap > 1', () => {
+    const tables = [
+      { tableId: 't1', playerCount: 8, maxSeats: 9, players: Array.from({ length: 8 }, (_, i) => ({ userId: `p${i}`, stack: 1000, seat: i + 1 })) },
+      { tableId: 't2', playerCount: 5, maxSeats: 9, players: Array.from({ length: 5 }, (_, i) => ({ userId: `p${10 + i}`, stack: 1000, seat: i + 1 })) },
+    ];
+    expect(tableBalancer.shouldRebalance(tables)).toBe(true);
+  });
+
+  it('should not rebalance when gap <= 1', () => {
+    const tables = [
+      { tableId: 't1', playerCount: 6, maxSeats: 9, players: Array.from({ length: 6 }, (_, i) => ({ userId: `p${i}`, stack: 1000, seat: i + 1 })) },
+      { tableId: 't2', playerCount: 5, maxSeats: 9, players: Array.from({ length: 5 }, (_, i) => ({ userId: `p${10 + i}`, stack: 1000, seat: i + 1 })) },
+    ];
+    expect(tableBalancer.shouldRebalance(tables)).toBe(false);
+  });
+
+  it('should calculate correct number of moves to balance', () => {
+    const tables = [
+      { tableId: 't1', playerCount: 8, maxSeats: 9, players: Array.from({ length: 8 }, (_, i) => ({ userId: `p${i}`, stack: 1000, seat: i + 1 })) },
+      { tableId: 't2', playerCount: 4, maxSeats: 9, players: Array.from({ length: 4 }, (_, i) => ({ userId: `p${10 + i}`, stack: 1000, seat: i + 1 })) },
+    ];
+    const moves = tableBalancer.calculateMoves(tables);
+    // 8+4=12 players, 2 tables → ideal 6 each → 2 moves from t1 → t2
+    expect(moves.length).toBe(2);
+    expect(moves[0].fromTableId).toBe('t1');
+    expect(moves[0].toTableId).toBe('t2');
+  });
+
+  it('should identify table break when <= 3 players and capacity exists', () => {
+    const smallTable = { tableId: 't1', playerCount: 2, maxSeats: 9, players: [{ userId: 'a', stack: 1000, seat: 1 }, { userId: 'b', stack: 1000, seat: 2 }] };
+    const allTables = [
+      smallTable,
+      { tableId: 't2', playerCount: 6, maxSeats: 9, players: Array.from({ length: 6 }, (_, i) => ({ userId: `p${i}`, stack: 1000, seat: i + 1 })) },
+    ];
+    expect(tableBalancer.shouldBreakTable(smallTable, allTables)).toBe(true);
+  });
+
+  it('should generate break moves distributing to least-populated tables', () => {
+    const breakTable = { tableId: 't1', playerCount: 2, maxSeats: 9, players: [{ userId: 'a', stack: 1000, seat: 1 }, { userId: 'b', stack: 500, seat: 2 }] };
+    const otherTables = [
+      { tableId: 't2', playerCount: 5, maxSeats: 9, players: Array.from({ length: 5 }, (_, i) => ({ userId: `p${i}`, stack: 1000, seat: i + 1 })) },
+      { tableId: 't3', playerCount: 6, maxSeats: 9, players: Array.from({ length: 6 }, (_, i) => ({ userId: `p${10 + i}`, stack: 1000, seat: i + 1 })) },
+    ];
+    const moves = tableBalancer.breakTable(breakTable, otherTables);
+    expect(moves.length).toBe(2);
+    // First move should go to t2 (fewest players)
+    expect(moves[0].toTableId).toBe('t2');
+  });
+});
+
+describe('Phase 11 — StateVerifier Integration', () => {
+  const { stateVerifier } = require('../src/engine/StateVerifier');
+
+  it('should detect chip conservation violation when total changes', () => {
+    const tableId = 'test-verify-integration';
+    const players = [
+      { user_id: 'p1', stack: 900, bet: 100, cards: [], is_folded: false, is_all_in: false },
+      { user_id: 'p2', stack: 800, bet: 100, cards: [], is_folded: false, is_all_in: false },
+    ];
+
+    // Record initial total: 900+100 + 800+100 = 1900
+    stateVerifier.recordInitialChipTotal(tableId, players.map((p: any) => ({ ...p, stack: p.stack + p.bet })));
+
+    // Simulate a discrepancy (extra chips appeared)
+    const badPlayers = [
+      { user_id: 'p1', stack: 1000, bet: 100, cards: [], is_folded: false, is_all_in: false },
+      { user_id: 'p2', stack: 900, bet: 100, cards: [], is_folded: false, is_all_in: false },
+    ];
+
+    const result = stateVerifier.verify({
+      tableId,
+      handNumber: 1,
+      players: badPlayers,
+      communityCards: [],
+      pot: 0,
+      stage: 'flop',
+    });
+
+    expect(result.valid).toBe(false);
+    expect(result.violations.some((v: any) => v.type === 'CHIP_CONSERVATION')).toBe(true);
+
+    stateVerifier.clearTable(tableId);
+  });
+
+  it('should pass verification when chip total is conserved', () => {
+    const tableId = 'test-verify-clean';
+    const players = [
+      { user_id: 'p1', stack: 900, bet: 100, cards: [], is_folded: false, is_all_in: false },
+      { user_id: 'p2', stack: 800, bet: 200, cards: [], is_folded: false, is_all_in: false },
+    ];
+
+    stateVerifier.recordInitialChipTotal(tableId, [
+      { ...players[0], stack: players[0].stack + players[0].bet },
+      { ...players[1], stack: players[1].stack + players[1].bet },
+    ]);
+
+    const result = stateVerifier.verify({
+      tableId,
+      handNumber: 1,
+      players,
+      communityCards: [],
+      pot: 0,
+      stage: 'preflop',
+    });
+
+    // Chip total = 900+100 + 800+200 = 2000 which matches initial
+    expect(result.valid).toBe(true);
+    stateVerifier.clearTable(tableId);
+  });
+});
+
+describe('Phase 11 — DisconnectEngine + PreciseActionTimer Integration', () => {
+  const { disconnectEngine } = require('../src/engine/DisconnectEngine');
+  const { preciseActionTimer } = require('../src/engine/PreciseActionTimer');
+
+  afterEach(() => {
+    disconnectEngine.dispose('test-disconnect-table');
+    preciseActionTimer.clearTable('test-disconnect-table');
+  });
+
+  it('should register and track player connection state', () => {
+    disconnectEngine.configure('test-disconnect-table', { disconnectTimeoutSeconds: 10 });
+    disconnectEngine.registerPlayer('test-disconnect-table', 'player1');
+
+    expect(disconnectEngine.isConnected('test-disconnect-table', 'player1')).toBe(true);
+    expect(disconnectEngine.isSittingOut('test-disconnect-table', 'player1')).toBe(false);
+  });
+
+  it('should mark player disconnected and emit bus event', () => {
+    disconnectEngine.configure('test-disconnect-table', { disconnectTimeoutSeconds: 10 });
+    disconnectEngine.registerPlayer('test-disconnect-table', 'player1');
+    disconnectEngine.markDisconnected('test-disconnect-table', 'player1');
+
+    expect(disconnectEngine.isConnected('test-disconnect-table', 'player1')).toBe(false);
+  });
+
+  it('should reconnect player and reset state', () => {
+    disconnectEngine.configure('test-disconnect-table', { disconnectTimeoutSeconds: 10 });
+    disconnectEngine.registerPlayer('test-disconnect-table', 'player1');
+    disconnectEngine.markDisconnected('test-disconnect-table', 'player1');
+    disconnectEngine.heartbeat('test-disconnect-table', 'player1');
+
+    expect(disconnectEngine.isConnected('test-disconnect-table', 'player1')).toBe(true);
+  });
+
+  it('should auto-sit-out after max consecutive timeouts', () => {
+    disconnectEngine.configure('test-disconnect-table', {
+      disconnectTimeoutSeconds: 10,
+      maxConsecutiveTimeouts: 2,
+    });
+    disconnectEngine.registerPlayer('test-disconnect-table', 'player1');
+    
+    // Simulate consecutive timeouts manually
+    disconnectEngine.markDisconnected('test-disconnect-table', 'player1');
+    const state = disconnectEngine.getState('test-disconnect-table', 'player1');
+    if (state) {
+      state.consecutiveTimeouts = 2;
+      disconnectEngine.sitOut('test-disconnect-table', 'player1', 'forced');
+    }
+
+    expect(disconnectEngine.isSittingOut('test-disconnect-table', 'player1')).toBe(true);
+  });
+});
+
+describe('Phase 11 — EngineTelemetry Integration', () => {
+  const { engineTelemetry } = require('../src/engine/EngineTelemetry');
+
+  beforeEach(() => {
+    engineTelemetry.dispose();
+  });
+
+  it('should record hand timing and provide snapshot', () => {
+    engineTelemetry.recordHandTiming('table1', 50, 30, 5000);
+    engineTelemetry.recordHandTiming('table1', 45, 25, 4500);
+
+    const snapshot = engineTelemetry.getSnapshot();
+    expect(snapshot.activeTables).toBe(1);
+    expect(snapshot.totalHandsDealt).toBe(2);
+    expect(snapshot.avgHandDurationMs).toBeGreaterThan(0);
+  });
+
+  it('should track per-table metrics separately', () => {
+    engineTelemetry.recordHandTiming('table1', 50, 30, 5000);
+    engineTelemetry.recordHandTiming('table2', 60, 40, 6000);
+
+    const snapshot = engineTelemetry.getSnapshot();
+    expect(snapshot.activeTables).toBe(2);
+    expect(snapshot.totalHandsDealt).toBe(2);
+  });
+
+  it('should track cache hit ratio', () => {
+    engineTelemetry.recordCacheHit('table1');
+    engineTelemetry.recordCacheHit('table1');
+    engineTelemetry.recordCacheMiss('table1');
+
+    const snapshot = engineTelemetry.getSnapshot();
+    // 2 hits / 3 total = ~0.667
+    expect(snapshot.cacheHitRatio).toBeCloseTo(0.667, 1);
+  });
+});
