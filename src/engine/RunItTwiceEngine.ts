@@ -20,6 +20,7 @@ import { masterBus } from '../core/MasterBus';
 export interface RITConfig {
   enabled: boolean;
   autoDeclineTimeout: number; // Seconds before auto-declining
+  maxRuns: 2 | 3; // Support Run It Twice or Three Times
 }
 
 export interface RITState {
@@ -30,20 +31,26 @@ export interface RITState {
   offeredTo: string; // Player who needs to respond
   acceptedBy: Set<string>; // Players who accepted
   pot: number;
+  maxRuns: 2 | 3;
   board1: string[]; // First runout
   board2: string[]; // Second runout
+  board3: string[]; // Third runout (if maxRuns === 3)
   board1Winner?: string;
   board2Winner?: string;
+  board3Winner?: string;
   timeoutTimer?: ReturnType<typeof setTimeout>;
 }
 
 export interface RITResult {
   board1: string[];
   board2: string[];
-  pot1: number; // Half pot awarded from board 1
-  pot2: number; // Half pot awarded from board 2
+  board3?: string[]; // Third board (if maxRuns === 3)
+  pot1: number;
+  pot2: number;
+  pot3?: number; // Third pot portion (if maxRuns === 3)
   board1Winner: string;
   board2Winner: string;
+  board3Winner?: string;
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -87,8 +94,10 @@ class RunItTwiceEngineClass {
       offeredTo,
       acceptedBy: new Set([offeredBy]), // Offerer auto-accepts
       pot,
+      maxRuns: config.maxRuns || 2,
       board1: [],
       board2: [],
+      board3: [],
     };
 
     // Auto-decline timeout
@@ -170,51 +179,89 @@ class RunItTwiceEngineClass {
     const state = this.activeOffers.get(tableId);
     if (!state || state.status !== 'accepted') return null;
 
+    const runs = state.maxRuns || 2;
     const cardsNeeded = 5 - existingBoard.length;
-    if (remainingDeck.length < cardsNeeded * 2) {
-      // Not enough cards for two runouts — shouldn't happen but guard
-      console.warn(`[RITEngine] Not enough cards for dual boards at ${tableId}`);
+    if (remainingDeck.length < cardsNeeded * runs) {
+      console.warn(`[RITEngine] Not enough cards for ${runs} runouts at ${tableId}`);
       return null;
     }
 
-    // Deal two sets of remaining community cards
+    // Deal boards
     const run1Cards = remainingDeck.slice(0, cardsNeeded);
     const run2Cards = remainingDeck.slice(cardsNeeded, cardsNeeded * 2);
-
     state.board1 = [...existingBoard, ...run1Cards];
     state.board2 = [...existingBoard, ...run2Cards];
 
-    return {
+    const result: RITResult = {
       board1: state.board1,
       board2: state.board2,
-      pot1: Math.trunc((state.pot / 2) * 100) / 100,
-      pot2: state.pot - Math.trunc((state.pot / 2) * 100) / 100,
-      board1Winner: '', // To be filled by hand evaluator
-      board2Winner: '', // To be filled by hand evaluator
+      pot1: 0,
+      pot2: 0,
+      board1Winner: '',
+      board2Winner: '',
     };
+
+    if (runs === 3) {
+      const run3Cards = remainingDeck.slice(cardsNeeded * 2, cardsNeeded * 3);
+      state.board3 = [...existingBoard, ...run3Cards];
+      result.board3 = state.board3;
+      // Thirds
+      const third = Math.trunc((state.pot / 3) * 100) / 100;
+      result.pot1 = third;
+      result.pot2 = third;
+      result.pot3 = state.pot - third * 2;
+      result.board3Winner = '';
+    } else {
+      // Halves
+      result.pot1 = Math.trunc((state.pot / 2) * 100) / 100;
+      result.pot2 = state.pot - result.pot1;
+    }
+
+    return result;
   }
 
   /**
    * Resolve RIT with board winners (called after hand evaluation)
    */
-  resolve(tableId: string, board1Winner: string, board2Winner: string): Map<string, number> {
+  resolve(
+    tableId: string,
+    board1Winner: string,
+    board2Winner: string,
+    board3Winner?: string
+  ): Map<string, number> {
     const state = this.activeOffers.get(tableId);
     if (!state) return new Map();
 
     state.board1Winner = board1Winner;
     state.board2Winner = board2Winner;
+    if (board3Winner) state.board3Winner = board3Winner;
     state.status = 'resolved';
 
     const distribution = new Map<string, number>();
-    const halfPot = Math.trunc((state.pot / 2) * 100) / 100;
-    const otherHalf = state.pot - halfPot;
+    const runs = state.maxRuns || 2;
 
-    if (board1Winner === board2Winner) {
-      // Same player wins both — gets entire pot
-      distribution.set(board1Winner, state.pot);
+    if (runs === 3 && board3Winner) {
+      // Three-way pot split
+      const third = Math.trunc((state.pot / 3) * 100) / 100;
+      const remainder = state.pot - third * 2;
+
+      const winners = [board1Winner, board2Winner, board3Winner];
+      const amounts = [third, third, remainder];
+
+      for (let i = 0; i < 3; i++) {
+        distribution.set(winners[i], (distribution.get(winners[i]) || 0) + amounts[i]);
+      }
     } else {
-      distribution.set(board1Winner, halfPot);
-      distribution.set(board2Winner, otherHalf);
+      // Two-way pot split
+      const halfPot = Math.trunc((state.pot / 2) * 100) / 100;
+      const otherHalf = state.pot - halfPot;
+
+      if (board1Winner === board2Winner) {
+        distribution.set(board1Winner, state.pot);
+      } else {
+        distribution.set(board1Winner, halfPot);
+        distribution.set(board2Winner, otherHalf);
+      }
     }
 
     masterBus.emit('RIT_RESOLVED', {
@@ -227,9 +274,7 @@ class RunItTwiceEngineClass {
       distribution: Object.fromEntries(distribution),
     });
 
-    // Cleanup after resolved
     this.clearOffer(tableId);
-
     return distribution;
   }
 

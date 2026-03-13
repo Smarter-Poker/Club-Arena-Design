@@ -9,7 +9,7 @@ import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { masterBus } from '../core/MasterBus';
 import { useWalletStore } from '../stores/useWalletStore';
-import { useUserStore } from '../stores/useUserStore';
+import { useAuthUser } from '../hooks/useAuthUser';
 import { TransactionHistory } from '../components/wallet/TransactionHistory';
 import DepositWithdrawModal from '../components/wallet/DepositWithdrawModal';
 import './PlayerWalletPage.css';
@@ -164,7 +164,7 @@ function WalletCard({
 
 export default function PlayerWalletPage() {
   const navigate = useNavigate();
-  const { user } = useUserStore();
+  const { user } = useAuthUser();
   const { balances, diamonds, loadBalances, loadDiamonds, internalTransfer } = useWalletStore();
 
   const [activeTab, setActiveTab] = useState<WalletTab>('overview');

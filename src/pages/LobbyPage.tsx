@@ -15,7 +15,7 @@ import { tableService } from '../services/TableService';
 import { supabase } from '../lib/supabase';
 import { masterBus } from '../core/MasterBus';
 import { dailyChallengeService } from '../services/DailyChallengeService';
-import { useUserStore } from '../stores/useUserStore';
+import { useAuthUser } from '../hooks/useAuthUser';
 import type { PokerTable } from '../types/database.types';
 import DailyLoginReward from '../components/gamification/DailyLoginReward';
 import LuckyDrawWheel from '../components/gamification/LuckyDrawWheel';
@@ -29,7 +29,7 @@ type GameFilter = 'all' | 'nlh' | 'plo' | 'ofc' | 'tournaments' | 'favorites';
 export default function LobbyPage() {
   const navigate = useNavigate();
   const toast = useToast();
-  const { user } = useUserStore();
+  const { user } = useAuthUser();
   const [activeFilter, setActiveFilter] = useState<GameFilter>('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [stakeFilter, setStakeFilter] = useState<string>('any');

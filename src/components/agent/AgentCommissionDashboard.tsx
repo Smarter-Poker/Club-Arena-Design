@@ -7,7 +7,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { supabase } from '../../lib/supabase';
 import { masterBus } from '../../core/MasterBus';
-import { useUserStore } from '../../stores/useUserStore';
+import { useAuthUser } from '../../hooks/useAuthUser';
 import { useToast } from '../common/Toast';
 import './AgentCommissionDashboard.css';
 
@@ -42,7 +42,7 @@ interface SubAgent {
 }
 
 export function AgentCommissionDashboard() {
-  const { user } = useUserStore();
+  const { user } = useAuthUser();
   const toast = useToast();
 
   const [summary, setSummary] = useState<CommissionSummary | null>(null);

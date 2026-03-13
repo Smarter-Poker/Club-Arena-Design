@@ -9,202 +9,244 @@ import { ClubsService } from '../../services/ClubsService';
 import './ClubDiscovery.css';
 
 interface Club {
-    id: string;
-    name: string;
-    logo?: string;
-    description: string;
-    memberCount: number;
-    activeTableCount: number;
-    minStakes: string;
-    maxStakes: string;
-    tags: string[];
-    isPrivate: boolean;
-    rating: number;
+  id: string;
+  name: string;
+  logo?: string;
+  description: string;
+  memberCount: number;
+  activeTableCount: number;
+  minStakes: string;
+  maxStakes: string;
+  tags: string[];
+  isPrivate: boolean;
+  rating: number;
 }
 
 interface ClubDiscoveryProps {
-    onJoinRequest?: (clubId: string) => void;
-    onViewClub?: (club: Club) => void;
+  onJoinRequest?: (clubId: string) => void;
+  onViewClub?: (club: Club) => void;
 }
 
-export const ClubDiscovery: React.FC<ClubDiscoveryProps> = ({
-    onJoinRequest,
-    onViewClub,
-}) => {
-    const [clubs, setClubs] = useState<Club[]>([]);
-    const [search, setSearch] = useState('');
-    const [filter, setFilter] = useState<'all' | 'popular' | 'active' | 'new'>('popular');
-    const [stakeFilter, setStakeFilter] = useState<'all' | 'micro' | 'low' | 'mid' | 'high'>('all');
-    const [loading, setLoading] = useState(true);
-    const [visibleItems, setVisibleItems] = useState<Set<number>>(new Set());
+export const ClubDiscovery: React.FC<ClubDiscoveryProps> = ({ onJoinRequest, onViewClub }) => {
+  const [clubs, setClubs] = useState<Club[]>([]);
+  const [search, setSearch] = useState('');
+  const [filter, setFilter] = useState<'all' | 'popular' | 'active' | 'new'>('popular');
+  const [stakeFilter, setStakeFilter] = useState<'all' | 'micro' | 'low' | 'mid' | 'high'>('all');
+  const [loading, setLoading] = useState(true);
+  const [visibleItems, setVisibleItems] = useState<Set<number>>(new Set());
 
-    useEffect(() => {
-        loadClubs();
-    }, [filter, stakeFilter]);
+  useEffect(() => {
+    loadClubs();
+  }, [filter, stakeFilter]);
 
-    const loadClubs = async () => {
-        setLoading(true);
-        try {
-            let fetchedClubs: any[] = [];
-            if (search) {
-                fetchedClubs = await ClubsService.search(search);
-            } else {
-                fetchedClubs = await ClubsService.search(''); // empty search for popular
-            }
-            
-            // Map backend data to local Club interface
-            const mappedClubs: Club[] = fetchedClubs.map(c => ({
-                id: c.id,
-                name: c.name,
-                logo: c.logo_url || c.avatar_url,
-                description: c.description || 'Welcome to our club!',
-                memberCount: c.member_count || 0,
-                activeTableCount: c.table_count || 0,
-                minStakes: '1/2', // Default fallback
-                maxStakes: '5/10', // Default fallback
-                tags: ['Texas Holdem'],
-                isPrivate: c.requires_approval || !c.is_public,
-                rating: 5.0, // Default rating
-            }));
-            
-            setClubs(mappedClubs);
-            setVisibleItems(new Set());
-            mappedClubs.forEach((_, i) => {
-                setTimeout(() => setVisibleItems(prev => new Set(prev).add(i)), i * 60);
-            });
-        } catch (error) {
-            console.error('Failed to load clubs:', error);
-        } finally {
-            setLoading(false);
+  const loadClubs = async () => {
+    setLoading(true);
+    try {
+      let fetchedClubs: any[] = [];
+      if (search) {
+        fetchedClubs = await ClubsService.search(search);
+      } else {
+        // ── Filter-specific queries (was: all calling search('')) ──
+        let query = supabase
+          .from('clubs')
+          .select('*, club_members(count)')
+          .eq('is_public', true)
+          .limit(30);
+
+        // Sort by filter type
+        if (filter === 'popular') {
+          query = query.order('member_count', { ascending: false });
+        } else if (filter === 'active') {
+          query = query.order('table_count', { ascending: false, nullsFirst: false });
+        } else if (filter === 'new') {
+          query = query.order('created_at', { ascending: false });
+        } else {
+          query = query.order('member_count', { ascending: false });
         }
-    };
 
-    const filteredClubs = clubs.filter(club =>
-        club.name.toLowerCase().includes(search.toLowerCase()) ||
-        club.description.toLowerCase().includes(search.toLowerCase()) ||
-        club.tags.some(tag => tag.toLowerCase().includes(search.toLowerCase()))
-    );
+        const { data } = await query;
+        fetchedClubs = data || [];
+      }
 
-    const renderStars = (rating: number) => {
-        const full = Math.floor(rating);
-        const half = rating % 1 >= 0.5;
-        return (
-            <span className="stars">
-                {'★'.repeat(full)}
-                {half && '½'}
-                <span className="rating-value">{rating.toFixed(1)}</span>
-            </span>
-        );
-    };
+      // Map backend data to local Club interface
+      const mappedClubs: Club[] = fetchedClubs.map((c) => ({
+        id: c.id,
+        name: c.name,
+        logo: c.logo_url || c.avatar_url,
+        description: c.description || 'Welcome to our club!',
+        memberCount: c.member_count || 0,
+        activeTableCount: c.table_count || 0,
+        minStakes: c.min_stakes || '1/2',
+        maxStakes: c.max_stakes || '5/10',
+        tags: c.tags || ['Texas Holdem'],
+        isPrivate: c.requires_approval || !c.is_public,
+        rating: c.rating || 5.0,
+      }));
 
+      // Apply stake filter client-side
+      const stakeFilteredClubs =
+        stakeFilter === 'all'
+          ? mappedClubs
+          : mappedClubs.filter((club) => {
+              const stakes = club.minStakes.toLowerCase();
+              switch (stakeFilter) {
+                case 'micro':
+                  return (
+                    stakes.includes('0.01') || stakes.includes('0.02') || stakes.includes('0.05')
+                  );
+                case 'low':
+                  return (
+                    stakes.includes('0.1') ||
+                    stakes.includes('0.25') ||
+                    stakes.includes('0.5') ||
+                    stakes.includes('1/')
+                  );
+                case 'mid':
+                  return stakes.includes('2/') || stakes.includes('5/');
+                case 'high':
+                  return stakes.includes('10/') || stakes.includes('25/') || stakes.includes('50/');
+                default:
+                  return true;
+              }
+            });
+
+      setClubs(stakeFilteredClubs);
+      setVisibleItems(new Set());
+      stakeFilteredClubs.forEach((_, i) => {
+        setTimeout(() => setVisibleItems((prev) => new Set(prev).add(i)), i * 60);
+      });
+    } catch (error) {
+      console.error('Failed to load clubs:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const filteredClubs = clubs.filter(
+    (club) =>
+      club.name.toLowerCase().includes(search.toLowerCase()) ||
+      club.description.toLowerCase().includes(search.toLowerCase()) ||
+      club.tags.some((tag) => tag.toLowerCase().includes(search.toLowerCase()))
+  );
+
+  const renderStars = (rating: number) => {
+    const full = Math.floor(rating);
+    const half = rating % 1 >= 0.5;
     return (
-        <div className="club-discovery">
-            <div className="discovery-header">
-                <h2>🔍 Discover Clubs</h2>
-            </div>
-
-            {/* Search */}
-            <div className="search-bar">
-                <span className="search-icon">🔎</span>
-                <input
-                    type="text"
-                    placeholder="Search clubs by name, game, or tag..."
-                    value={search}
-                    onChange={(e) => setSearch(e.target.value)}
-                />
-            </div>
-
-            {/* Filters */}
-            <div className="filter-row">
-                <div className="filter-group">
-                    {(['all', 'popular', 'active', 'new'] as const).map(f => (
-                        <button
-                            key={f}
-                            className={filter === f ? 'active' : ''}
-                            onClick={() => setFilter(f)}
-                        >
-                            {f.charAt(0).toUpperCase() + f.slice(1)}
-                        </button>
-                    ))}
-                </div>
-                <select
-                    className="stake-select"
-                    value={stakeFilter}
-                    onChange={(e) => setStakeFilter(e.target.value as any)}
-                >
-                    <option value="all">All Stakes</option>
-                    <option value="micro">Micro</option>
-                    <option value="low">Low</option>
-                    <option value="mid">Mid</option>
-                    <option value="high">High</option>
-                </select>
-            </div>
-
-            {/* Club Grid */}
-            <div className="clubs-grid">
-                {loading ? (
-                    Array.from({ length: 4 }).map((_, i) => (
-                        <div key={i} className="club-card skeleton" />
-                    ))
-                ) : filteredClubs.length === 0 ? (
-                    <div className="empty-state">
-                        <span>🏠</span>
-                        <p>No clubs found matching your criteria</p>
-                    </div>
-                ) : (
-                    filteredClubs.map((club, i) => (
-                        <div
-                            key={club.id}
-                            className="club-card"
-                            onClick={() => onViewClub?.(club)}
-                            style={{
-                                opacity: visibleItems.has(i) ? 1 : 0,
-                                transform: visibleItems.has(i) ? 'translateY(0)' : 'translateY(8px)',
-                                transition: 'all 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275)'
-                            }}
-                        >
-                            <div className="club-header">
-                                <div className="club-logo">
-                                    {club.logo ? (
-                                        <img src={club.logo} alt={club.name} />
-                                    ) : (
-                                        <span>{club.name[0]}</span>
-                                    )}
-                                </div>
-                                <div className="club-meta">
-                                    <h3>{club.name}</h3>
-                                    {club.isPrivate && <span className="private-badge">🔒</span>}
-                                </div>
-                            </div>
-                            <p className="club-desc">{club.description}</p>
-                            <div className="club-tags">
-                                {club.tags.slice(0, 3).map(tag => (
-                                    <span key={tag} className="tag">{tag}</span>
-                                ))}
-                            </div>
-                            <div className="club-stats">
-                                <span>👥 {club.memberCount}</span>
-                                <span>🎰 {club.activeTableCount} tables</span>
-                                <span>💵 {club.minStakes} - {club.maxStakes}</span>
-                            </div>
-                            <div className="club-footer">
-                                {renderStars(club.rating)}
-                                <button
-                                    className="join-btn"
-                                    onClick={(e) => {
-                                        e.stopPropagation();
-                                        onJoinRequest?.(club.id);
-                                    }}
-                                >
-                                    {club.isPrivate ? 'Request' : 'Join'}
-                                </button>
-                            </div>
-                        </div>
-                    ))
-                )}
-            </div>
-        </div>
+      <span className="stars">
+        {'★'.repeat(full)}
+        {half && '½'}
+        <span className="rating-value">{rating.toFixed(1)}</span>
+      </span>
     );
+  };
+
+  return (
+    <div className="club-discovery">
+      <div className="discovery-header">
+        <h2>🔍 Discover Clubs</h2>
+      </div>
+
+      {/* Search */}
+      <div className="search-bar">
+        <span className="search-icon">🔎</span>
+        <input
+          type="text"
+          placeholder="Search clubs by name, game, or tag..."
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+        />
+      </div>
+
+      {/* Filters */}
+      <div className="filter-row">
+        <div className="filter-group">
+          {(['all', 'popular', 'active', 'new'] as const).map((f) => (
+            <button key={f} className={filter === f ? 'active' : ''} onClick={() => setFilter(f)}>
+              {f.charAt(0).toUpperCase() + f.slice(1)}
+            </button>
+          ))}
+        </div>
+        <select
+          className="stake-select"
+          value={stakeFilter}
+          onChange={(e) => setStakeFilter(e.target.value as any)}
+        >
+          <option value="all">All Stakes</option>
+          <option value="micro">Micro</option>
+          <option value="low">Low</option>
+          <option value="mid">Mid</option>
+          <option value="high">High</option>
+        </select>
+      </div>
+
+      {/* Club Grid */}
+      <div className="clubs-grid">
+        {loading ? (
+          Array.from({ length: 4 }).map((_, i) => <div key={i} className="club-card skeleton" />)
+        ) : filteredClubs.length === 0 ? (
+          <div className="empty-state">
+            <span>🏠</span>
+            <p>No clubs found matching your criteria</p>
+          </div>
+        ) : (
+          filteredClubs.map((club, i) => (
+            <div
+              key={club.id}
+              className="club-card"
+              onClick={() => onViewClub?.(club)}
+              style={{
+                opacity: visibleItems.has(i) ? 1 : 0,
+                transform: visibleItems.has(i) ? 'translateY(0)' : 'translateY(8px)',
+                transition: 'all 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275)',
+              }}
+            >
+              <div className="club-header">
+                <div className="club-logo">
+                  {club.logo ? (
+                    <img src={club.logo} alt={club.name} />
+                  ) : (
+                    <span>{club.name[0]}</span>
+                  )}
+                </div>
+                <div className="club-meta">
+                  <h3>{club.name}</h3>
+                  {club.isPrivate && <span className="private-badge">🔒</span>}
+                </div>
+              </div>
+              <p className="club-desc">{club.description}</p>
+              <div className="club-tags">
+                {club.tags.slice(0, 3).map((tag) => (
+                  <span key={tag} className="tag">
+                    {tag}
+                  </span>
+                ))}
+              </div>
+              <div className="club-stats">
+                <span>👥 {club.memberCount}</span>
+                <span>🎰 {club.activeTableCount} tables</span>
+                <span>
+                  💵 {club.minStakes} - {club.maxStakes}
+                </span>
+              </div>
+              <div className="club-footer">
+                {renderStars(club.rating)}
+                <button
+                  className="join-btn"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onJoinRequest?.(club.id);
+                  }}
+                >
+                  {club.isPrivate ? 'Request' : 'Join'}
+                </button>
+              </div>
+            </div>
+          ))
+        )}
+      </div>
+    </div>
+  );
 };
 
 export default ClubDiscovery;

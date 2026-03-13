@@ -7,7 +7,7 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../../lib/supabase';
 import { masterBus } from '../../core/MasterBus';
-import { useUserStore } from '../../stores/useUserStore';
+import { useAuthUser } from '../../hooks/useAuthUser';
 import { useToast } from '../common/Toast';
 import './SpinAndGoLobby.css';
 import { retryAsync } from '../../utils/retryAsync';
@@ -44,7 +44,7 @@ const MULTIPLIER_PROBABILITIES: { [key: number]: number } = {
 };
 
 export function SpinAndGoLobby({ clubId, onRegister }: SpinAndGoLobbyProps) {
-  const { user } = useUserStore();
+  const { user } = useAuthUser();
   const toast = useToast();
 
   const [tournaments, setTournaments] = useState<SpinTournament[]>([]);

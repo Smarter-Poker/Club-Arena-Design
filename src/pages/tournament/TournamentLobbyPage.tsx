@@ -9,7 +9,7 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { supabase } from '../../lib/supabase';
 import { masterBus } from '../../core/MasterBus';
-import { useUserStore } from '../../stores/useUserStore';
+import { useAuthUser } from '../../hooks/useAuthUser';
 import { tournamentService } from '../../services/TournamentService';
 import TournamentLobbyCard from '../../components/tournament/TournamentLobbyCard';
 import { CardSkeleton } from '../../components/skeletons/CardSkeleton';
@@ -50,7 +50,7 @@ interface Tournament {
 
 export default function TournamentLobbyPage() {
   const { clubId } = useParams<{ clubId?: string }>();
-  const { user } = useUserStore();
+  const { user } = useAuthUser();
   const toast = useToast();
   const [tournaments, setTournaments] = useState<Tournament[]>([]);
   const [loading, setLoading] = useState(true);

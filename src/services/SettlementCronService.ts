@@ -235,9 +235,22 @@ export const SettlementCronService = {
       const { data, error } = await retryAsync(() => supabase.rpc('get_wallet_balance_totals'), 3);
 
       if (error || !data) {
-        // If RPC doesn't exist, pass canary (non-blocking)
-        console.warn('[SettlementCron] Canary RPC not available — passing by default');
-        return { passed: true, totalCredits: 0, totalDebits: 0, difference: 0 };
+        // FAIL-CLOSED: If canary RPC doesn't exist, settlement MUST NOT proceed unverified.
+        // Raise critical alert and block until the RPC is deployed.
+        console.error(
+          '[SettlementCron] Canary RPC not available — BLOCKING settlement (fail-closed)'
+        );
+        try {
+          const { FinancialAlertService } = await import('./FinancialAlertService');
+          await FinancialAlertService.logCritical(
+            'SettlementCronService.runCanaryCheck',
+            'Canary balance-check RPC (get_wallet_balance_totals) is missing — settlement blocked',
+            { error: error?.message || 'No data returned' }
+          );
+        } catch {
+          /* best effort */
+        }
+        return { passed: false, totalCredits: 0, totalDebits: 0, difference: -1 };
       }
 
       const row = Array.isArray(data) ? data[0] : data;
@@ -250,8 +263,12 @@ export const SettlementCronService = {
 
       return { passed, totalCredits, totalDebits, difference };
     } catch (err) {
-      console.warn('[SettlementCron] Canary check error — passing by default:', err);
-      return { passed: true, totalCredits: 0, totalDebits: 0, difference: 0 };
+      // FAIL-CLOSED: Unexpected errors also block settlement
+      console.error(
+        '[SettlementCron] Canary check error — BLOCKING settlement (fail-closed):',
+        err
+      );
+      return { passed: false, totalCredits: 0, totalDebits: 0, difference: -1 };
     }
   },
 

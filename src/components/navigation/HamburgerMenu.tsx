@@ -10,7 +10,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../../lib/supabase';
-import { useUserStore } from '../../stores/useUserStore';
+import { useAuthUser } from '../../hooks/useAuthUser';
 import { useToast } from '../common/Toast';
 import styles from './HamburgerMenu.module.css';
 
@@ -35,7 +35,7 @@ const colors = {
 
 export default function HamburgerMenu({ isOpen, onClose }: HamburgerMenuProps) {
   const navigate = useNavigate();
-  const { user } = useUserStore();
+  const { user } = useAuthUser();
   const toast = useToast();
   const touchStartRef = useRef<number | null>(null);
 

@@ -8,7 +8,7 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { supabase } from '../../lib/supabase';
 import { masterBus } from '../../core/MasterBus';
-import { useUserStore } from '../../stores/useUserStore';
+import { useAuthUser } from '../../hooks/useAuthUser';
 import MessageBubble from './MessageBubble';
 import MessageInput from './MessageInput';
 import { PlayerAvatar } from '../avatars/PlayerAvatar';
@@ -54,7 +54,7 @@ interface MessageThreadProps {
 }
 
 export default function MessageThread({ conversationId, onBack }: MessageThreadProps) {
-  const { user } = useUserStore();
+  const { user } = useAuthUser();
   const [messages, setMessages] = useState<Message[]>([]);
   const [participants, setParticipants] = useState<Participant[]>([]);
   const [loading, setLoading] = useState(true);

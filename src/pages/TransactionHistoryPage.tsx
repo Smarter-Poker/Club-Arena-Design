@@ -6,7 +6,7 @@ import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { masterBus } from '../core/MasterBus';
-import { useUserStore } from '../stores/useUserStore';
+import { useAuthUser } from '../hooks/useAuthUser';
 import { useToast } from '../components/common/Toast';
 import { exportToCSV } from '../lib/export';
 import './TransactionHistoryPage.css';
@@ -38,7 +38,7 @@ const PAGE_SIZE = 25;
 export default function TransactionHistoryPage() {
   const navigate = useNavigate();
   useVisibilityRefresh(() => loadTransactions(1, true));
-  const { user } = useUserStore();
+  const { user } = useAuthUser();
   const toast = useToast();
 
   const [transactions, setTransactions] = useState<Transaction[]>([]);

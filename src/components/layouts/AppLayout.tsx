@@ -16,7 +16,7 @@ import styles from './AppLayout.module.css';
 import ClubArenaWelcomeModal, { useClubArenaWelcome } from '../modals/ClubArenaWelcomeModal';
 import ClubAnnouncementBanner from '../club/ClubAnnouncementBanner';
 import GlobalHeader from '../navigation/GlobalHeader';
-import { useUserStore } from '../../stores/useUserStore';
+import { useAuthUser } from '../../hooks/useAuthUser';
 
 export default function AppLayout() {
   const location = useLocation();
@@ -39,7 +39,7 @@ export default function AppLayout() {
   }, []);
 
   // User store for conditional rendering
-  const { user } = useUserStore();
+  const { user } = useAuthUser();
   const { showWelcome, isReady, acceptWelcome } = useClubArenaWelcome();
 
   return (

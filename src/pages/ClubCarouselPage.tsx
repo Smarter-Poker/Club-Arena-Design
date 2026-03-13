@@ -14,7 +14,7 @@ import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { masterBus } from '../core/MasterBus';
-import { useUserStore } from '../stores/useUserStore';
+import { useAuthUser } from '../hooks/useAuthUser';
 import { useToast } from '../components/common/Toast';
 import IntroVideo from '../components/IntroVideo';
 import './ClubCarouselPage.css';
@@ -63,7 +63,7 @@ const getFrameForClub = (clubId: number): string => {
 
 export default function ClubCarouselPage() {
   const navigate = useNavigate();
-  const { user } = useUserStore();
+  const { user } = useAuthUser();
   const toast = useToast();
 
   const [clubs, setClubs] = useState<UserClub[]>([]);

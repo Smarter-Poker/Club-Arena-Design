@@ -8,7 +8,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { supabase } from '../../lib/supabase';
 import { masterBus } from '../../core/MasterBus';
-import { useUserStore } from '../../stores/useUserStore';
+import { useAuthUser } from '../../hooks/useAuthUser';
 import { PlayerAvatar } from '../avatars/PlayerAvatar';
 import { haptic } from '../../services/HapticService';
 import type { VipTier, PresenceStatus } from '../avatars/PlayerAvatar';
@@ -39,7 +39,7 @@ export default function FriendListPanel({
   onProfileClick,
   onInviteClick,
 }: FriendListPanelProps) {
-  const { user } = useUserStore();
+  const { user } = useAuthUser();
   const [friends, setFriends] = useState<Friend[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');

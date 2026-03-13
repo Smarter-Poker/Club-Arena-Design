@@ -13,7 +13,7 @@
 import { useEffect, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../../lib/supabase';
-import { useUserStore } from '../../stores/useUserStore';
+import { useAuthUser } from '../../hooks/useAuthUser';
 import { masterBus } from '../../core/MasterBus';
 import { useToast } from './Toast';
 import type { RealtimeChannel } from '@supabase/supabase-js';
@@ -21,103 +21,102 @@ import type { RealtimeChannel } from '@supabase/supabase-js';
 const WAITLIST_CHANNEL_KEY = 'global-waitlist-auto-seat';
 
 export default function GlobalWaitlistListener() {
-    const { user } = useUserStore();
-    const navigate = useNavigate();
-    const toast = useToast();
-    const channelRef = useRef<RealtimeChannel | null>(null);
-    const reconnectTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const { user } = useAuthUser();
+  const navigate = useNavigate();
+  const toast = useToast();
+  const channelRef = useRef<RealtimeChannel | null>(null);
+  const reconnectTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-    // ─── Core subscription logic (extracted for reuse on reconnect) ───
-    const setupChannel = useCallback(() => {
-        if (!user?.id) return null;
+  // ─── Core subscription logic (extracted for reuse on reconnect) ───
+  const setupChannel = useCallback(() => {
+    if (!user?.id) return null;
 
-        // Prevent duplicate channels
-        if (channelRef.current) {
-            masterBus.removeRegisteredChannel(WAITLIST_CHANNEL_KEY);
+    // Prevent duplicate channels
+    if (channelRef.current) {
+      masterBus.removeRegisteredChannel(WAITLIST_CHANNEL_KEY);
+    }
+
+    const channel = masterBus.getOrCreateChannel(WAITLIST_CHANNEL_KEY);
+    channel.on(
+      'postgres_changes',
+      {
+        event: 'DELETE',
+        schema: 'public',
+        table: 'table_seats',
+      },
+      async (payload) => {
+        const vacatedTableId = (payload.old as any)?.table_id;
+        if (!vacatedTableId) return;
+
+        try {
+          // Immediately query if the user is #1 on this table's waitlist
+          const { data } = await supabase
+            .from('waitlist_entries')
+            .select('id, position, poker_tables(name)')
+            .eq('user_id', user.id)
+            .eq('table_id', vacatedTableId)
+            .maybeSingle();
+
+          if (data && data.position === 1) {
+            const tableName = (data.poker_tables as any)?.name || 'the table';
+            toast.success(`Seat available at ${tableName}! Joining in 3s...`);
+            // Auto-navigate to the table where the seat opened
+            setTimeout(() => {
+              navigate(`/table/${vacatedTableId}`);
+            }, 3000);
+          }
+
+          // #10: Emit position change for any waitlist entry
+          if (data) {
+            masterBus.emit('WAITLIST_POSITION_CHANGED', {
+              tableId: vacatedTableId,
+              position: data.position,
+              tableName: (data.poker_tables as any)?.name || 'Unknown',
+            });
+          }
+        } catch (err) {
+          console.error('[GlobalWaitlistListener] Error checking waitlist position:', err);
         }
+      }
+    );
 
-        const channel = masterBus.getOrCreateChannel(WAITLIST_CHANNEL_KEY);
-            channel
-            .on(
-                'postgres_changes',
-                {
-                    event: 'DELETE',
-                    schema: 'public',
-                    table: 'table_seats',
-                },
-                async (payload) => {
-                    const vacatedTableId = (payload.old as any)?.table_id;
-                    if (!vacatedTableId) return;
+    // #3: System event listener for disconnect recovery
+    channel.on('system' as any, {} as any, (status: any) => {
+      if (status === 'disconnected' || status?.event === 'disconnected') {
+        console.warn('[GlobalWaitlistListener] Realtime disconnected — scheduling reconnect...');
+        // Auto-reconnect after 3 seconds
+        if (reconnectTimeoutRef.current) clearTimeout(reconnectTimeoutRef.current);
+        reconnectTimeoutRef.current = setTimeout(() => {
+          console.log('[GlobalWaitlistListener] Attempting reconnect...');
+          channelRef.current = setupChannel();
+        }, 3000);
+      }
+    });
 
-                    try {
-                        // Immediately query if the user is #1 on this table's waitlist
-                        const { data } = await supabase
-                            .from('waitlist_entries')
-                            .select('id, position, poker_tables(name)')
-                            .eq('user_id', user.id)
-                            .eq('table_id', vacatedTableId)
-                            .maybeSingle();
+    channel.subscribe((status) => {
+      if (status === 'SUBSCRIBED') {
+        console.log('[GlobalWaitlistListener] Connected and listening');
+      } else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
+        console.warn('[GlobalWaitlistListener] Channel error/timeout — scheduling reconnect...');
+        if (reconnectTimeoutRef.current) clearTimeout(reconnectTimeoutRef.current);
+        reconnectTimeoutRef.current = setTimeout(() => {
+          channelRef.current = setupChannel();
+        }, 5000);
+      }
+    });
 
-                        if (data && data.position === 1) {
-                            const tableName = (data.poker_tables as any)?.name || 'the table';
-                            toast.success(`Seat available at ${tableName}! Joining in 3s...`);
-                            // Auto-navigate to the table where the seat opened
-                            setTimeout(() => {
-                                navigate(`/table/${vacatedTableId}`);
-                            }, 3000);
-                        }
+    channelRef.current = channel;
+    return channel;
+  }, [user?.id, navigate, toast]);
 
-                        // #10: Emit position change for any waitlist entry
-                        if (data) {
-                            masterBus.emit('WAITLIST_POSITION_CHANGED', {
-                                tableId: vacatedTableId,
-                                position: data.position,
-                                tableName: (data.poker_tables as any)?.name || 'Unknown',
-                            });
-                        }
-                    } catch (err) {
-                        console.error('[GlobalWaitlistListener] Error checking waitlist position:', err);
-                    }
-                }
-            );
+  useEffect(() => {
+    const channel = setupChannel();
 
-        // #3: System event listener for disconnect recovery
-        channel.on('system' as any, {} as any, (status: any) => {
-            if (status === 'disconnected' || status?.event === 'disconnected') {
-                console.warn('[GlobalWaitlistListener] Realtime disconnected — scheduling reconnect...');
-                // Auto-reconnect after 3 seconds
-                if (reconnectTimeoutRef.current) clearTimeout(reconnectTimeoutRef.current);
-                reconnectTimeoutRef.current = setTimeout(() => {
-                    console.log('[GlobalWaitlistListener] Attempting reconnect...');
-                    channelRef.current = setupChannel();
-                }, 3000);
-            }
-        });
+    return () => {
+      if (channel) masterBus.removeRegisteredChannel(WAITLIST_CHANNEL_KEY);
+      if (reconnectTimeoutRef.current) clearTimeout(reconnectTimeoutRef.current);
+    };
+  }, [setupChannel]);
 
-        channel.subscribe((status) => {
-            if (status === 'SUBSCRIBED') {
-                console.log('[GlobalWaitlistListener] Connected and listening');
-            } else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
-                console.warn('[GlobalWaitlistListener] Channel error/timeout — scheduling reconnect...');
-                if (reconnectTimeoutRef.current) clearTimeout(reconnectTimeoutRef.current);
-                reconnectTimeoutRef.current = setTimeout(() => {
-                    channelRef.current = setupChannel();
-                }, 5000);
-            }
-        });
-
-        channelRef.current = channel;
-        return channel;
-    }, [user?.id, navigate, toast]);
-
-    useEffect(() => {
-        const channel = setupChannel();
-
-        return () => {
-            if (channel) masterBus.removeRegisteredChannel(WAITLIST_CHANNEL_KEY);
-            if (reconnectTimeoutRef.current) clearTimeout(reconnectTimeoutRef.current);
-        };
-    }, [setupChannel]);
-
-    return null; // Invisible global background listener
+  return null; // Invisible global background listener
 }

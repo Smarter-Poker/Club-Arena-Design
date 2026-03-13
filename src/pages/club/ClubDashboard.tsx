@@ -15,7 +15,7 @@ import { useState, useEffect, useRef } from 'react';
 import { useParams, Link, useSearchParams } from 'react-router-dom';
 import { supabase } from '../../lib/supabase';
 import { masterBus } from '../../core/MasterBus';
-import { useUserStore } from '../../stores/useUserStore';
+import { useAuthUser } from '../../hooks/useAuthUser';
 import { getLocalStorage, setLocalStorage } from '../../lib/storage';
 import ClubStatsCards from '../../components/club/ClubStatsCards';
 import ClubActivityFeed from '../../components/club/ClubActivityFeed';
@@ -48,7 +48,7 @@ export default function ClubDashboard() {
   const [searchParams] = useSearchParams();
   const { clubId: routeClubId } = useParams<{ clubId?: string }>();
   const clubId = routeClubId || searchParams.get('club') || undefined;
-  const { user } = useUserStore();
+  const { user } = useAuthUser();
   const toast = useToast();
   useVisibilityRefresh(() => loadDashboardData());
   const [club, setClub] = useState<ClubInfo | null>(null);

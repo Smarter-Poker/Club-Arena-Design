@@ -6,7 +6,7 @@ import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { masterBus } from '../core/MasterBus';
-import { useUserStore } from '../stores/useUserStore';
+import { useAuthUser } from '../hooks/useAuthUser';
 import { useToast } from '../components/common/Toast';
 import ClubBottomNav from '../components/club/ClubBottomNav';
 import './BadBeatJackpotPage.css';
@@ -38,7 +38,7 @@ export default function BadBeatJackpotPage() {
   const navigate = useNavigate();
   useVisibilityRefresh(() => loadJackpotData());
   const { clubId } = useParams();
-  const { user } = useUserStore();
+  const { user } = useAuthUser();
   const toast = useToast();
 
   const [jackpot, setJackpot] = useState<JackpotInfo | null>(null);

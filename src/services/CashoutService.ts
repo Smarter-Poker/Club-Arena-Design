@@ -450,7 +450,8 @@ class CashoutServiceClass {
       notes || 'Agent sent chips to player via Cashier'
     );
 
-    // Record reversal window metadata in chip_transactions
+    // Record reversal window in chip_transactions — set BOTH the dedicated column
+    // AND metadata for backward compatibility. fn_can_agent_remove_chips reads the column.
     const reversibleUntil = new Date();
     reversibleUntil.setMinutes(reversibleUntil.getMinutes() + 10);
 
@@ -460,6 +461,8 @@ class CashoutServiceClass {
       to_user_id: playerId,
       amount,
       transaction_type: 'send',
+      reversible_until: reversibleUntil.toISOString(),
+      is_reversed: false,
       metadata: { reversible_until: reversibleUntil.toISOString() },
       notes,
     });
@@ -499,18 +502,25 @@ class CashoutServiceClass {
       notes || 'Agent reversed chip send within 10-minute window'
     );
 
-    // Mark original transaction as reversed via metadata
+    // Mark original transaction as reversed via BOTH the dedicated column AND metadata.
+    // Match on the most recent unreversed 'send' within the reversal window.
     const { error: reverseError } = await supabase
       .from('chip_transactions')
-      .update({ metadata: { is_reversed: true } })
+      .update({
+        is_reversed: true,
+        metadata: { is_reversed: true },
+      })
       .eq('from_user_id', agentId)
       .eq('to_user_id', playerId)
       .eq('club_id', clubId)
       .eq('transaction_type', 'send')
+      .eq('is_reversed', false)
+      .gte('reversible_until', new Date().toISOString())
+      .order('created_at', { ascending: false })
       .limit(1);
 
     if (reverseError) {
-      console.warn('[Cashout] Failed to mark reversal metadata:', reverseError);
+      console.warn('[Cashout] Failed to mark reversal on column:', reverseError);
     }
 
     // Record removal in chip_transactions for reversal tracking

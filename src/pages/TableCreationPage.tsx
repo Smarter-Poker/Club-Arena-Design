@@ -5,7 +5,7 @@
 import { useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
-import { useUserStore } from '../stores/useUserStore';
+import { useAuthUser } from '../hooks/useAuthUser';
 import './TableCreationPage.css';
 
 const sectionAnimationStyle = (index: number) => ({
@@ -34,7 +34,7 @@ interface TableSettings {
 export default function TableCreationPage() {
   const navigate = useNavigate();
   const { clubId } = useParams();
-  const { user } = useUserStore();
+  const { user } = useAuthUser();
 
   const [settings, setSettings] = useState<TableSettings>({
     name: '',

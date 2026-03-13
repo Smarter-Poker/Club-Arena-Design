@@ -19,6 +19,7 @@ import { masterBus } from './MasterBus';
 import { achievementTriggerService } from '../services/AchievementTriggerService';
 import { postgresSyncHooks } from '../services/PostgresSyncHooks';
 import { setSentryUser, clearSentryUser } from './SentryInit';
+import { pushNotificationService } from '../services/PushNotificationService';
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // TYPES
@@ -155,6 +156,16 @@ class IdentityDNACore {
               achievementTriggerService
                 .onLogin(session.user.id)
                 .catch((err) => console.warn('[Achievements] Login trigger failed:', err));
+
+              // Register push notifications
+              pushNotificationService
+                .init()
+                .then(() => {
+                  pushNotificationService.setExternalUserId(session.user.id);
+                })
+                .catch(() => {
+                  /* OneSignal not configured */
+                });
 
               // Phase 7: Absolute Realtime Perfection (Listen to external/Admin Postgres mutations)
               postgresSyncHooks.init(session.user.id);

@@ -92,6 +92,7 @@ export type BusEventType =
   // Settlement cron lifecycle
   | 'SETTLEMENT_CYCLE_STARTED'
   | 'SETTLEMENT_CYCLE_COMPLETED'
+  | 'SETTLEMENT_PAYOUT_FAILED'
   // Resilience & Connection Events
   | 'OFFLINE_QUEUE_REPLAYED'
   | 'WS_CONNECTION_FAILED'
@@ -186,7 +187,47 @@ export type BusEventType =
   | 'DAILY_REWARD_CLAIMED'
   | 'WHEEL_SPIN_RESULT'
   | 'DAILY_RESET_AVAILABLE'
-  | 'NOTIFICATION_DISMISSED';
+  | 'NOTIFICATION_DISMISSED'
+  // Q3: Social, Messaging & Discovery events
+  | 'USER_BLOCKED'
+  | 'USER_UNBLOCKED'
+  | 'CONVERSATION_CREATED'
+  | 'CONVERSATION_PINNED'
+  | 'CONVERSATION_UNPINNED'
+  | 'UNREAD_DM_COUNT_CHANGED'
+  // Phase Q1: Disconnect & Time Bank engine events
+  | 'PLAYER_SAT_OUT'
+  | 'PLAYER_SAT_BACK'
+  | 'DISCONNECT_TIMER_STARTED'
+  | 'PLAYER_TIMED_OUT'
+  | 'TIME_BANK_ACTIVATED'
+  | 'TIME_BANK_STOPPED'
+  | 'TIME_BANK_REFILLED'
+  | 'TIME_BANK_DEPLETED'
+  | 'TIME_BANK_EXPIRED'
+  // Phase Q1: Insurance engine events
+  | 'INSURANCE_OFFERED'
+  | 'INSURANCE_ACCEPTED'
+  | 'INSURANCE_DECLINED'
+  | 'INSURANCE_SETTLED'
+  // Phase Q1: Mixed game rotation events
+  | 'GAME_VARIANT_ROTATED'
+  // Phase Q1: Tournament chip race events
+  | 'CHIP_RACE_COMPLETED'
+  // Phase Q1: Pre-action queue events
+  | 'PRE_ACTION_SET'
+  | 'PRE_ACTION_EXECUTED'
+  | 'PRE_ACTION_INVALIDATED'
+  // Phase Q1: OFC dealing events
+  | 'OFC_HAND_STARTED'
+  | 'OFC_CARDS_DEALT'
+  | 'OFC_PLACEMENT_TIMER'
+  | 'OFC_TURN_CHANGE'
+  | 'OFC_SCORING_COMPLETE'
+  | 'OFC_FANTASYLAND_ENTERED'
+  // Phase Q1: Rakeback events
+  | 'RAKEBACK_CALCULATED'
+  | 'RAKEBACK_DISTRIBUTED';
 
 // #13: Type-safe payload map — compile-time enforcement of correct payloads
 export interface BusPayloadMap {
@@ -289,6 +330,13 @@ export interface BusPayloadMap {
     agentsPaid?: number;
     playersWithRakeback?: number;
     totalDisbursed?: number;
+  };
+  SETTLEMENT_PAYOUT_FAILED: {
+    settlementId: string;
+    agentId: string;
+    amount: number;
+    periodId: string;
+    error: string;
   };
   // Resilience & Connection Events
   OFFLINE_QUEUE_REPLAYED: { replayed: number; failed: number };
@@ -533,6 +581,113 @@ export interface BusPayloadMap {
   WHEEL_SPIN_RESULT: { segmentId: string; amount: number; type: string };
   DAILY_RESET_AVAILABLE: { date: string };
   NOTIFICATION_DISMISSED: { notificationId: string };
+  // Q3: Social, Messaging & Discovery payloads
+  USER_BLOCKED: { userId: string; blockedUserId: string };
+  USER_UNBLOCKED: { userId: string; unblockedUserId: string };
+  CONVERSATION_CREATED: { conversationId: string; isGroup: boolean };
+  CONVERSATION_PINNED: { conversationId: string };
+  CONVERSATION_UNPINNED: { conversationId: string };
+  UNREAD_DM_COUNT_CHANGED: { count: number };
+  // Phase Q1: Disconnect & Time Bank engine payloads
+  PLAYER_SAT_OUT: {
+    tableId: string;
+    playerId: string;
+    reason: string;
+    consecutiveTimeouts: number;
+  };
+  PLAYER_SAT_BACK: { tableId: string; playerId: string };
+  DISCONNECT_TIMER_STARTED: { tableId: string; playerId: string; timeoutSeconds: number };
+  PLAYER_TIMED_OUT: {
+    tableId: string;
+    playerId: string;
+    action: string;
+    reason: string;
+    consecutiveTimeouts: number;
+  };
+  TIME_BANK_ACTIVATED: {
+    tableId: string;
+    playerId: string;
+    secondsGranted: number;
+    usesRemaining: number;
+    totalRemaining: number;
+  };
+  TIME_BANK_STOPPED: {
+    tableId: string;
+    playerId: string;
+    secondsUsed: number;
+    remainingSeconds: number;
+    usesRemaining: number;
+  };
+  TIME_BANK_REFILLED: {
+    tableId: string;
+    playerId: string;
+    usesRemaining: number;
+    remainingSeconds: number;
+  };
+  TIME_BANK_DEPLETED: {
+    tableId: string;
+    playerId: string;
+    remainingSeconds: number;
+    usesRemaining: number;
+  };
+  TIME_BANK_EXPIRED: {
+    tableId: string;
+    playerId: string;
+    remainingSeconds: number;
+    usesRemaining: number;
+  };
+  // Phase Q1: Insurance engine payloads
+  INSURANCE_OFFERED: {
+    tableId: string;
+    handId: string;
+    playerId: string;
+    equity: number;
+    premium: number;
+    insuredAmount: number;
+  };
+  INSURANCE_ACCEPTED: { tableId: string; handId: string; playerId: string; premium: number };
+  INSURANCE_DECLINED: { tableId: string; handId: string; playerId: string };
+  INSURANCE_SETTLED: {
+    tableId: string;
+    handId: string;
+    playerId: string;
+    payout: number;
+    won: boolean;
+  };
+  // Phase Q1: Mixed game rotation payloads
+  GAME_VARIANT_ROTATED: {
+    tableId: string;
+    previousVariant: string;
+    newVariant: string;
+    handsAtPrevious: number;
+  };
+  // Phase Q1: Tournament chip race payloads
+  CHIP_RACE_COMPLETED: {
+    tournamentId: string;
+    playersAffected: number;
+    smallestDenomination: number;
+    newSmallestDenomination: number;
+  };
+  // Phase Q1: Pre-action queue payloads
+  PRE_ACTION_SET: { tableId: string; playerId: string; action: string };
+  PRE_ACTION_EXECUTED: { tableId: string; playerId: string; action: string; amount: number };
+  PRE_ACTION_INVALIDATED: { tableId: string; playerId: string; reason: string };
+  // Phase Q1: OFC dealing payloads
+  OFC_HAND_STARTED: { tableId: string; handNumber: number; players: string[] };
+  OFC_CARDS_DEALT: { tableId: string; playerId: string; cardCount: number; isFantasyland: boolean };
+  OFC_PLACEMENT_TIMER: { tableId: string; playerId: string; secondsRemaining: number };
+  OFC_TURN_CHANGE: { tableId: string; playerId: string };
+  OFC_SCORING_COMPLETE: { tableId: string; scores: Record<string, number> };
+  OFC_FANTASYLAND_ENTERED: { tableId: string; playerId: string };
+  // Phase Q1: Rakeback payloads
+  RAKEBACK_CALCULATED: {
+    playerId: string;
+    period: string;
+    rakeContributed: number;
+    rakebackAmount: number;
+    tier: string;
+  };
+  RAKEBACK_DISTRIBUTED: { period: string; totalDistributed: number; playersCount: number };
 }
 
 export interface BusEvent<T = unknown> {

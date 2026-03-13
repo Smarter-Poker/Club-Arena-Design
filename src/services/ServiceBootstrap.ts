@@ -11,11 +11,13 @@ import { masterBus } from '../core/MasterBus';
 import { OfflineQueueService } from './OfflineQueueService';
 import { SettlementCronService } from './SettlementCronService';
 import { AutoRebuyService } from './AutoRebuyService';
+import { FinancialCronService } from './FinancialCronService';
 
 export interface BootResult {
   offlineQueue: boolean;
   settlementCron: boolean;
   autoRebuy: boolean;
+  financialCron: boolean;
   timestamp: string;
 }
 
@@ -34,6 +36,7 @@ export async function bootServices(options?: {
       offlineQueue: true,
       settlementCron: true,
       autoRebuy: true,
+      financialCron: true,
       timestamp: new Date().toISOString(),
     };
   }
@@ -42,6 +45,7 @@ export async function bootServices(options?: {
     offlineQueue: false,
     settlementCron: false,
     autoRebuy: false,
+    financialCron: false,
     timestamp: new Date().toISOString(),
   };
 
@@ -74,6 +78,19 @@ export async function bootServices(options?: {
     console.error('[ServiceBootstrap] ✗ AutoRebuyService failed:', err);
   }
 
+  // 4. Financial Cron — reconciliation, suspension checks, audit trail
+  try {
+    FinancialCronService.start({
+      reconciliationIntervalMs: 24 * 60 * 60 * 1000, // Daily
+      suspensionCheckIntervalMs: 6 * 60 * 60 * 1000, // Every 6h
+      autoSuspendEnabled: false, // Log-only by default
+    });
+    result.financialCron = true;
+    console.debug('[ServiceBootstrap] ✓ FinancialCronService started');
+  } catch (err) {
+    console.error('[ServiceBootstrap] ✗ FinancialCronService failed:', err);
+  }
+
   booted = true;
 
   // Emit ready event so UI can react
@@ -82,6 +99,7 @@ export async function bootServices(options?: {
       offlineQueue: result.offlineQueue,
       settlementCron: result.settlementCron,
       autoRebuy: result.autoRebuy,
+      financialCron: result.financialCron,
     } as Record<string, boolean>,
     timestamp: result.timestamp,
   });
@@ -97,6 +115,7 @@ export function shutdownServices(): void {
   OfflineQueueService.dispose();
   SettlementCronService.stop();
   AutoRebuyService.stop();
+  FinancialCronService.stop();
   booted = false;
   console.debug('[ServiceBootstrap] Services shut down');
 }

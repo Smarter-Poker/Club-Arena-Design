@@ -6,7 +6,7 @@ import { useState, useEffect, useMemo, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { masterBus } from '../core/MasterBus';
-import { useUserStore } from '../stores/useUserStore';
+import { useAuthUser } from '../hooks/useAuthUser';
 import { useToast } from '../components/common/Toast';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts';
 import './RakebackPage.css';
@@ -28,7 +28,7 @@ type ClaimStatus = 'idle' | 'claiming' | 'success' | 'error';
 export default function RakebackPage() {
   const navigate = useNavigate();
   useVisibilityRefresh(() => loadRakebackData());
-  const { user } = useUserStore();
+  const { user } = useAuthUser();
   const toast = useToast();
 
   const [periods, setPeriods] = useState<RakebackPeriod[]>([]);

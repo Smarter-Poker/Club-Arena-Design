@@ -12,7 +12,7 @@ import styles from './AgentManagementPage.module.css';
 import ConfirmModal from '@/components/common/ConfirmModal';
 import { AgentService, type Agent } from '@/services/AgentService';
 import { MembershipService, type ClubMembership } from '@/services/MembershipService';
-import { useUserStore } from '@/stores/useUserStore';
+import { useAuthUser } from '@/hooks/useAuthUser';
 import { supabase } from '@/lib/supabase';
 import { masterBus } from '../core/MasterBus';
 import ChipTransferModal from '@/components/agent/ChipTransferModal';
@@ -42,7 +42,7 @@ type TabType = 'agents' | 'players' | 'hierarchy' | 'credit-limits' | 'commissio
 export default function AgentManagementPage() {
   const { clubId } = useParams<{ clubId: string }>();
   const navigate = useNavigate();
-  const { user } = useUserStore();
+  const { user } = useAuthUser();
   const toast = useToast();
   useVisibilityRefresh(async () => {
     if (!clubId) return;

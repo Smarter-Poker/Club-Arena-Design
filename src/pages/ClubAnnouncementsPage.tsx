@@ -6,7 +6,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { masterBus } from '../core/MasterBus';
-import { useUserStore } from '../stores/useUserStore';
+import { useAuthUser } from '../hooks/useAuthUser';
 import ClubBottomNav from '../components/club/ClubBottomNav';
 import { useToast } from '../components/common/Toast';
 import { sanitizeInput } from '../utils/sanitizeInput';
@@ -32,7 +32,7 @@ interface Announcement {
 export default function ClubAnnouncementsPage() {
   const navigate = useNavigate();
   const { clubId } = useParams();
-  const { user } = useUserStore();
+  const { user } = useAuthUser();
   const toast = useToast();
   useVisibilityRefresh(() => loadAnnouncements());
 

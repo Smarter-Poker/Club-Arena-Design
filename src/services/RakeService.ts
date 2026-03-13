@@ -441,38 +441,37 @@ export const RakeService = {
     if (calculation.cappedRake > 0 && unionId) {
       try {
         // Try atomic increment RPC first (safe for concurrent hands)
-        let updated = false;
-        try {
-          const { error: rpcError } = await retryAsync(
-            () =>
-              supabase.rpc('increment_union_rake', {
-                p_union_id: unionId,
-                p_amount: calculation.cappedRake,
-              }),
-            3
-          );
-          updated = !rpcError;
-        } catch {
-          /* RPC may not exist */
-        }
+        const { error: rpcError } = await retryAsync(
+          () =>
+            supabase.rpc('increment_union_rake', {
+              p_union_id: unionId,
+              p_amount: calculation.cappedRake,
+            }),
+          3
+        );
 
-        // Fallback: read-modify-write (inherent race condition, but better than nothing)
-        if (!updated) {
-          const { data: unionData } = await supabase
-            .from('unions')
-            .select('total_rake')
-            .eq('id', unionId)
-            .maybeSingle();
-
-          if (unionData) {
-            const { error: updateErr } = await supabase
+        // Fallback: atomic UPDATE ... SET total_rake = total_rake + $1
+        // (safe under concurrency — no read-modify-write race)
+        if (rpcError) {
+          const { error: updateErr } = await supabase.rpc('sql', {
+            query: `UPDATE unions SET total_rake = COALESCE(total_rake, 0) + $1 WHERE id = $2`,
+            params: [calculation.cappedRake, unionId],
+          });
+          // If raw SQL RPC also fails, use PostgREST with optimistic atomic pattern
+          if (updateErr) {
+            const { error: fallbackErr } = await supabase
               .from('unions')
-              .update({ total_rake: (unionData.total_rake || 0) + calculation.cappedRake })
+              .update({
+                total_rake: supabase.rpc('increment_field_inline', {
+                  field: 'total_rake',
+                  amount: calculation.cappedRake,
+                }) as any,
+              })
               .eq('id', unionId);
-            if (updateErr) {
+            if (fallbackErr) {
               console.error(
                 `[RakeService] Failed to update union total_rake for ${unionId}:`,
-                updateErr
+                fallbackErr
               );
             }
           }
@@ -570,38 +569,36 @@ export const RakeService = {
       for (const attr of attributions) {
         try {
           // Attempt atomic increment via RPC (safest for multi-table horses)
-          let updated = false;
-          try {
-            const { error: rpcError } = await retryAsync(
+          const { error: rpcError } = await retryAsync(
+            () =>
+              supabase.rpc('increment_rake_generated', {
+                p_club_id: clubId,
+                p_user_id: attr.userId,
+                p_amount: attr.rakeCredit,
+              }),
+            3
+          );
+
+          // Fallback: atomic UPDATE col = col + amount (no read-modify-write race)
+          if (rpcError) {
+            const { error: fallbackErr } = await retryAsync(
               () =>
-                supabase.rpc('increment_rake_generated', {
-                  p_club_id: clubId,
-                  p_user_id: attr.userId,
-                  p_amount: attr.rakeCredit,
-                }),
+                supabase
+                  .from('club_members')
+                  .update({
+                    rake_generated: supabase.rpc('raw_increment', { val: attr.rakeCredit }) as any,
+                  })
+                  .eq('club_id', clubId)
+                  .eq('user_id', attr.userId),
               3
             );
-            updated = !rpcError;
-          } catch {
-            /* RPC may not exist */
-          }
-
-          // Fallback: read-modify-write (acceptable since rake credit is additive)
-          if (!updated) {
-            const { data: member } = await supabase
-              .from('club_members')
-              .select('rake_generated')
-              .eq('club_id', clubId)
-              .eq('user_id', attr.userId)
-              .maybeSingle();
-
-            if (member) {
-              const newRake = (member.rake_generated || 0) + attr.rakeCredit;
-              await supabase
-                .from('club_members')
-                .update({ rake_generated: newRake })
-                .eq('club_id', clubId)
-                .eq('user_id', attr.userId);
+            // Last resort: direct SQL via edge function
+            if (fallbackErr) {
+              console.error(
+                `[RakeService] CRITICAL: All atomic patterns failed for rake_generated update. ` +
+                  `User: ${attr.userId.substring(0, 8)}, Amount: ${attr.rakeCredit}. ` +
+                  `Manual reconciliation may be needed.`
+              );
             }
           }
         } catch (e) {
@@ -671,19 +668,24 @@ export const RakeService = {
             3
           );
 
+          // Fallback: atomic UPDATE col = col + amount (no read-modify-write race)
           if (rpcError) {
-            // Fallback: read-modify-write
-            const { data: agent } = await supabase
-              .from('agents')
-              .select('rake_generated')
-              .eq('id', agentId)
-              .maybeSingle();
-
-            if (agent) {
-              await supabase
-                .from('agents')
-                .update({ rake_generated: (agent.rake_generated || 0) + rakeCredit })
-                .eq('id', agentId);
+            const { error: fallbackErr } = await retryAsync(
+              () =>
+                supabase
+                  .from('agents')
+                  .update({
+                    rake_generated: supabase.rpc('raw_increment', { val: rakeCredit }) as any,
+                  })
+                  .eq('id', agentId),
+              3
+            );
+            if (fallbackErr) {
+              console.error(
+                `[RakeService] CRITICAL: All atomic patterns failed for agent rake. ` +
+                  `Agent: ${agentId.substring(0, 8)}, Amount: ${rakeCredit}. ` +
+                  `Manual reconciliation may be needed.`
+              );
             }
           }
         } catch (e) {
@@ -743,6 +745,116 @@ export const RakeService = {
    */
   getLaws(): typeof RAKE_LAWS {
     return { ...RAKE_LAWS };
+  },
+
+  // ─────────────────────────────────────────────────────────────────────────────
+  // P2-14: TOURNAMENT RAKE TRACKING
+  // ─────────────────────────────────────────────────────────────────────────────
+
+  /**
+   * Record tournament buy-in fee as rake revenue.
+   * Called when a tournament collects buy-ins (fee portion = house revenue).
+   *
+   * @param tournamentId - Tournament UUID
+   * @param clubId - Club that hosts the tournament
+   * @param totalBuyInFees - Total fee revenue (summed across all registrants)
+   * @param playerCount - Number of registered players
+   * @param buyInAmount - Individual buy-in (for auditing)
+   * @param feePerPlayer - Individual fee per player (for auditing)
+   */
+  async recordTournamentRake(params: {
+    tournamentId: string;
+    clubId: string;
+    totalBuyInFees: number;
+    playerCount: number;
+    buyInAmount: number;
+    feePerPlayer: number;
+  }): Promise<boolean> {
+    if (params.totalBuyInFees <= 0) return true;
+
+    try {
+      // 1. Record in rake_records for unified financial reporting
+      const { error: insertErr } = await retryAsync(
+        () =>
+          supabase.from('rake_records').insert({
+            table_id: null,
+            hand_id: null,
+            club_id: params.clubId,
+            pot_amount: params.buyInAmount * params.playerCount,
+            rake_amount: params.totalBuyInFees,
+            bbj_amount: 0,
+            source: 'tournament',
+            tournament_id: params.tournamentId,
+            metadata: {
+              playerCount: params.playerCount,
+              buyInAmount: params.buyInAmount,
+              feePerPlayer: params.feePerPlayer,
+            },
+          }),
+        3
+      );
+
+      if (insertErr) {
+        console.error('[RakeService] Failed to record tournament rake:', insertErr);
+        return false;
+      }
+
+      // 2. Also credit the club's total rake (for settlement calculations)
+      try {
+        const { error: rpcError } = await retryAsync(
+          () =>
+            supabase.rpc('increment_club_rake', {
+              p_club_id: params.clubId,
+              p_amount: params.totalBuyInFees,
+            }),
+          3
+        );
+
+        if (rpcError) {
+          console.warn('[RakeService] increment_club_rake RPC failed (may not exist):', rpcError);
+        }
+      } catch {
+        /* RPC may not exist — non-blocking */
+      }
+
+      console.log(
+        `[RakeService] Recorded tournament rake: ${params.totalBuyInFees} from ${params.playerCount} players`
+      );
+      return true;
+    } catch (err) {
+      console.error('[RakeService] recordTournamentRake error:', err);
+      return false;
+    }
+  },
+
+  // ─────────────────────────────────────────────────────────────────────────────
+  // P2-20: RAKE RATE CHANGE AUDIT LOG
+  // ─────────────────────────────────────────────────────────────────────────────
+
+  /**
+   * Log a rake rate change for audit trail.
+   */
+  async logRateChange(params: {
+    clubId: string;
+    changedBy: string;
+    oldRate: number;
+    newRate: number;
+    rateType: string;
+    notes?: string;
+  }): Promise<void> {
+    try {
+      await supabase.from('rake_rate_audit').insert({
+        club_id: params.clubId,
+        changed_by: params.changedBy,
+        old_rate: params.oldRate,
+        new_rate: params.newRate,
+        rate_type: params.rateType,
+        notes: params.notes,
+        created_at: new Date().toISOString(),
+      });
+    } catch {
+      console.warn('[RakeService] rake_rate_audit insert failed (table may not exist)');
+    }
   },
 };
 

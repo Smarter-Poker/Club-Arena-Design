@@ -394,11 +394,15 @@ export const ChipFlowService = {
     }
 
     // 2. Fallback to paginated client-side aggregation if RPC is missing
+    //    Safety: cap at 10,000 pages (10M rows) to prevent infinite loops on massive tables
+    const MAX_PAGES = 10_000;
     let totalMinted = 0;
     let hasMoreMints = true;
     let offsetMints = 0;
+    let mintPages = 0;
 
-    while (hasMoreMints) {
+    while (hasMoreMints && mintPages < MAX_PAGES) {
+      mintPages++;
       const { data: mints, error } = await supabase
         .from('wallet_transactions')
         .select('amount')
@@ -417,8 +421,10 @@ export const ChipFlowService = {
     let totalInLockedBalance = 0;
     let hasMoreWallets = true;
     let offsetWallets = 0;
+    let walletPages = 0;
 
-    while (hasMoreWallets) {
+    while (hasMoreWallets && walletPages < MAX_PAGES) {
+      walletPages++;
       const { data: wallets, error } = await supabase
         .from('wallets')
         .select('balance, locked_balance')

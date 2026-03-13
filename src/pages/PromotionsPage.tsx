@@ -9,7 +9,7 @@ import { masterBus } from '../core/MasterBus';
 import DailyBonusWheel from '../components/bonus/DailyBonusWheel';
 import LeaderboardCard from '../components/leaderboard/LeaderboardCard';
 import ReferralModal from '../components/social/ReferralModal';
-import { useUserStore } from '../stores/useUserStore';
+import { useAuthUser } from '../hooks/useAuthUser';
 import { useToast } from '../components/common/Toast';
 import { promotionService } from '../services/PromotionService';
 import ClubBottomNav from '../components/club/ClubBottomNav';
@@ -32,7 +32,7 @@ interface Promotion {
 export default function PromotionsPage() {
   useVisibilityRefresh(() => loadPromotions());
   const { clubId } = useParams();
-  const { user } = useUserStore();
+  const { user } = useAuthUser();
   const toast = useToast();
 
   const [promotions, setPromotions] = useState<Promotion[]>([]);

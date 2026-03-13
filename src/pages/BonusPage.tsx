@@ -6,7 +6,7 @@ import { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { masterBus } from '../core/MasterBus';
-import { useUserStore } from '../stores/useUserStore';
+import { useAuthUser } from '../hooks/useAuthUser';
 import { bonusService } from '../services/BonusService';
 import { useToast } from '../components/common/Toast';
 import { haptic } from '../services/HapticService';
@@ -30,7 +30,7 @@ interface SpecialBonus {
 
 export default function BonusPage() {
   const navigate = useNavigate();
-  const { user } = useUserStore();
+  const { user } = useAuthUser();
 
   const [dailyBonuses, setDailyBonuses] = useState<DailyBonus[]>([]);
   const [currentDay, setCurrentDay] = useState(1);

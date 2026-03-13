@@ -6,7 +6,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../../lib/supabase';
-import { useUserStore } from '../../stores/useUserStore';
+import { useAuthUser } from '../../hooks/useAuthUser';
 import { useToast } from '../common/Toast';
 import './ChipPurchaseModal.css';
 import { retryAsync } from '../../utils/retryAsync';
@@ -40,7 +40,7 @@ export function ChipPurchaseModal({
   currentDiamonds,
   onPurchase,
 }: ChipPurchaseModalProps) {
-  const { user } = useUserStore();
+  const { user } = useAuthUser();
   const toast = useToast();
   const [purchasing, setPurchasing] = useState<string | null>(null);
   const [visibleItems, setVisibleItems] = useState<Set<number>>(new Set());

@@ -6,7 +6,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { waitlistService } from '../../services/WaitlistService';
-import { useUserStore } from '../../stores/useUserStore';
+import { useAuthUser } from '../../hooks/useAuthUser';
 import { supabase } from '../../lib/supabase';
 import { PlayerAvatar } from '../avatars/PlayerAvatar';
 import { haptic } from '../../services/HapticService';
@@ -52,7 +52,7 @@ const GAME_ICONS: Record<string, string> = {
 
 export default function TableCard({ table }: TableCardProps) {
   const navigate = useNavigate();
-  const { user } = useUserStore();
+  const { user } = useAuthUser();
   const toast = useToast();
   const [isJoiningWaitlist, setIsJoiningWaitlist] = useState(false);
   const [mounted, setMounted] = useState(false);

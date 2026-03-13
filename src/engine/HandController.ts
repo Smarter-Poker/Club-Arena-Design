@@ -32,6 +32,7 @@ export interface HandConfig {
   smallBlind: number;
   bigBlind: number;
   ante?: number;
+  bigBlindAnte?: boolean; // If true, BB posts ante for entire table
   rakeConfig: RakeConfig;
   bombPot?: {
     anteMultiplier: number; // Each player antes this many BBs
@@ -224,11 +225,24 @@ export class HandController {
 
     // Post antes if configured
     if (this.config.ante) {
-      for (const player of this.state.players.filter((p) => !p.is_sitting_out)) {
-        const anteAmount = Math.min(this.config.ante, player.stack);
-        player.totalInvested += anteAmount;
-        player.stack -= anteAmount;
-        this.state.pot += anteAmount;
+      if (this.config.bigBlindAnte) {
+        // Big Blind Ante (BBA): BB posts ante for all active players
+        const activeCount = this.state.players.filter((p) => !p.is_sitting_out).length;
+        const totalAnte = this.config.ante * activeCount;
+        if (bbPlayer) {
+          const bbaAmount = Math.min(totalAnte, bbPlayer.stack);
+          bbPlayer.totalInvested += bbaAmount;
+          bbPlayer.stack -= bbaAmount;
+          this.state.pot += bbaAmount;
+        }
+      } else {
+        // Traditional ante: each player posts individually
+        for (const player of this.state.players.filter((p) => !p.is_sitting_out)) {
+          const anteAmount = Math.min(this.config.ante, player.stack);
+          player.totalInvested += anteAmount;
+          player.stack -= anteAmount;
+          this.state.pot += anteAmount;
+        }
       }
     }
 

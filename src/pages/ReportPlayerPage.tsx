@@ -5,7 +5,7 @@
 import { useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
-import { useUserStore } from '../stores/useUserStore';
+import { useAuthUser } from '../hooks/useAuthUser';
 import { sanitizeInput } from '../utils/sanitizeInput';
 import './ReportPlayerPage.css';
 
@@ -27,7 +27,7 @@ interface ReportForm {
 export default function ReportPlayerPage() {
   const navigate = useNavigate();
   const { playerId } = useParams();
-  const { user } = useUserStore();
+  const { user } = useAuthUser();
 
   const [form, setForm] = useState<ReportForm>({
     reason: 'abuse',

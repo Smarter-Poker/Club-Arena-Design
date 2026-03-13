@@ -9,7 +9,7 @@ import { useState, useEffect, useRef, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { masterBus } from '../core/MasterBus';
-import { useUserStore } from '../stores/useUserStore';
+import { useAuthUser } from '../hooks/useAuthUser';
 import { useToast } from '../components/common/Toast';
 import AchievementBadge, { AchievementGrid } from '../components/achievements/AchievementBadge';
 import { AchievementShareCard } from '../components/achievements/AchievementShareCard';
@@ -215,7 +215,7 @@ const ACHIEVEMENTS: Omit<Achievement, 'progress' | 'unlocked' | 'unlockedAt'>[] 
 export default function AchievementsPage() {
   const navigate = useNavigate();
   useVisibilityRefresh(() => loadAchievements());
-  const { user } = useUserStore();
+  const { user } = useAuthUser();
   const toast = useToast();
   const [category, setCategory] = useState<AchievementCategory>('all');
   const [achievements, setAchievements] = useState<Achievement[]>([]);

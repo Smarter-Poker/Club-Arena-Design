@@ -105,6 +105,33 @@ class ProfileServiceClass {
   }
 
   /**
+   * Get a public-facing profile for another user (limited fields)
+   */
+  async getPublicProfile(userId: string): Promise<UserProfile | null> {
+    try {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select(
+          `
+          id, username, display_name, avatar_url, bio,
+          level, vip_tier, vip_points,
+          current_streak, longest_streak,
+          hands_played, tournaments_won, total_winnings,
+          created_at, updated_at
+        `
+        )
+        .eq('id', userId)
+        .maybeSingle();
+
+      if (error || !data) return null;
+      return this.mapProfile(data);
+    } catch (err) {
+      console.error('[Profile] getPublicProfile error:', err);
+      return null;
+    }
+  }
+
+  /**
    * Update profile
    */
   async updateProfile(

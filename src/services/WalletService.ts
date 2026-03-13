@@ -379,21 +379,10 @@ export const WalletService = {
    * Chip flow: Union → Club Bank → Agent Wallet → Player Wallet → Table Buy-in
    */
   async lockForBuyIn(userId: string, tableId: string, amount: number): Promise<boolean> {
-    // 1. Check Player Wallet balance first
-    const { data: walletData } = await supabase
-      .from('wallets')
-      .select('balance')
-      .eq('user_id', userId)
-      .eq('wallet_type', 'PLAYER')
-      .maybeSingle();
-
-    if (!walletData || (walletData.balance || 0) < amount) {
-      throw new Error(
-        `Insufficient chips in Player Wallet. Need ${amount}, have ${walletData?.balance || 0}`
-      );
-    }
-
-    // 2. Atomically deduct from Player Wallet AND LOG using SECURITY DEFINER RPC
+    // Atomically deduct from Player Wallet AND LOG using SECURITY DEFINER RPC.
+    // The RPC returns false if insufficient balance —- no separate pre-check needed.
+    // (Removing the pre-check eliminates a TOCTOU race condition where two concurrent
+    // buy-ins could both pass the SELECT check but one would fail the deduct.)
     const { data: deductResult, error: deductError } = await retryAsync(async () => {
       const res = await supabase.rpc('atomic_deduct_wallet_and_log', {
         p_user_id: userId,
@@ -402,13 +391,16 @@ export const WalletService = {
         p_description: 'Cash game buy-in at table',
         p_table_id: tableId,
         p_hand_id: null,
-        p_related_entity_id: null
+        p_related_entity_id: null,
       });
       return res;
     });
 
     if (deductError) {
-      console.error('[WalletService] atomic_deduct_wallet_and_log RPC failed:', deductError.message);
+      console.error(
+        '[WalletService] atomic_deduct_wallet_and_log RPC failed:',
+        deductError.message
+      );
       throw new Error(`Buy-in failed: ${deductError.message}`);
     }
 
@@ -439,13 +431,16 @@ export const WalletService = {
         p_description: 'Cash game cash-out from table',
         p_table_id: tableId,
         p_hand_id: null,
-        p_related_entity_id: null
+        p_related_entity_id: null,
       });
       return res;
     });
 
     if (creditError) {
-      console.error('[WalletService] atomic_credit_wallet_and_log RPC failed:', creditError.message);
+      console.error(
+        '[WalletService] atomic_credit_wallet_and_log RPC failed:',
+        creditError.message
+      );
       throw new Error(`Cash-out failed: ${creditError.message}`);
     }
 

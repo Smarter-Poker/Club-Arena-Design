@@ -10,6 +10,7 @@
 
 import type { Card, CardSuit, CardRank } from '../types/database.types';
 import { evaluateHand, SUITS, RANKS, RANK_VALUES } from './PokerEngine';
+import { secureShuffle } from './CryptoRandom';
 
 // Full deck as engine Card objects
 const FULL_DECK: Card[] = [];
@@ -24,13 +25,10 @@ function cardKey(c: Card): string {
 }
 
 /**
- * Fisher-Yates in-place shuffle (mutates array)
+ * Fisher-Yates in-place shuffle using cryptographic random
  */
 function shuffleArray<T>(arr: T[]): void {
-  for (let i = arr.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [arr[i], arr[j]] = [arr[j], arr[i]];
-  }
+  secureShuffle(arr);
 }
 
 /**
@@ -58,9 +56,9 @@ export function monteCarloEquity(
   for (const c of boardCards) knownSet.add(cardKey(c));
 
   // Remaining deck = all cards NOT in heroCards or boardCards
-  const remainingDeck = FULL_DECK.filter(c => !knownSet.has(cardKey(c)));
+  const remainingDeck = FULL_DECK.filter((c) => !knownSet.has(cardKey(c)));
 
-  const cardsNeeded = (5 - boardCards.length) + (numOpponents * 2); // Board completion + opponent hole cards
+  const cardsNeeded = 5 - boardCards.length + numOpponents * 2; // Board completion + opponent hole cards
   if (remainingDeck.length < cardsNeeded) {
     return 50; // Not enough cards for simulation
   }

@@ -16,7 +16,7 @@ import { useState, useEffect, useRef, useMemo } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { masterBus } from '../core/MasterBus';
-import { useUserStore } from '../stores/useUserStore';
+import { useAuthUser } from '../hooks/useAuthUser';
 import { useWalletStore } from '../stores/useWalletStore';
 import haptic from '../services/HapticService';
 import ClubBottomNav from '../components/club/ClubBottomNav';
@@ -111,7 +111,7 @@ export default function ClubHomePage() {
   const { clubId } = useParams<{ clubId: string }>();
   useVisibilityRefresh(() => loadClubData());
   const navigate = useNavigate();
-  const { user } = useUserStore();
+  const { user } = useAuthUser();
   const { diamonds } = useWalletStore();
 
   // Refs to avoid stale closures in realtime subscriptions

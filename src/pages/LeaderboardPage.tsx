@@ -18,7 +18,7 @@ import type {
   TournamentStats,
 } from '../services/LeaderboardService';
 import { getUserMemberships } from '../services/ClubsService';
-import { useUserStore } from '../stores/useUserStore';
+import { useAuthUser } from '../hooks/useAuthUser';
 import { useToast } from '../components/common/Toast';
 import { PlayerAvatar } from '../components/avatars/PlayerAvatar';
 import type { VipTier } from '../components/avatars/PlayerAvatar';
@@ -74,7 +74,7 @@ const PERIOD_OPTIONS: { value: LeaderboardPeriod; label: string }[] = [
 export default function LeaderboardPage() {
   const navigate = useNavigate();
   useVisibilityRefresh(() => loadLeaderboard());
-  const { user } = useUserStore();
+  const { user } = useAuthUser();
   const toast = useToast();
   const [scope, setScope] = useState<LeaderboardScope>('my-clubs');
   const [period, setPeriod] = useState<LeaderboardPeriod>('weekly');

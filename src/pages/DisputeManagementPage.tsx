@@ -1,0 +1,292 @@
+/**
+ * ═══════════════════════════════════════════════════════════════════════════════
+ *  DISPUTE MANAGEMENT PAGE — Club Owner/Admin Dispute Dashboard
+ * ═══════════════════════════════════════════════════════════════════════════════
+ *
+ * Full dispute lifecycle management:
+ * - View all disputes for the club with status filters
+ * - Start review, resolve, escalate, or withdraw disputes
+ * - Open count badge for unresolved disputes
+ * - Real-time updates via Supabase subscription
+ */
+
+import { useState, useEffect, useCallback, useRef } from 'react';
+import { useParams } from 'react-router-dom';
+import { supabase } from '../lib/supabase';
+import { masterBus } from '../core/MasterBus';
+import { useAuthUser } from '../hooks/useAuthUser';
+import { useToast } from '../components/common/Toast';
+import {
+  DisputeService,
+  type Dispute,
+  type DisputeStatus,
+  type DisputeResolution,
+} from '../services/DisputeService';
+import './DisputeManagementPage.css';
+
+type FilterTab = 'all' | 'open' | 'under_review' | 'resolved' | 'escalated';
+
+export default function DisputeManagementPage() {
+  const { clubId } = useParams();
+  const { user } = useAuthUser();
+  const toast = useToast();
+
+  const [disputes, setDisputes] = useState<Dispute[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [activeTab, setActiveTab] = useState<FilterTab>('all');
+  const [resolving, setResolving] = useState<string | null>(null);
+  const [resolutionText, setResolutionText] = useState('');
+  const [adjustmentAmount, setAdjustmentAmount] = useState('');
+  const [adjustmentType, setAdjustmentType] = useState<'credit' | 'debit' | 'none'>('none');
+  const [expandedId, setExpandedId] = useState<string | null>(null);
+  const isMounted = useRef(true);
+
+  useEffect(() => {
+    return () => {
+      isMounted.current = false;
+    };
+  }, []);
+
+  const loadDisputes = useCallback(async () => {
+    if (!clubId) return;
+    setLoading(true);
+    try {
+      const data = await DisputeService.getClubDisputes(clubId);
+      if (isMounted.current) setDisputes(data);
+    } catch (err) {
+      console.error('[Disputes] Load failed:', err);
+    }
+    if (isMounted.current) setLoading(false);
+  }, [clubId]);
+
+  useEffect(() => {
+    loadDisputes();
+  }, [loadDisputes]);
+
+  // Real-time subscription
+  useEffect(() => {
+    if (!clubId) return;
+    const channelKey = `disputes-${clubId}`;
+    const channel = masterBus.getOrCreateChannel(channelKey);
+    channel
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'disputes', filter: `club_id=eq.${clubId}` },
+        () => loadDisputes()
+      )
+      .subscribe();
+    return () => {
+      masterBus.removeRegisteredChannel(channelKey);
+    };
+  }, [clubId, loadDisputes]);
+
+  const handleStartReview = async (disputeId: string) => {
+    if (!user?.id) return;
+    try {
+      await DisputeService.startReview(disputeId, user.id);
+      toast.success('Dispute now under review');
+      loadDisputes();
+    } catch (err) {
+      toast.error('Failed to start review');
+    }
+  };
+
+  const handleResolve = async (disputeId: string) => {
+    if (!resolutionText.trim()) {
+      toast.error('Please enter a resolution');
+      return;
+    }
+    setResolving(disputeId);
+    try {
+      const resolution: DisputeResolution = {
+        resolution: resolutionText.trim(),
+        adjustmentType,
+        adjustmentAmount: adjustmentType !== 'none' ? parseFloat(adjustmentAmount) || 0 : undefined,
+      };
+      await DisputeService.resolveDispute(disputeId, user?.id || '', resolution);
+      toast.success('Dispute resolved');
+      setResolutionText('');
+      setAdjustmentAmount('');
+      setAdjustmentType('none');
+      setExpandedId(null);
+      loadDisputes();
+    } catch (err) {
+      toast.error('Failed to resolve dispute');
+    }
+    setResolving(null);
+  };
+
+  const handleEscalate = async (disputeId: string) => {
+    try {
+      await DisputeService.escalateDispute(disputeId, 'Escalated by admin for further review');
+      toast.success('Dispute escalated');
+      loadDisputes();
+    } catch (err) {
+      toast.error('Failed to escalate');
+    }
+  };
+
+  const filtered = activeTab === 'all' ? disputes : disputes.filter((d) => d.status === activeTab);
+
+  const statusCounts = {
+    all: disputes.length,
+    open: disputes.filter((d) => d.status === 'open').length,
+    under_review: disputes.filter((d) => d.status === 'under_review').length,
+    resolved: disputes.filter((d) => d.status === 'resolved').length,
+    escalated: disputes.filter((d) => d.status === 'escalated').length,
+  };
+
+  const getStatusBadge = (status: DisputeStatus) => {
+    const map: Record<DisputeStatus, { icon: string; cls: string }> = {
+      open: { icon: '⚪', cls: 'badge-open' },
+      under_review: { icon: '🔵', cls: 'badge-review' },
+      resolved: { icon: '✅', cls: 'badge-resolved' },
+      escalated: { icon: '🔴', cls: 'badge-escalated' },
+      withdrawn: { icon: '⬜', cls: 'badge-withdrawn' },
+    };
+    const cfg = map[status] || map.open;
+    return (
+      <span className={`dispute-badge ${cfg.cls}`}>
+        {cfg.icon} {status.replace('_', ' ')}
+      </span>
+    );
+  };
+
+  return (
+    <div className="dispute-management-page">
+      <div className="dispute-header">
+        <h2>⚖️ Dispute Management</h2>
+        {statusCounts.open > 0 && (
+          <span className="open-count-badge">{statusCounts.open} open</span>
+        )}
+      </div>
+
+      {/* Filter Tabs */}
+      <div className="dispute-tabs">
+        {(['all', 'open', 'under_review', 'resolved', 'escalated'] as FilterTab[]).map((tab) => (
+          <button
+            key={tab}
+            className={`tab-btn ${activeTab === tab ? 'active' : ''}`}
+            onClick={() => setActiveTab(tab)}
+          >
+            {tab === 'under_review' ? 'Reviewing' : tab.charAt(0).toUpperCase() + tab.slice(1)}
+            {statusCounts[tab] > 0 && <span className="tab-count">{statusCounts[tab]}</span>}
+          </button>
+        ))}
+      </div>
+
+      {/* Disputes List */}
+      {loading ? (
+        <div className="loading-state">
+          <div className="spinner" />
+          <p>Loading disputes...</p>
+        </div>
+      ) : filtered.length === 0 ? (
+        <div className="empty-state">
+          <span className="empty-icon">◉</span>
+          <p>{activeTab === 'all' ? 'No disputes filed' : `No ${activeTab} disputes`}</p>
+        </div>
+      ) : (
+        <div className="dispute-list">
+          {filtered.map((dispute) => (
+            <div key={dispute.id} className={`dispute-card status-${dispute.status}`}>
+              <div
+                className="dispute-card-header"
+                onClick={() => setExpandedId(expandedId === dispute.id ? null : dispute.id)}
+              >
+                <div className="dispute-meta">
+                  {getStatusBadge(dispute.status)}
+                  <span className="dispute-amount">{dispute.amount.toLocaleString()} chips</span>
+                </div>
+                <div className="dispute-target">
+                  <span className="target-type">{dispute.targetType.replace('_', ' ')}</span>
+                  <span className="dispute-submitter">by {dispute.submitterName}</span>
+                </div>
+                <div className="dispute-date">
+                  {new Date(dispute.createdAt).toLocaleDateString(undefined, {
+                    month: 'short',
+                    day: 'numeric',
+                    hour: '2-digit',
+                    minute: '2-digit',
+                  })}
+                </div>
+              </div>
+
+              <div className="dispute-reason">
+                <strong>Reason:</strong> {dispute.reason}
+              </div>
+
+              {dispute.resolution && (
+                <div className="dispute-resolution-text">
+                  <strong>Resolution:</strong> {dispute.resolution}
+                </div>
+              )}
+
+              {/* Expanded Actions */}
+              {expandedId === dispute.id &&
+                dispute.status !== 'resolved' &&
+                dispute.status !== 'withdrawn' && (
+                  <div className="dispute-actions">
+                    {dispute.status === 'open' && (
+                      <button
+                        className="action-btn review"
+                        onClick={() => handleStartReview(dispute.id)}
+                      >
+                        🔍 Start Review
+                      </button>
+                    )}
+
+                    {(dispute.status === 'open' || dispute.status === 'under_review') && (
+                      <>
+                        <div className="resolution-form">
+                          <textarea
+                            placeholder="Enter resolution notes..."
+                            value={resolutionText}
+                            onChange={(e) => setResolutionText(e.target.value)}
+                            rows={2}
+                          />
+                          <div className="adjustment-row">
+                            <select
+                              value={adjustmentType}
+                              onChange={(e) => setAdjustmentType(e.target.value as any)}
+                            >
+                              <option value="none">No Adjustment</option>
+                              <option value="credit">Credit Player</option>
+                              <option value="debit">Debit Player</option>
+                            </select>
+                            {adjustmentType !== 'none' && (
+                              <input
+                                type="number"
+                                placeholder="Amount"
+                                value={adjustmentAmount}
+                                onChange={(e) => setAdjustmentAmount(e.target.value)}
+                              />
+                            )}
+                          </div>
+                          <div className="resolution-actions">
+                            <button
+                              className="action-btn resolve"
+                              onClick={() => handleResolve(dispute.id)}
+                              disabled={resolving === dispute.id}
+                            >
+                              {resolving === dispute.id ? 'Resolving...' : '✓ Resolve'}
+                            </button>
+                            <button
+                              className="action-btn escalate"
+                              onClick={() => handleEscalate(dispute.id)}
+                            >
+                              🔴 Escalate
+                            </button>
+                          </div>
+                        </div>
+                      </>
+                    )}
+                  </div>
+                )}
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}

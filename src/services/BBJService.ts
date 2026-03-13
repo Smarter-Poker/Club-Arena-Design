@@ -326,6 +326,28 @@ export const BBJService = {
 
     if (error) {
       console.error('BBJService.recordContribution error:', error);
+      // P2-19: Raise CRITICAL alert — money was deducted from pot but never recorded in BBJ pool
+      try {
+        const { FinancialAlertService } = await import('./FinancialAlertService');
+        await FinancialAlertService.logCritical(
+          'BBJService.recordContribution',
+          `BBJ contribution recording FAILED — ${contribution} chips deducted from pot but not credited to pool`,
+          {
+            poolId: params.poolId,
+            handId: params.handId,
+            tableId: params.tableId,
+            clubId: clubId,
+            contribution,
+            mainPortion,
+            backupPortion,
+            promoPortion,
+            bigBlind: params.bigBlind,
+            error: error.message,
+          }
+        );
+      } catch {
+        /* best effort */
+      }
       return null;
     }
 

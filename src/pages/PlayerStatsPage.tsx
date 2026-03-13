@@ -6,7 +6,7 @@ import { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { masterBus } from '../core/MasterBus';
-import { useUserStore } from '../stores/useUserStore';
+import { useAuthUser } from '../hooks/useAuthUser';
 import { useToast } from '../components/common/Toast';
 import {
   AreaChart,
@@ -94,7 +94,7 @@ function useCountUpNumber(target: number, duration: number = 400) {
 
 export default function PlayerStatsPage() {
   const { userId } = useParams();
-  const { user } = useUserStore();
+  const { user } = useAuthUser();
 
   const targetUserId = userId || user?.id;
   const [stats, setStats] = useState<DetailedStats | null>(null);

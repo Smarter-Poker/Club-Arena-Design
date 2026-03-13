@@ -72,23 +72,59 @@ export const DIAMOND_PACKAGES: DiamondPackage[] = [
 
 export const DiamondService = {
   /**
-   * Get user's diamond wallet balance
+   * Get user's diamond wallet balance.
+   * Strategy: Try wallets table (DIAMOND type) first for Triple-Wallet alignment,
+   * then fall back to profiles.diamonds for backward compatibility.
+   * Also computes lifetimeEarned/lifetimeSpent from wallet_transactions.
    */
   async getBalance(userId: string): Promise<DiamondWallet> {
-    const { data, error } = await supabase
-      .from('profiles')
-      .select('diamonds')
-      .eq('id', userId)
+    // 1. Try wallets table (preferred — consistent with Triple-Wallet architecture)
+    const { data: walletData } = await supabase
+      .from('wallets')
+      .select('balance')
+      .eq('user_id', userId)
+      .eq('wallet_type', 'DIAMOND')
       .maybeSingle();
 
-    if (error || !data) {
-      return { balance: 0, lifetimeEarned: 0, lifetimeSpent: 0 };
+    let balance = walletData?.balance ?? null;
+
+    // 2. Fallback to profiles.diamonds if DIAMOND wallet doesn't exist yet
+    if (balance === null) {
+      const { data: profileData } = await supabase
+        .from('profiles')
+        .select('diamonds')
+        .eq('id', userId)
+        .maybeSingle();
+      balance = profileData?.diamonds || 0;
+    }
+
+    // 3. Compute lifetime stats from wallet_transactions (non-blocking)
+    let lifetimeEarned = 0;
+    let lifetimeSpent = 0;
+    try {
+      const { data: earnedData } = await supabase
+        .from('wallet_transactions')
+        .select('amount')
+        .eq('user_id', userId)
+        .eq('type', 'credit')
+        .in('category', ['diamond_purchase', 'diamond_reward', 'diamond_refund']);
+      lifetimeEarned = (earnedData || []).reduce((sum, t) => sum + Number(t.amount || 0), 0);
+
+      const { data: spentData } = await supabase
+        .from('wallet_transactions')
+        .select('amount')
+        .eq('user_id', userId)
+        .eq('type', 'debit')
+        .in('category', ['diamond_deduction', 'vip_purchase', 'mint']);
+      lifetimeSpent = (spentData || []).reduce((sum, t) => sum + Number(t.amount || 0), 0);
+    } catch {
+      // Non-blocking: lifetime stats are best-effort
     }
 
     return {
-      balance: data.diamonds || 0,
-      lifetimeEarned: 0,
-      lifetimeSpent: 0,
+      balance: balance || 0,
+      lifetimeEarned,
+      lifetimeSpent,
     };
   },
 
@@ -100,7 +136,14 @@ export const DiamondService = {
       .from('wallet_transactions')
       .select('id, type, amount, description, created_at')
       .eq('user_id', userId)
-      .in('category', ['diamond_purchase', 'diamond_deduction', 'vip_purchase', 'mint'])
+      .in('category', [
+        'diamond_purchase',
+        'diamond_deduction',
+        'vip_purchase',
+        'mint',
+        'diamond_reward',
+        'diamond_refund',
+      ])
       .order('created_at', { ascending: false })
       .limit(limit);
 
@@ -116,14 +159,21 @@ export const DiamondService = {
   },
 
   /**
-   * Purchase diamonds (calls backend RPC to credit balance)
-   * In production this would be behind a Stripe payment intent verification.
-   * For now, it directly credits via the fn_add_diamonds RPC.
+   * Purchase diamonds with Stripe payment verification.
+   *
+   * PRODUCTION FLOW:
+   *   1. Create Stripe PaymentIntent via Supabase edge function
+   *   2. Client confirms payment (Stripe.js)
+   *   3. Webhook / edge function verifies payment → credits diamonds
+   *
+   * DEVELOPMENT FALLBACK:
+   *   Directly calls fn_add_diamonds RPC (no real Stripe in dev)
    */
   async purchaseDiamonds(
     userId: string,
-    packageId: string
-  ): Promise<{ success: boolean; newBalance?: number; error?: string }> {
+    packageId: string,
+    paymentMethodId?: string
+  ): Promise<{ success: boolean; newBalance?: number; clientSecret?: string; error?: string }> {
     const pkg = DIAMOND_PACKAGES.find((p) => p.id === packageId);
     if (!pkg) {
       return { success: false, error: 'Invalid package' };
@@ -131,6 +181,53 @@ export const DiamondService = {
 
     const totalDiamonds = pkg.diamonds + pkg.bonusDiamonds;
 
+    // ── STRIPE FLOW: Try edge function first ──────────────────────────────
+    if (paymentMethodId) {
+      try {
+        const { data: intentData, error: intentError } = await supabase.functions.invoke(
+          'create-diamond-payment',
+          {
+            body: {
+              userId,
+              packageId,
+              paymentMethodId,
+              amount: pkg.priceUSD * 100, // Stripe uses cents
+              currency: 'usd',
+              diamonds: totalDiamonds,
+              description: `${pkg.name} (${pkg.diamonds}+${pkg.bonusDiamonds} bonus)`,
+            },
+          }
+        );
+
+        if (intentError) {
+          console.error('[DiamondService] Stripe edge function error:', intentError);
+          return { success: false, error: 'Payment processing failed. Please try again.' };
+        }
+
+        // Edge function returns clientSecret for client-side confirmation
+        // OR confirms server-side and returns the new balance
+        if (intentData?.requiresAction && intentData?.clientSecret) {
+          // Client needs to handle 3D Secure or other confirmation
+          return { success: true, clientSecret: intentData.clientSecret };
+        }
+
+        if (intentData?.success) {
+          masterBus.emit('DIAMOND_BALANCE_CHANGED', {
+            newBalance: intentData.newBalance || 0,
+            delta: totalDiamonds,
+            source: 'stripe_purchase',
+          });
+          return { success: true, newBalance: intentData.newBalance };
+        }
+
+        return { success: false, error: intentData?.error || 'Payment failed' };
+      } catch (stripeErr) {
+        console.warn('[DiamondService] Stripe flow unavailable, falling back to RPC:', stripeErr);
+        // Fall through to legacy RPC
+      }
+    }
+
+    // ── LEGACY / DEV FLOW: Direct RPC credit ──────────────────────────────
     const { data, error } = await retryAsync(
       () =>
         supabase.rpc('fn_add_diamonds', {
@@ -158,6 +255,37 @@ export const DiamondService = {
       success: data?.success ?? true,
       newBalance: data?.new_balance,
     };
+  },
+
+  /**
+   * Verify a Stripe payment (called after 3D Secure confirmation)
+   */
+  async verifyPayment(
+    userId: string,
+    paymentIntentId: string
+  ): Promise<{ success: boolean; newBalance?: number; error?: string }> {
+    try {
+      const { data, error } = await supabase.functions.invoke('verify-diamond-payment', {
+        body: { userId, paymentIntentId },
+      });
+
+      if (error) {
+        return { success: false, error: 'Payment verification failed' };
+      }
+
+      if (data?.success && data?.newBalance !== undefined) {
+        masterBus.emit('DIAMOND_BALANCE_CHANGED', {
+          newBalance: data.newBalance,
+          delta: data.diamondsAdded || 0,
+          source: 'stripe_verified',
+        });
+      }
+
+      return { success: data?.success, newBalance: data?.newBalance };
+    } catch (err) {
+      console.error('[DiamondService] verifyPayment error:', err);
+      return { success: false, error: 'Verification error' };
+    }
   },
 
   /**

@@ -10,7 +10,7 @@ import { AgentService } from '../services/AgentService';
 import type { Agent, AgentPlayer } from '../services/AgentService';
 import { CommissionService } from '../services/CommissionService';
 import type { CommissionSpread } from '../services/CommissionService';
-import { useUserStore } from '../stores/useUserStore';
+import { useAuthUser } from '../hooks/useAuthUser';
 import { useToast } from '../components/common/Toast';
 import CreditRequestWidget from '../components/agent/CreditRequestWidget';
 import PageSkeleton from '../components/common/PageSkeleton';
@@ -22,7 +22,7 @@ type DashboardTab = 'overview' | 'agents' | 'players' | 'commissions' | 'transfe
 export default function SuperAgentDashboard() {
   const navigate = useNavigate();
   const { clubId } = useParams();
-  const { user } = useUserStore();
+  const { user } = useAuthUser();
   const toast = useToast();
   useVisibilityRefresh(() => {
     if (clubId && user?.id) loadDashboardData();

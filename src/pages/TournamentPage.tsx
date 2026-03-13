@@ -15,7 +15,7 @@ import CreateTournamentModal from '../components/club/CreateTournamentModal';
 import './TournamentPage.css';
 import { supabase } from '../lib/supabase';
 import { masterBus } from '../core/MasterBus';
-import { useUserStore } from '../stores/useUserStore';
+import { useAuthUser } from '../hooks/useAuthUser';
 import EliminationOverlay from '../components/tournament/EliminationOverlay';
 import HandReplayViewer from '../components/gameplay/HandReplayViewer';
 import { tableService } from '../services/TableService';
@@ -31,7 +31,7 @@ const GUEST_USER = { id: 'guest', username: 'Guest' };
 export default function TournamentPage() {
   const { clubId, tournamentId } = useParams();
   const navigate = useNavigate();
-  const { user } = useUserStore();
+  const { user } = useAuthUser();
   const toast = useToast();
   const currentUser = user || GUEST_USER;
 

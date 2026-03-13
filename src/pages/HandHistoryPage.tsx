@@ -9,7 +9,7 @@ import { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { handHistoryService } from '../services/HandHistoryService';
 import type { HandRecord } from '../services/HandHistoryService';
-import { useUserStore } from '../stores/useUserStore';
+import { useAuthUser } from '../hooks/useAuthUser';
 import { useToast } from '../components/common/Toast';
 import { exportToCSV } from '../lib/export';
 import { supabase } from '../lib/supabase';
@@ -27,7 +27,7 @@ type HistoryFilter = 'all' | 'won' | 'lost' | 'big-pots';
 
 export default function HandHistoryPage() {
   const navigate = useNavigate();
-  const { user } = useUserStore();
+  const { user } = useAuthUser();
   const toast = useToast();
   useVisibilityRefresh(() => loadHands(true));
   const [hands, setHands] = useState<HandRecord[]>([]);

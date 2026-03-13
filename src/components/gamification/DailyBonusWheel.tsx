@@ -6,7 +6,7 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { supabase } from '../../lib/supabase';
-import { useUserStore } from '../../stores/useUserStore';
+import { useAuthUser } from '../../hooks/useAuthUser';
 import { useToast } from '../common/Toast';
 import './DailyBonusWheel.css';
 import { retryAsync } from '../../utils/retryAsync';
@@ -36,7 +36,7 @@ const WHEEL_PRIZES: WheelReward[] = [
 ];
 
 export function DailyBonusWheel({ isOpen, onClose, onReward }: DailyBonusWheelProps) {
-  const { user } = useUserStore();
+  const { user } = useAuthUser();
   const toast = useToast();
   const wheelRef = useRef<HTMLDivElement>(null);
 

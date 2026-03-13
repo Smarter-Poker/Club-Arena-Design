@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../../lib/supabase';
-import { useUserStore } from '../../stores/useUserStore';
+import { useAuthUser } from '../../hooks/useAuthUser';
 import './FavoriteTablesWidget.css';
 
 interface FavoriteTable {
@@ -19,7 +19,7 @@ interface FavoriteTablesWidgetProps {
 }
 
 export const FavoriteTablesWidget: React.FC<FavoriteTablesWidgetProps> = ({ onJoinTable }) => {
-  const { user } = useUserStore();
+  const { user } = useAuthUser();
   const [favorites, setFavorites] = useState<FavoriteTable[]>([]);
   const [loading, setLoading] = useState(true);
   const [visibleItems, setVisibleItems] = useState<Set<number>>(new Set());

@@ -7,7 +7,7 @@
  */
 
 import { useNavigate } from 'react-router-dom';
-import { useUserStore } from '../../stores/useUserStore';
+import { useAuthUser } from '../../hooks/useAuthUser';
 import { useWalletStore } from '../../stores/useWalletStore';
 import { notificationService } from '../../services/NotificationService';
 import { messagingService } from '../../services/MessagingService';
@@ -15,90 +15,87 @@ import { useState, useEffect } from 'react';
 import './SmarterHeader.css';
 
 interface SmarterHeaderProps {
-    showBackButton?: boolean;
-    backTo?: string;
-    title?: string;
+  showBackButton?: boolean;
+  backTo?: string;
+  title?: string;
 }
 
-export default function SmarterHeader({ showBackButton = true, backTo, title }: SmarterHeaderProps) {
-    const navigate = useNavigate();
-    const { user } = useUserStore();
-    const { diamonds } = useWalletStore();
-    const [unreadNotifications, setUnreadNotifications] = useState(0);
-    const [unreadMessages, setUnreadMessages] = useState(0);
+export default function SmarterHeader({
+  showBackButton = true,
+  backTo,
+  title,
+}: SmarterHeaderProps) {
+  const navigate = useNavigate();
+  const { user } = useAuthUser();
+  const { diamonds } = useWalletStore();
+  const [unreadNotifications, setUnreadNotifications] = useState(0);
+  const [unreadMessages, setUnreadMessages] = useState(0);
 
-    useEffect(() => {
-        if (user?.id) {
-            // Load unread counts
-            notificationService.getUnreadCount(user.id).then(setUnreadNotifications);
-            messagingService.getUnreadCount(user.id).then(setUnreadMessages);
-        }
-    }, [user?.id]);
+  useEffect(() => {
+    if (user?.id) {
+      // Load unread counts
+      notificationService.getUnreadCount(user.id).then(setUnreadNotifications);
+      messagingService.getUnreadCount(user.id).then(setUnreadMessages);
+    }
+  }, [user?.id]);
 
-    const handleBack = () => {
-        if (backTo) {
-            navigate(backTo);
-        } else {
-            navigate(-1);
-        }
-    };
+  const handleBack = () => {
+    if (backTo) {
+      navigate(backTo);
+    } else {
+      navigate(-1);
+    }
+  };
 
-    return (
-        <header className="smarter-header">
-            <div className="header-left">
-                {showBackButton && (
-                    <button className="hub-button" onClick={handleBack}>
-                        <span className="hub-arrow">←</span>
-                        <span className="hub-text">{backTo ? 'Hub' : 'Back'}</span>
-                    </button>
-                )}
-                <div className="header-brand">
-                    <img
-                        src={`${import.meta.env.BASE_URL}images/smarter-poker-logo.jpg`}
-                        alt="Smarter.Poker"
-                        className="brand-logo"
-                    />
-                    {title && <span className="header-title">{title}</span>}
-                </div>
-            </div>
+  return (
+    <header className="smarter-header">
+      <div className="header-left">
+        {showBackButton && (
+          <button className="hub-button" onClick={handleBack}>
+            <span className="hub-arrow">←</span>
+            <span className="hub-text">{backTo ? 'Hub' : 'Back'}</span>
+          </button>
+        )}
+        <div className="header-brand">
+          <img
+            src={`${import.meta.env.BASE_URL}images/smarter-poker-logo.jpg`}
+            alt="Smarter.Poker"
+            className="brand-logo"
+          />
+          {title && <span className="header-title">{title}</span>}
+        </div>
+      </div>
 
-            <div className="header-center">
-                {/* Diamonds */}
-                <div className="header-stat diamonds">
-                    <span className="stat-icon">◆</span>
-                    <span className="stat-value">{diamonds.toLocaleString()}</span>
-                    <button className="add-button">+</button>
-                </div>
+      <div className="header-center">
+        {/* Diamonds */}
+        <div className="header-stat diamonds">
+          <span className="stat-icon">◆</span>
+          <span className="stat-value">{diamonds.toLocaleString()}</span>
+          <button className="add-button">+</button>
+        </div>
+      </div>
 
-            </div>
+      <div className="header-right">
+        {/* Avatar */}
+        <button className="header-avatar" onClick={() => navigate('/profile')}>
+          {user?.avatar_url ? <img src={user.avatar_url} alt="" /> : <span>●</span>}
+        </button>
 
-            <div className="header-right">
-                {/* Avatar */}
-                <button className="header-avatar" onClick={() => navigate('/profile')}>
-                    {user?.avatar_url ? (
-                        <img src={user.avatar_url} alt="" />
-                    ) : (
-                        <span>●</span>
-                    )}
-                </button>
+        {/* Messages */}
+        <button className="header-icon-btn" onClick={() => navigate('/messages')}>
+          ◈{unreadMessages > 0 && <span className="badge">{unreadMessages}</span>}
+        </button>
 
-                {/* Messages */}
-                <button className="header-icon-btn" onClick={() => navigate('/messages')}>
-                    ◈
-                    {unreadMessages > 0 && <span className="badge">{unreadMessages}</span>}
-                </button>
+        {/* Notifications */}
+        <button className="header-icon-btn" onClick={() => navigate('/notifications')}>
+          ✱{unreadNotifications > 0 && <span className="badge">{unreadNotifications}</span>}
+        </button>
 
-                {/* Notifications */}
-                <button className="header-icon-btn" onClick={() => navigate('/notifications')}>
-                    ✱
-                    {unreadNotifications > 0 && <span className="badge">{unreadNotifications}</span>}
-                </button>
-
-                {/* Settings */}
-                <button className="header-icon-btn" onClick={() => navigate('/settings')}>
-                    ⚙
-                </button>
-            </div>
-        </header>
-    );
+        {/* Settings */}
+        <button className="header-icon-btn" onClick={() => navigate('/settings')}>
+          ⚙
+        </button>
+      </div>
+    </header>
+  );
 }

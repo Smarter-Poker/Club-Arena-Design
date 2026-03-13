@@ -6,6 +6,7 @@ import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useParams, useSearchParams } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { useUserStore } from '../stores/useUserStore';
+import { useAuthUser } from '../hooks/useAuthUser';
 import { masterBus } from '../core/MasterBus';
 import { useToast } from '../components/common/Toast';
 import { useVirtualScroll } from '../hooks/useVirtualScroll';
@@ -404,7 +405,7 @@ export default function ClubMembersPage() {
   const [searchParams] = useSearchParams();
   const { clubId: routeClubId } = useParams();
   const clubId = routeClubId || searchParams.get('club') || undefined;
-  const { user } = useUserStore();
+  const { user } = useAuthUser();
   const toast = useToast();
   useVisibilityRefresh(() => loadMembers());
 

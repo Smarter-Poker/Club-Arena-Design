@@ -1,0 +1,293 @@
+/**
+ * ═══════════════════════════════════════════════════════════════════════════════
+ *  FRIEND SUGGESTION SERVICE — "People You May Know" Algorithm
+ * ═══════════════════════════════════════════════════════════════════════════════
+ * Generates friend suggestions based on:
+ * - Shared club memberships
+ * - Mutual friends
+ * - Recent table opponents
+ */
+
+import { supabase } from '../lib/supabase';
+import { blockService } from './BlockService';
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// TYPES
+// ═══════════════════════════════════════════════════════════════════════════════
+
+export interface FriendSuggestion {
+  userId: string;
+  username: string;
+  displayName?: string;
+  avatarUrl?: string;
+  isOnline: boolean;
+  score: number;
+  reasons: SuggestionReason[];
+}
+
+export interface SuggestionReason {
+  type: 'mutual_friend' | 'shared_club' | 'recent_opponent';
+  label: string;
+  count?: number;
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// SERVICE CLASS
+// ═══════════════════════════════════════════════════════════════════════════════
+
+class FriendSuggestionServiceClass {
+  /**
+   * Get friend suggestions for a user
+   */
+  async getSuggestions(userId: string, limit: number = 10): Promise<FriendSuggestion[]> {
+    try {
+      // Parallel: get existing friends, blocked users, and candidates
+      const [friends, sharedClubUsers, recentOpponents] = await Promise.all([
+        this.getExistingFriendIds(userId),
+        this.getSharedClubUsers(userId),
+        this.getRecentOpponents(userId),
+      ]);
+
+      // Merge and score candidates
+      const candidates = new Map<string, FriendSuggestion>();
+
+      // Score shared club members (+3 each shared club)
+      for (const candidate of sharedClubUsers) {
+        if (candidate.userId === userId || friends.has(candidate.userId)) continue;
+
+        const existing = candidates.get(candidate.userId);
+        if (existing) {
+          existing.score += 3;
+          const clubReason = existing.reasons.find((r) => r.type === 'shared_club');
+          if (clubReason && clubReason.count) {
+            clubReason.count++;
+            clubReason.label = `${clubReason.count} shared clubs`;
+          }
+        } else {
+          candidates.set(candidate.userId, {
+            ...candidate,
+            score: 3,
+            reasons: [
+              {
+                type: 'shared_club',
+                label: `Member of ${candidate.clubName}`,
+                count: 1,
+              },
+            ],
+          });
+        }
+      }
+
+      // Score recent opponents (+2 each session)
+      for (const opponent of recentOpponents) {
+        if (opponent.userId === userId || friends.has(opponent.userId)) continue;
+
+        const existing = candidates.get(opponent.userId);
+        if (existing) {
+          existing.score += 2;
+          existing.reasons.push({
+            type: 'recent_opponent',
+            label: 'Played together recently',
+          });
+        } else {
+          candidates.set(opponent.userId, {
+            ...opponent,
+            score: 2,
+            reasons: [
+              {
+                type: 'recent_opponent',
+                label: 'Played together recently',
+              },
+            ],
+          });
+        }
+      }
+
+      // Filter out blocked users
+      const results: FriendSuggestion[] = [];
+      for (const suggestion of candidates.values()) {
+        const isBlocked = await blockService.isEitherBlocked(userId, suggestion.userId);
+        if (!isBlocked) {
+          results.push(suggestion);
+        }
+      }
+
+      // Sort by score descending
+      results.sort((a, b) => b.score - a.score);
+      return results.slice(0, limit);
+    } catch (err) {
+      console.error('[FriendSuggestions] getSuggestions error:', err);
+      return [];
+    }
+  }
+
+  /**
+   * Get IDs of existing friends
+   */
+  private async getExistingFriendIds(userId: string): Promise<Set<string>> {
+    const { data } = await supabase
+      .from('friendships')
+      .select('user_id, friend_id')
+      .or(`user_id.eq.${userId},friend_id.eq.${userId}`)
+      .eq('status', 'accepted');
+
+    const ids = new Set<string>();
+    (data || []).forEach((row: any) => {
+      ids.add(row.user_id === userId ? row.friend_id : row.user_id);
+    });
+    ids.add(userId); // exclude self
+    return ids;
+  }
+
+  /**
+   * Find users in the same clubs
+   */
+  private async getSharedClubUsers(
+    userId: string
+  ): Promise<(FriendSuggestion & { clubName: string })[]> {
+    // Get user's clubs
+    const { data: myClubs } = await supabase
+      .from('club_members')
+      .select('club_id, clubs(name)')
+      .eq('user_id', userId);
+
+    if (!myClubs || myClubs.length === 0) return [];
+
+    const clubIds = myClubs.map((c: any) => c.club_id);
+    const clubNames = new Map<string, string>();
+    myClubs.forEach((c: any) => {
+      clubNames.set(c.club_id, (c.clubs as any)?.name || 'Club');
+    });
+
+    // Get members of those clubs (excluding self)
+    const { data: members } = await supabase
+      .from('club_members')
+      .select(
+        `
+        user_id,
+        club_id,
+        profiles:user_id(username, display_name, avatar_url, is_online)
+      `
+      )
+      .in('club_id', clubIds)
+      .neq('user_id', userId)
+      .limit(100);
+
+    return (members || []).map((m: any) => ({
+      userId: m.user_id,
+      username: m.profiles?.username || 'Unknown',
+      displayName: m.profiles?.display_name,
+      avatarUrl: m.profiles?.avatar_url,
+      isOnline: m.profiles?.is_online || false,
+      score: 0,
+      reasons: [],
+      clubName: clubNames.get(m.club_id) || 'Club',
+    }));
+  }
+
+  /**
+   * Find recent table opponents (last 7 days)
+   */
+  private async getRecentOpponents(userId: string): Promise<FriendSuggestion[]> {
+    const sevenDaysAgo = new Date(Date.now() - 7 * 86400000).toISOString();
+
+    // Get tables user played at recently
+    const { data: myHands } = await supabase
+      .from('hand_players')
+      .select('hand_id')
+      .eq('user_id', userId)
+      .gte('created_at', sevenDaysAgo)
+      .limit(200);
+
+    if (!myHands || myHands.length === 0) return [];
+
+    const handIds = myHands.map((h: any) => h.hand_id);
+
+    // Get other players from those hands
+    const { data: opponents } = await supabase
+      .from('hand_players')
+      .select(
+        `
+        user_id,
+        profiles:user_id(username, display_name, avatar_url, is_online)
+      `
+      )
+      .in('hand_id', handIds)
+      .neq('user_id', userId)
+      .limit(50);
+
+    // Dedupe by user_id
+    const seen = new Set<string>();
+    return (opponents || [])
+      .filter((o: any) => {
+        if (seen.has(o.user_id)) return false;
+        seen.add(o.user_id);
+        return true;
+      })
+      .map((o: any) => ({
+        userId: o.user_id,
+        username: o.profiles?.username || 'Unknown',
+        displayName: o.profiles?.display_name,
+        avatarUrl: o.profiles?.avatar_url,
+        isOnline: o.profiles?.is_online || false,
+        score: 0,
+        reasons: [],
+      }));
+  }
+
+  /**
+   * Get mutual friends between two users
+   */
+  async getMutualFriends(
+    userId: string,
+    otherUserId: string
+  ): Promise<{ id: string; username: string; avatarUrl?: string }[]> {
+    try {
+      // Get friends of userId
+      const { data: myFriends } = await supabase
+        .from('friendships')
+        .select('user_id, friend_id')
+        .or(`user_id.eq.${userId},friend_id.eq.${userId}`)
+        .eq('status', 'accepted');
+
+      const myFriendIds = new Set<string>();
+      (myFriends || []).forEach((row: any) => {
+        myFriendIds.add(row.user_id === userId ? row.friend_id : row.user_id);
+      });
+
+      // Get friends of otherUserId
+      const { data: theirFriends } = await supabase
+        .from('friendships')
+        .select('user_id, friend_id')
+        .or(`user_id.eq.${otherUserId},friend_id.eq.${otherUserId}`)
+        .eq('status', 'accepted');
+
+      const theirFriendIds = new Set<string>();
+      (theirFriends || []).forEach((row: any) => {
+        theirFriendIds.add(row.user_id === otherUserId ? row.friend_id : row.user_id);
+      });
+
+      // Intersection
+      const mutualIds = [...myFriendIds].filter((id) => theirFriendIds.has(id));
+      if (mutualIds.length === 0) return [];
+
+      // Fetch profiles
+      const { data: profiles } = await supabase
+        .from('profiles')
+        .select('id, username, avatar_url')
+        .in('id', mutualIds);
+
+      return (profiles || []).map((p: any) => ({
+        id: p.id,
+        username: p.username,
+        avatarUrl: p.avatar_url,
+      }));
+    } catch (err) {
+      console.error('[FriendSuggestions] getMutualFriends error:', err);
+      return [];
+    }
+  }
+}
+
+// Export singleton
+export const friendSuggestionService = new FriendSuggestionServiceClass();

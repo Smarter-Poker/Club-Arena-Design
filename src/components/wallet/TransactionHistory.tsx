@@ -6,7 +6,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../../lib/supabase';
-import { useUserStore } from '../../stores/useUserStore';
+import { useAuthUser } from '../../hooks/useAuthUser';
 import { useToast } from '../common/Toast';
 import './TransactionHistory.css';
 
@@ -96,7 +96,7 @@ const CATEGORY_ICONS: Record<string, string> = {
 };
 
 export function TransactionHistory({ walletId, limit = 20 }: TransactionHistoryProps) {
-  const { user } = useUserStore();
+  const { user } = useAuthUser();
   const toast = useToast();
 
   const [transactions, setTransactions] = useState<Transaction[]>([]);

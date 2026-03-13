@@ -7,7 +7,7 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../../lib/supabase';
 import { masterBus } from '../../core/MasterBus';
-import { useUserStore } from '../../stores/useUserStore';
+import { useAuthUser } from '../../hooks/useAuthUser';
 import { useToast } from '../common/Toast';
 import './WaitlistManager.css';
 
@@ -28,7 +28,7 @@ interface WaitlistEntry {
 }
 
 export function WaitlistManager({ tableId, isAdmin, onSeatPlayer }: WaitlistManagerProps) {
-  const { user } = useUserStore();
+  const { user } = useAuthUser();
   const toast = useToast();
 
   const [waitlist, setWaitlist] = useState<WaitlistEntry[]>([]);

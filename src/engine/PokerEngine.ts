@@ -5,7 +5,15 @@
  * Hand evaluation, dealing, pot management
  */
 
-import type { Card, CardRank, CardSuit, SeatPlayer, ActionType } from '../types/database.types';
+import type {
+  Card,
+  CardRank,
+  CardSuit,
+  SeatPlayer,
+  ActionType,
+  GameVariant,
+} from '../types/database.types';
+import { secureShuffle } from './CryptoRandom';
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // CONSTANTS
@@ -65,11 +73,8 @@ export class Deck {
   }
 
   shuffle(): void {
-    // Fisher-Yates shuffle
-    for (let i = this.cards.length - 1; i > 0; i--) {
-      const j = Math.floor(Math.random() * (i + 1));
-      [this.cards[i], this.cards[j]] = [this.cards[j], this.cards[i]];
-    }
+    // Fisher-Yates shuffle with cryptographically secure random
+    secureShuffle(this.cards);
   }
 
   deal(count: number = 1): Card[] {
@@ -626,17 +631,73 @@ export interface RakeConfig {
   percent: number; // e.g., 5 for 5%
   cap: number; // Maximum rake per hand
   noFlop: boolean; // No rake if no flop
+  /** Optional: cap overrides by player count (e.g., heads-up gets lower cap) */
+  capByPlayerCount?: Record<number, number>;
 }
 
-export function calculateRake(pot: number, sawFlop: boolean, config: RakeConfig): number {
+export function calculateRake(
+  pot: number,
+  sawFlop: boolean,
+  config: RakeConfig,
+  playerCount?: number
+): number {
   if (pot <= 0 || config.percent <= 0) return 0;
   if (config.noFlop && !sawFlop) {
     return 0;
   }
 
+  // Use player-count-specific cap if available
+  let cap = config.cap;
+  if (playerCount && config.capByPlayerCount) {
+    cap = config.capByPlayerCount[playerCount] ?? config.cap;
+  }
+
   // Exact cent precision — no floating-point drift
   const rake = Math.trunc(pot * config.percent) / 100;
-  return Math.min(rake, config.cap);
+  return Math.min(rake, cap);
+}
+
+// ── Timed Rake (alternative to pot-based rake) ──────────────────────────────
+
+export interface TimedRakeConfig {
+  /** Rake amount per time interval */
+  amountPerInterval: number;
+  /** Interval in minutes */
+  intervalMinutes: number;
+  /** Grace period in minutes before first rake (default: 0) */
+  gracePeriodMinutes: number;
+}
+
+/**
+ * Calculate timed rake based on elapsed session time.
+ * Used as an alternative to pot-based rake — collects a flat fee per time period.
+ *
+ * @param sessionStartTime - When the player sat down (timestamp ms)
+ * @param lastRakeTime - When rake was last collected (timestamp ms)
+ * @param config - Timed rake configuration
+ * @returns Amount of rake due (0 if not yet time)
+ */
+export function calculateTimedRake(
+  sessionStartTime: number,
+  lastRakeTime: number,
+  config: TimedRakeConfig
+): number {
+  const now = Date.now();
+  const sessionElapsedMs = now - sessionStartTime;
+  const graceMs = config.gracePeriodMinutes * 60 * 1000;
+
+  // Still in grace period
+  if (sessionElapsedMs < graceMs) return 0;
+
+  const timeSinceLastRake = now - lastRakeTime;
+  const intervalMs = config.intervalMinutes * 60 * 1000;
+
+  // Not yet time for next collection
+  if (timeSinceLastRake < intervalMs) return 0;
+
+  // Calculate how many intervals have passed
+  const intervals = Math.floor(timeSinceLastRake / intervalMs);
+  return intervals * config.amountPerInterval;
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════

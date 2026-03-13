@@ -9,7 +9,7 @@ import { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { masterBus } from '../core/MasterBus';
-import { useUserStore } from '../stores/useUserStore';
+import { useAuthUser } from '../hooks/useAuthUser';
 import { useToast } from '../components/common/Toast';
 import ClubBottomNav from '../components/club/ClubBottomNav';
 import { sanitizeInput } from '../utils/sanitizeInput';
@@ -23,7 +23,7 @@ const rulesLineAnimationStyle = (index: number) => ({
 
 export default function ClubRulesPage() {
   const { clubId } = useParams<{ clubId: string }>();
-  const { user } = useUserStore();
+  const { user } = useAuthUser();
   const toast = useToast();
 
   const [rules, setRules] = useState('');

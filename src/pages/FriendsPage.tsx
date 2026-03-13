@@ -5,7 +5,7 @@
 import { useState, useEffect, useRef, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
-import { useUserStore } from '../stores/useUserStore';
+import { useAuthUser } from '../hooks/useAuthUser';
 import { masterBus } from '../core/MasterBus';
 import { useToast } from '../components/common/Toast';
 import FriendsList from '../components/social/FriendsList';
@@ -13,6 +13,7 @@ import RecentPlayers from '../components/social/RecentPlayers';
 import FriendActivityFeed from '../components/social/FriendActivityFeed';
 import InviteToTable from '../components/social/InviteToTable';
 import FriendChallengeModal from '../components/social/FriendChallengeModal';
+import FriendSuggestions from '../components/social/FriendSuggestions';
 import { useSwipeAction } from '../hooks/useSwipeAction';
 import './FriendsPage.css';
 import { useVisibilityRefresh } from '../hooks/useVisibilityRefresh';
@@ -31,7 +32,7 @@ type FriendsTab = 'friends' | 'pending' | 'recent';
 export default function FriendsPage() {
   const navigate = useNavigate();
   useVisibilityRefresh(() => loadFriends());
-  const { user } = useUserStore();
+  const { user } = useAuthUser();
   const toast = useToast();
 
   const [friends, setFriends] = useState<Friend[]>([]);
@@ -355,6 +356,9 @@ export default function FriendsPage() {
           </div>
         )}
       </div>
+
+      {/* Q3: Friend Suggestions - "People You May Know" */}
+      <FriendSuggestions />
 
       <div className="friends-tabs fr-chip-bar">
         <button

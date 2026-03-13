@@ -10,7 +10,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { masterBus } from '../core/MasterBus';
-import { useUserStore } from '../stores/useUserStore';
+import { useAuthUser } from '../hooks/useAuthUser';
 import { useToast } from '../components/common/Toast';
 import ClubBottomNav from '../components/club/ClubBottomNav';
 import MessageThread from '../components/messaging/MessageThread';
@@ -35,7 +35,7 @@ export default function ClubMessagesPage() {
     conversationId?: string;
     clubId?: string;
   }>();
-  const { user } = useUserStore();
+  const { user } = useAuthUser();
   const toast = useToast();
 
   const [conversations, setConversations] = useState<ClubConversation[]>([]);

@@ -6,7 +6,7 @@ import { useState, useEffect, useRef, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { masterBus } from '../core/MasterBus';
-import { useUserStore } from '../stores/useUserStore';
+import { useAuthUser } from '../hooks/useAuthUser';
 import { useToast } from '../components/common/Toast';
 import { PremiumSFX } from '../services/PremiumSFX';
 import { haptic } from '../services/HapticService';
@@ -49,7 +49,7 @@ interface Notification {
 
 export default function NotificationsPage() {
   const navigate = useNavigate();
-  const { user } = useUserStore();
+  const { user } = useAuthUser();
   const toast = useToast();
   useVisibilityRefresh(() => loadNotifications());
   const [notifications, setNotifications] = useState<Notification[]>([]);

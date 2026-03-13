@@ -1,0 +1,106 @@
+/**
+ * ═══════════════════════════════════════════════════════════════════════════════
+ *  FRIEND SUGGESTIONS — "People You May Know" Widget
+ * ═══════════════════════════════════════════════════════════════════════════════
+ * Horizontal scroll of suggestion cards with shared context
+ */
+
+import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+import {
+  friendSuggestionService,
+  type FriendSuggestion,
+} from '../../services/FriendSuggestionService';
+import { useAuthUser } from '../../hooks/useAuthUser';
+import { supabase } from '../../lib/supabase';
+import { useToast } from '../common/Toast';
+import styles from './FriendSuggestions.module.css';
+
+export default function FriendSuggestions() {
+  const navigate = useNavigate();
+  const { user } = useAuthUser();
+  const toast = useToast();
+
+  const [suggestions, setSuggestions] = useState<FriendSuggestion[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [dismissed, setDismissed] = useState<Set<string>>(new Set());
+  const [sendingRequest, setSendingRequest] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!user?.id) return;
+    friendSuggestionService
+      .getSuggestions(user.id, 12)
+      .then(setSuggestions)
+      .finally(() => setLoading(false));
+  }, [user?.id]);
+
+  const handleAddFriend = async (userId: string) => {
+    if (!user?.id) return;
+    setSendingRequest(userId);
+    try {
+      const { error } = await supabase.from('friendships').insert({
+        user_id: user.id,
+        friend_id: userId,
+        status: 'pending',
+      });
+      if (error) throw error;
+      toast.success('Friend request sent!');
+      setDismissed((prev) => new Set(prev).add(userId));
+    } catch {
+      toast.error('Failed to send request');
+    }
+    setSendingRequest(null);
+  };
+
+  const handleDismiss = (userId: string) => {
+    setDismissed((prev) => new Set(prev).add(userId));
+  };
+
+  const visible = suggestions.filter((s) => !dismissed.has(s.userId));
+
+  if (loading || visible.length === 0) return null;
+
+  return (
+    <div className={styles.container}>
+      <h3 className={styles.title}>👥 People You May Know</h3>
+      <div className={styles.scrollContainer}>
+        {visible.map((suggestion) => (
+          <div key={suggestion.userId} className={styles.card}>
+            <button
+              className={styles.dismissBtn}
+              onClick={(e) => {
+                e.stopPropagation();
+                handleDismiss(suggestion.userId);
+              }}
+            >
+              ✕
+            </button>
+            <img
+              src={suggestion.avatarUrl || '/default-avatar.png'}
+              alt={suggestion.username}
+              className={styles.avatar}
+              onClick={() => navigate(`/profile/${suggestion.userId}`)}
+              onError={(e) => {
+                (e.target as HTMLImageElement).src = '/default-avatar.png';
+              }}
+            />
+            <span className={styles.name} onClick={() => navigate(`/profile/${suggestion.userId}`)}>
+              {suggestion.displayName || suggestion.username}
+            </span>
+            <span className={styles.reason}>
+              {suggestion.reasons[0]?.label || 'Suggested for you'}
+            </span>
+            {suggestion.isOnline && <span className={styles.onlineDot} />}
+            <button
+              className={styles.addBtn}
+              onClick={() => handleAddFriend(suggestion.userId)}
+              disabled={sendingRequest === suggestion.userId}
+            >
+              {sendingRequest === suggestion.userId ? '...' : '+ Add Friend'}
+            </button>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}

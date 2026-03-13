@@ -3,7 +3,7 @@ import { WalletService } from '../../services/WalletService';
 import { CommissionService } from '../../services/CommissionService';
 import { supabase } from '../../lib/supabase';
 import { masterBus } from '../../core/MasterBus';
-import { useUserStore } from '../../stores/useUserStore';
+import { useAuthUser } from '../../hooks/useAuthUser';
 import { useToast } from '../common/Toast';
 import {
   AreaChart,
@@ -49,7 +49,7 @@ const commissionDistribution = [
 ];
 
 export const ClubFinancialDashboard: React.FC<FinancialDashboardProps> = ({ clubId }) => {
-  const { user } = useUserStore();
+  const { user } = useAuthUser();
   const toast = useToast();
   const [diamondBalance, setDiamondBalance] = useState(0);
   const [mintAmount, setMintAmount] = useState(1000);

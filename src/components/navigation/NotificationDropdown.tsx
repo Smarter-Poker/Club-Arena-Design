@@ -8,7 +8,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { supabase } from '../../lib/supabase';
 import { masterBus } from '../../core/MasterBus';
-import { useUserStore } from '../../stores/useUserStore';
+import { useAuthUser } from '../../hooks/useAuthUser';
 import styles from './NotificationDropdown.module.css';
 
 interface Notification {
@@ -26,7 +26,7 @@ interface NotificationDropdownProps {
 }
 
 export default function NotificationDropdown({ onNavigate }: NotificationDropdownProps) {
-  const { user } = useUserStore();
+  const { user } = useAuthUser();
   const [isOpen, setIsOpen] = useState(false);
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);

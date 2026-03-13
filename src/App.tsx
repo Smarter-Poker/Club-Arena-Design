@@ -98,6 +98,10 @@ const NotificationCenter = lazy(() => import('./pages/NotificationCenter'));
 const BusDevToolsPage = lazy(() => import('./pages/BusDevToolsPage'));
 const FinancialAlertsPage = lazy(() => import('./pages/FinancialAlertsPage'));
 
+// Q3: Social, Messaging & Discovery Pages
+const PublicProfilePage = lazy(() => import('./pages/PublicProfilePage'));
+const NewConversationPage = lazy(() => import('./pages/NewConversationPage'));
+
 // Shared/Public Pages
 const HandReplayerPage = lazy(() => import('./pages/share/HandReplayerPage'));
 
@@ -652,6 +656,16 @@ export default function App() {
                   }
                 />
                 <Route
+                  path="profile/:userId"
+                  element={
+                    <AuthGuard>
+                      <PageErrorBoundary pageName="Public Profile">
+                        <PublicProfilePage />
+                      </PageErrorBoundary>
+                    </AuthGuard>
+                  }
+                />
+                <Route
                   path="settings"
                   element={
                     <AuthGuard>
@@ -705,6 +719,26 @@ export default function App() {
                 />
                 <Route
                   path="messages"
+                  element={
+                    <AuthGuard>
+                      <PageErrorBoundary pageName="Messages">
+                        <MessagesPage />
+                      </PageErrorBoundary>
+                    </AuthGuard>
+                  }
+                />
+                <Route
+                  path="messages/new"
+                  element={
+                    <AuthGuard>
+                      <PageErrorBoundary pageName="New Message">
+                        <NewConversationPage />
+                      </PageErrorBoundary>
+                    </AuthGuard>
+                  }
+                />
+                <Route
+                  path="messages/:conversationId"
                   element={
                     <AuthGuard>
                       <PageErrorBoundary pageName="Messages">

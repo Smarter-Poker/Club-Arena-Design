@@ -22,7 +22,7 @@ import { useState, useEffect, useCallback, useMemo, useRef, ReactNode } from 're
 import { useNavigate, useSearchParams, useParams } from 'react-router-dom';
 import { masterBus } from '../core/MasterBus';
 import { useWalletStore } from '../stores/useWalletStore';
-import { useUserStore } from '../stores/useUserStore';
+import { useAuthUser } from '../hooks/useAuthUser';
 import { WalletService } from '../services/WalletService';
 import { ChipFlowService } from '../services/ChipFlowService';
 import { cashoutService } from '../services/CashoutService';
@@ -127,7 +127,7 @@ export default function CashierPage() {
   const tableId = searchParams.get('table');
   const clubId = routeClubId || searchParams.get('club');
 
-  const { user } = useUserStore();
+  const { user } = useAuthUser();
   const vipInfo = useVIPStatus();
   const { balances, diamonds, mintChips, loadBalances } = useWalletStore();
   const toast = useToast();

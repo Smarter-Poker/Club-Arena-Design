@@ -9,7 +9,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import styles from './CreateUnionPage.module.css';
 import { supabase } from '../lib/supabase';
-import { useUserStore } from '../stores/useUserStore';
+import { useAuthUser } from '../hooks/useAuthUser';
 import { useToast } from '../components/common/Toast';
 import { masterBus } from '../core/MasterBus';
 import { sanitizeInput } from '../utils/sanitizeInput';
@@ -52,7 +52,7 @@ const DEFAULT_FORM: UnionFormData = {
 
 export default function CreateUnionPage() {
   const navigate = useNavigate();
-  const { user } = useUserStore();
+  const { user } = useAuthUser();
   const toast = useToast();
   const [step, setStep] = useState(1);
   const [form, setForm] = useState<UnionFormData>(DEFAULT_FORM);

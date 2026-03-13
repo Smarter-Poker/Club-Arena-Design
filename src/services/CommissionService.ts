@@ -109,6 +109,21 @@ export const CommissionService = {
       throw new Error('Rate cannot be negative');
     }
 
+    // P2-17/20: Read old rate for audit trail before upserting
+    let oldRate = 0;
+    try {
+      const { data: existing } = await supabase
+        .from('commission_structures')
+        .select('rate')
+        .eq('club_id', clubId)
+        .eq('agent_id', agentId)
+        .eq('target_role', targetRole)
+        .maybeSingle();
+      oldRate = existing?.rate ?? 0;
+    } catch {
+      /* first time set — oldRate stays 0 */
+    }
+
     const { data, error } = await supabase
       .from('commission_structures')
       .upsert(
@@ -126,6 +141,23 @@ export const CommissionService = {
       .maybeSingle();
 
     if (error) throw error;
+
+    // P2-17/20: Log the rate change for audit trail (non-blocking)
+    if (oldRate !== rate) {
+      try {
+        const { FinancialCronService } = await import('./FinancialCronService');
+        await FinancialCronService.logRateChange({
+          agentId,
+          changedBy: setBy,
+          oldRate,
+          newRate: rate,
+          rateType: targetRole as 'commission' | 'sub_agent' | 'player',
+          clubId,
+        });
+      } catch {
+        /* non-blocking */
+      }
+    }
     if (!data) throw new Error('Commission rate upsert returned no data');
     return {
       id: data.id,
@@ -302,8 +334,19 @@ export const CommissionService = {
     }, 2);
 
     if (error) throw error;
+
+    // Fetch the payout record for accurate bus event data
+    const { data: payout } = await supabase
+      .from('commission_payouts')
+      .select('agent_id, net_payout')
+      .eq('id', payoutId)
+      .maybeSingle();
+
     // Notify listening pages (ClubFinancialsPage) that a commission was paid
-    masterBus.emit('COMMISSION_PAID', { agentId: payoutId, amount: 0 });
+    masterBus.emit('COMMISSION_PAID', {
+      agentId: payout?.agent_id || payoutId,
+      amount: payout?.net_payout || 0,
+    });
     return true;
   },
 

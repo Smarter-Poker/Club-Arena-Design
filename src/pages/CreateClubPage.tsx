@@ -9,7 +9,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import styles from './CreateClubPage.module.css';
 import { supabase } from '../lib/supabase';
-import { useUserStore } from '../stores/useUserStore';
+import { useAuthUser } from '../hooks/useAuthUser';
 import ClubPromotionRulesModal from '../components/modals/ClubPromotionRulesModal';
 import { ClubService } from '../services/ClubService';
 import { masterBus } from '../core/MasterBus';
@@ -497,7 +497,7 @@ const Step5Preview = ({ form, hasAgreed, setHasAgreed, onShowRules }: Step5Props
 
 export default function CreateClubPage() {
   const navigate = useNavigate();
-  const { user } = useUserStore();
+  const { user } = useAuthUser();
   const [step, setStep] = useState(1);
   const [form, setForm] = useState<ClubFormData>(DEFAULT_FORM);
   const [creating, setCreating] = useState(false);

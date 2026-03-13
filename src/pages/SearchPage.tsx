@@ -8,6 +8,7 @@ import { useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { masterBus } from '../core/MasterBus';
 import { useToast } from '../components/common/Toast';
+import { useAuthUser } from '../hooks/useAuthUser';
 import './SearchPage.css';
 
 type SearchCategory = 'all' | 'clubs' | 'players' | 'tables';
@@ -30,6 +31,31 @@ export default function SearchPage() {
   const [recentSearches, setRecentSearches] = useState<string[]>([]);
   const [visibleResults, setVisibleResults] = useState(new Set<number>());
   const [searchFocused, setSearchFocused] = useState(false);
+  const { user } = useAuthUser();
+  const [friendAdded, setFriendAdded] = useState<Set<string>>(new Set());
+
+  // Add friend action (inline on search results)
+  const handleAddFriend = async (e: React.MouseEvent, playerId: string) => {
+    e.stopPropagation();
+    if (!user?.id) return;
+    try {
+      const { error } = await supabase.from('friendships').insert({
+        user_id: user.id,
+        friend_id: playerId,
+        status: 'pending',
+      });
+      if (error && error.code !== '23505') throw error;
+      setFriendAdded((prev) => new Set(prev).add(playerId));
+      toast.success('Friend request sent!');
+    } catch {
+      toast.error('Failed to send request');
+    }
+  };
+
+  const handleMessagePlayer = (e: React.MouseEvent, playerId: string) => {
+    e.stopPropagation();
+    navigate(`/profile/${playerId}`);
+  };
 
   useEffect(() => {
     const saved = localStorage.getItem('recentSearches');
@@ -360,7 +386,30 @@ export default function SearchPage() {
                   <span className="result-name">{result.name}</span>
                   {result.subtitle && <span className="result-subtitle">{result.subtitle}</span>}
                 </div>
-                <span className="result-type">{result.type}</span>
+                {result.type === 'player' && result.id !== user?.id ? (
+                  <div className="result-actions" onClick={(e) => e.stopPropagation()}>
+                    {friendAdded.has(result.id) ? (
+                      <span className="friend-sent-badge">✓ Sent</span>
+                    ) : (
+                      <button
+                        className="inline-add-btn"
+                        onClick={(e) => handleAddFriend(e, result.id)}
+                        title="Add Friend"
+                      >
+                        👥+
+                      </button>
+                    )}
+                    <button
+                      className="inline-msg-btn"
+                      onClick={(e) => handleMessagePlayer(e, result.id)}
+                      title="Message"
+                    >
+                      ✉
+                    </button>
+                  </div>
+                ) : (
+                  <span className="result-type">{result.type}</span>
+                )}
               </div>
             ))}
           </div>

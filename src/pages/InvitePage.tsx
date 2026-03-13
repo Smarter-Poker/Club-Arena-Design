@@ -5,7 +5,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
-import { useUserStore } from '../stores/useUserStore';
+import { useAuthUser } from '../hooks/useAuthUser';
 import { clubService } from '../services/ClubService';
 import { MembershipService } from '../services/MembershipService';
 import { useToast } from '../components/common/Toast';
@@ -33,7 +33,7 @@ export default function InvitePage() {
   const { clubId } = useParams();
   const [searchParams] = useSearchParams();
   const inviteCode = searchParams.get('code');
-  const { user } = useUserStore();
+  const { user } = useAuthUser();
 
   const [club, setClub] = useState<ClubInfo | null>(null);
   const [loading, setLoading] = useState(true);

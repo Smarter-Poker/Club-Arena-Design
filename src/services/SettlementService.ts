@@ -361,10 +361,41 @@ export const SettlementService = {
         console.error(`[Settlement] CRITICAL: Failed to pay agent ${settlement.agent_id}:`, err);
         // Do NOT revert to 'approved' if it was a network drop. The atomic RPC guarantees consistency.
         // It stays in 'processing' so it doesn't get double-paid and can be manually reconciled.
+        const errMsg = err instanceof Error ? err.message : String(err);
         await supabase
           .from('agent_settlements')
-          .update({ notes: `Payout failed or timed out: ${err}` })
+          .update({
+            notes: `Payout failed or timed out: ${errMsg}`,
+            updated_at: new Date().toISOString(),
+          })
           .eq('id', settlement.id);
+
+        // Raise CRITICAL financial alert for ops dashboard visibility
+        try {
+          const { FinancialAlertService } = await import('./FinancialAlertService');
+          await FinancialAlertService.logCritical(
+            'SettlementService.executeMondayPayouts',
+            `Agent settlement payout STUCK in 'processing' — manual reconciliation required`,
+            {
+              settlementId: settlement.id,
+              agentId: settlement.agent_id,
+              netSettlement: settlement.net_settlement,
+              periodId,
+              error: errMsg,
+            }
+          );
+        } catch {
+          /* best effort — already logged to console */
+        }
+
+        // Emit bus event so admin dashboards show the stuck payout
+        masterBus.emit('SETTLEMENT_PAYOUT_FAILED', {
+          settlementId: settlement.id,
+          agentId: settlement.agent_id,
+          amount: settlement.net_settlement,
+          periodId,
+          error: errMsg,
+        });
       }
     }
 
@@ -489,15 +520,20 @@ export const SettlementService = {
       p_end: periodEnd,
     });
 
-    // Since we don't have the RPC perfectly mapped right now, we'll just log 0 to reserve the execution lock
-    // and let the loop do the real math.
+    // Pre-compute total rakeback from the rake query so the idempotency guard
+    // records the real expected amount (prevents permanent lockout on crash).
+    const estimatedTotalRake = Array.isArray(earlyRakeData)
+      ? earlyRakeData.reduce((sum: number, r: any) => sum + Number(r.rake_amount || 0), 0)
+      : Number(earlyRakeData?.total_rake || 0);
+    const estimatedRakeBack = Math.trunc(estimatedTotalRake * 0.9 * 100) / 100;
+
     const { data: canExecute, error: execErr } = await supabase.rpc(
       'verify_and_log_union_rakeback',
       {
         p_union_id: unionId,
         p_period_start: periodStart,
         p_period_end: periodEnd,
-        p_total_rakeback: 0,
+        p_total_rakeback: estimatedRakeBack,
       }
     );
 

@@ -11,7 +11,7 @@ import { getLocalStorage, setLocalStorage } from '../lib/storage';
 import { unionService, type Union, type UnionClub } from '../services/UnionService';
 import { tableService } from '../services/TableService';
 import { clubService } from '../services/ClubService';
-import { useUserStore } from '../stores/useUserStore';
+import { useAuthUser } from '../hooks/useAuthUser';
 import { presenceService } from '../services/PresenceService';
 import { supabase } from '../lib/supabase';
 import { masterBus } from '../core/MasterBus';
@@ -52,7 +52,7 @@ interface FinancialSummary {
 
 export default function UnionDetailPage() {
   const { unionId } = useParams<{ unionId: string }>();
-  const { user } = useUserStore();
+  const { user } = useAuthUser();
   const toast = useToast();
 
   const [union, setUnion] = useState<Union | null>(null);

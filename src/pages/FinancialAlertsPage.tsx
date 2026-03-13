@@ -10,11 +10,11 @@ import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '../lib/supabase';
 import { masterBus } from '../core/MasterBus';
 import { FinancialAlertService, FinancialAlert } from '../services/FinancialAlertService';
-import { useUserStore } from '../stores/useUserStore';
+import { useAuthUser } from '../hooks/useAuthUser';
 import './FinancialAlertsPage.css';
 
 export default function FinancialAlertsPage() {
-  const { user } = useUserStore();
+  const { user } = useAuthUser();
   const [alerts, setAlerts] = useState<FinancialAlert[]>([]);
   const [loading, setLoading] = useState(true);
   const [resolving, setResolving] = useState<string | null>(null);

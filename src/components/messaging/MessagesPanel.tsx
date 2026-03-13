@@ -8,7 +8,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { supabase } from '../../lib/supabase';
 import { masterBus } from '../../core/MasterBus';
-import { useUserStore } from '../../stores/useUserStore';
+import { useAuthUser } from '../../hooks/useAuthUser';
 import styles from './MessagesPanel.module.css';
 
 interface Conversation {
@@ -35,7 +35,7 @@ interface MessagesPanelProps {
 }
 
 export default function MessagesPanel({ initialConversationId, onClose }: MessagesPanelProps) {
-  const { user } = useUserStore();
+  const { user } = useAuthUser();
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [selectedConvo, setSelectedConvo] = useState<Conversation | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);

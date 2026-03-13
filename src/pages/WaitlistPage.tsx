@@ -7,7 +7,7 @@ import { useNavigate } from 'react-router-dom';
 import { waitlistService, type WaitlistEntry as ServiceEntry } from '../services/WaitlistService';
 import { supabase } from '../lib/supabase';
 import { masterBus } from '../core/MasterBus';
-import { useUserStore } from '../stores/useUserStore';
+import { useAuthUser } from '../hooks/useAuthUser';
 import { useToast } from '../components/common/Toast';
 import { haptic } from '../services/HapticService';
 import './WaitlistPage.css';
@@ -31,7 +31,7 @@ interface WaitlistEntry {
 
 export default function WaitlistPage() {
   const navigate = useNavigate();
-  const { user } = useUserStore();
+  const { user } = useAuthUser();
   const toast = useToast();
 
   const [entries, setEntries] = useState<WaitlistEntry[]>([]);

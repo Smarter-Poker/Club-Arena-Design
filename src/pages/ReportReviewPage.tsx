@@ -6,7 +6,7 @@ import { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { masterBus } from '../core/MasterBus';
-import { useUserStore } from '../stores/useUserStore';
+import { useAuthUser } from '../hooks/useAuthUser';
 import { useToast } from '../components/common/Toast';
 import { sanitizeInput } from '../utils/sanitizeInput';
 import PageSkeleton from '../components/common/PageSkeleton';
@@ -36,7 +36,7 @@ interface PlayerReport {
 
 export default function ReportReviewPage() {
   const { clubId } = useParams();
-  const { user } = useUserStore();
+  const { user } = useAuthUser();
   const toast = useToast();
 
   const [reports, setReports] = useState<PlayerReport[]>([]);

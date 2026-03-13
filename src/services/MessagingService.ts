@@ -466,6 +466,271 @@ class MessagingServiceClass {
 
     return !error;
   }
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // MESSAGE SEARCH
+  // ═══════════════════════════════════════════════════════════════════════════
+
+  /**
+   * Search messages within a conversation
+   */
+  async searchMessages(
+    conversationId: string,
+    query: string,
+    limit: number = 50
+  ): Promise<Message[]> {
+    if (!query.trim()) return [];
+
+    const { data, error } = await supabase
+      .from('messages')
+      .select(
+        `
+        *,
+        sender:sender_id(display_name, avatar_url)
+      `
+      )
+      .eq('conversation_id', conversationId)
+      .ilike('content', `%${query}%`)
+      .order('created_at', { ascending: false })
+      .limit(limit);
+
+    if (error) {
+      console.error('[Messaging] Search failed:', error);
+      return [];
+    }
+
+    return (data || []).map((m) => ({
+      id: m.id,
+      conversationId: m.conversation_id,
+      senderId: m.sender_id,
+      senderName: (m.sender as Record<string, unknown>)?.display_name as string,
+      senderAvatar: (m.sender as Record<string, unknown>)?.avatar_url as string,
+      content: m.content,
+      isRead: m.is_read,
+      createdAt: m.created_at,
+    }));
+  }
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // GROUP CHAT
+  // ═══════════════════════════════════════════════════════════════════════════
+
+  /**
+   * Create a group conversation
+   */
+  async createGroupConversation(
+    creatorId: string,
+    participantIds: string[],
+    name: string
+  ): Promise<Conversation | null> {
+    const allParticipants = [creatorId, ...participantIds.filter((id) => id !== creatorId)];
+
+    const { data, error } = await supabase
+      .from('conversations')
+      .insert({
+        participant_ids: allParticipants,
+        name,
+        is_group: true,
+        created_by: creatorId,
+      })
+      .select()
+      .maybeSingle();
+
+    if (error) {
+      console.error('[Messaging] Failed to create group:', error);
+      return null;
+    }
+
+    // Create conversation_participants entries
+    const participantInserts = allParticipants.map((uid) => ({
+      conversation_id: data.id,
+      user_id: uid,
+      role: uid === creatorId ? 'admin' : 'member',
+    }));
+
+    await supabase.from('conversation_participants').insert(participantInserts);
+
+    masterBus.emit('CONVERSATION_CREATED', {
+      conversationId: data.id,
+      isGroup: true,
+    });
+
+    const convs = await this.getConversations(creatorId);
+    return convs.find((c) => c.id === data.id) || null;
+  }
+
+  /**
+   * Add participant to group conversation
+   */
+  async addParticipant(conversationId: string, userId: string): Promise<boolean> {
+    try {
+      // Add to participant_ids array
+      const { data: conv } = await supabase
+        .from('conversations')
+        .select('participant_ids')
+        .eq('id', conversationId)
+        .maybeSingle();
+
+      if (!conv) return false;
+
+      const ids = conv.participant_ids as string[];
+      if (ids.includes(userId)) return true; // already in
+
+      const { error } = await supabase
+        .from('conversations')
+        .update({ participant_ids: [...ids, userId] })
+        .eq('id', conversationId);
+
+      if (error) return false;
+
+      // Create conversation_participants entry
+      await supabase.from('conversation_participants').insert({
+        conversation_id: conversationId,
+        user_id: userId,
+        role: 'member',
+      });
+
+      return true;
+    } catch {
+      return false;
+    }
+  }
+
+  /**
+   * Remove participant from group conversation
+   */
+  async removeParticipant(conversationId: string, userId: string): Promise<boolean> {
+    try {
+      const { data: conv } = await supabase
+        .from('conversations')
+        .select('participant_ids')
+        .eq('id', conversationId)
+        .maybeSingle();
+
+      if (!conv) return false;
+
+      const ids = (conv.participant_ids as string[]).filter((id) => id !== userId);
+
+      const { error } = await supabase
+        .from('conversations')
+        .update({ participant_ids: ids })
+        .eq('id', conversationId);
+
+      if (error) return false;
+
+      await supabase
+        .from('conversation_participants')
+        .delete()
+        .eq('conversation_id', conversationId)
+        .eq('user_id', userId);
+
+      return true;
+    } catch {
+      return false;
+    }
+  }
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // CONVERSATION PINNING
+  // ═══════════════════════════════════════════════════════════════════════════
+
+  /**
+   * Pin a conversation for a user
+   */
+  async pinConversation(conversationId: string, userId: string): Promise<boolean> {
+    const { error } = await supabase
+      .from('conversation_participants')
+      .update({ is_pinned: true })
+      .eq('conversation_id', conversationId)
+      .eq('user_id', userId);
+
+    if (!error) {
+      masterBus.emit('CONVERSATION_PINNED', { conversationId });
+    }
+    return !error;
+  }
+
+  /**
+   * Unpin a conversation for a user
+   */
+  async unpinConversation(conversationId: string, userId: string): Promise<boolean> {
+    const { error } = await supabase
+      .from('conversation_participants')
+      .update({ is_pinned: false })
+      .eq('conversation_id', conversationId)
+      .eq('user_id', userId);
+
+    if (!error) {
+      masterBus.emit('CONVERSATION_UNPINNED', { conversationId });
+    }
+    return !error;
+  }
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // MESSAGE FORWARDING
+  // ═══════════════════════════════════════════════════════════════════════════
+
+  /**
+   * Forward a message to another conversation
+   */
+  async forwardMessage(
+    messageId: string,
+    targetConversationId: string,
+    senderId: string
+  ): Promise<Message | null> {
+    // Get original message
+    const { data: original } = await supabase
+      .from('messages')
+      .select('content, image_url, audio_url')
+      .eq('id', messageId)
+      .maybeSingle();
+
+    if (!original) {
+      console.error('[Messaging] Original message not found for forward');
+      return null;
+    }
+
+    // Get receiver from target conversation
+    const { data: targetConv } = await supabase
+      .from('conversations')
+      .select('participant_ids')
+      .eq('id', targetConversationId)
+      .maybeSingle();
+
+    const receiverId =
+      (targetConv?.participant_ids as string[])?.find((id) => id !== senderId) || null;
+
+    const { data, error } = await supabase
+      .from('messages')
+      .insert({
+        conversation_id: targetConversationId,
+        sender_id: senderId,
+        receiver_id: receiverId,
+        content: `↪ ${original.content || ''}`.trim(),
+        image_url: original.image_url,
+        audio_url: original.audio_url,
+        is_forwarded: true,
+      })
+      .select()
+      .maybeSingle();
+
+    if (error || !data) {
+      console.error('[Messaging] Forward failed:', error);
+      return null;
+    }
+
+    // Update target conversation's last message
+    await supabase
+      .from('conversations')
+      .update({
+        last_message: `↪ ${(original.content || '').substring(0, 80)}`,
+        last_message_time: new Date().toISOString(),
+        last_message_user_id: senderId,
+      })
+      .eq('id', targetConversationId);
+
+    return await this.mapMessage(data);
+  }
 }
 
 // Reaction type

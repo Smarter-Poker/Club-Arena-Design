@@ -5,7 +5,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { supabase } from '../lib/supabase';
 import { masterBus } from '../core/MasterBus';
-import { useUserStore } from '../stores/useUserStore';
+import { useAuthUser } from '../hooks/useAuthUser';
 import {
   vipService,
   VIP_GOLD_LIMITS,
@@ -24,7 +24,7 @@ import { useToast } from '../components/common/Toast';
 import './VIPPage.css';
 
 export default function VIPPage() {
-  const { user } = useUserStore();
+  const { user } = useAuthUser();
   const toast = useToast();
 
   const [isVIP, setIsVIP] = useState(false);

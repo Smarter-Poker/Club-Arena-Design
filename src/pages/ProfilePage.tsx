@@ -10,7 +10,7 @@
 import { useState, useEffect, useMemo, lazy, Suspense, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
-import { useUserStore } from '../stores/useUserStore';
+import { useAuthUser } from '../hooks/useAuthUser';
 import { LoadingState } from '../components/common/EmptyState';
 import DailyBonusWheel from '../components/bonus/DailyBonusWheel';
 import FriendListPanel from '../components/social/FriendListPanel';
@@ -211,7 +211,7 @@ export default function ProfilePage() {
   }, []);
 
   const toast = useToast();
-  const { user: storeUser } = useUserStore();
+  const { user: storeUser } = useAuthUser();
   const [activeTab, setActiveTab] = useState<'stats' | 'achievements' | 'history' | 'social'>(
     'stats'
   );

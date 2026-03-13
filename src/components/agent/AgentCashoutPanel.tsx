@@ -7,7 +7,7 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { cashoutService, CashoutRequest } from '../../services/CashoutService';
-import { useUserStore } from '../../stores/useUserStore';
+import { useAuthUser } from '../../hooks/useAuthUser';
 import { masterBus } from '../../core/MasterBus';
 import { supabase } from '../../lib/supabase';
 import './AgentCashoutPanel.css';
@@ -18,7 +18,7 @@ interface AgentCashoutPanelProps {
 }
 
 export default function AgentCashoutPanel({ clubId, onCashoutProcessed }: AgentCashoutPanelProps) {
-  const { user } = useUserStore();
+  const { user } = useAuthUser();
   const [cashouts, setCashouts] = useState<CashoutRequest[]>([]);
   const [loading, setLoading] = useState(true);
   const [processing, setProcessing] = useState<string | null>(null);

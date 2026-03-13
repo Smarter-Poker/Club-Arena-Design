@@ -8,7 +8,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../../lib/supabase';
-import { useUserStore } from '../../stores/useUserStore';
+import { useAuthUser } from '../../hooks/useAuthUser';
 import { vipService, FEATURE_PRICING } from '../../services/VIPService';
 import { showDiamondTopUp } from '../common/DiamondTopUpToast';
 import { useToast } from '../common/Toast';
@@ -64,7 +64,7 @@ export default function PlayerNotesPanel({
   onClose,
   compact = false,
 }: PlayerNotesPanelProps) {
-  const { user } = useUserStore();
+  const { user } = useAuthUser();
   const [notes, setNotes] = useState<PlayerNote[]>([]);
   const [currentNote, setCurrentNote] = useState('');
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
