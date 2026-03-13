@@ -40,30 +40,36 @@ export const AgentFinancialPortal: React.FC<AgentPortalProps> = ({ agentId }) =>
   const fetchCommissionHistory = async () => {
     // Fetch last 7 days of commission data
     const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
-    const { data } = await supabase
-      .from('commission_ledger')
-      .select('amount, created_at')
-      .eq('agent_id', agentId)
-      .gte('created_at', new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString())
-      .order('created_at', { ascending: true });
+    try {
+      const { data, error } = await supabase
+        .from('commission_ledger')
+        .select('amount, created_at')
+        .eq('agent_id', agentId)
+        .gte('created_at', new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString())
+        .order('created_at', { ascending: true });
 
-    if (data && data.length > 0) {
-      // Group by day
-      const grouped: Record<string, number> = {};
-      data.forEach((d: any) => {
-        const day = new Date(d.created_at).toLocaleDateString('en-US', { weekday: 'short' });
-        grouped[day] = (grouped[day] || 0) + (d.amount || 0);
-      });
-      setCommissionData(days.map((d) => ({ name: d, rake: 0, commissions: grouped[d] || 0 })));
-    } else {
-      // No commission data yet — show zeros (not fake data)
-      setCommissionData(
-        days.map((d) => ({
-          name: d,
-          rake: 0,
-          commissions: 0,
-        }))
-      );
+      if (error) throw error;
+
+      if (data && data.length > 0) {
+        // Group by day
+        const grouped: Record<string, number> = {};
+        data.forEach((d: any) => {
+          const day = new Date(d.created_at).toLocaleDateString('en-US', { weekday: 'short' });
+          grouped[day] = (grouped[day] || 0) + (d.amount || 0);
+        });
+        setCommissionData(days.map((d) => ({ name: d, rake: 0, commissions: grouped[d] || 0 })));
+      } else {
+        // No commission data yet — show zeros
+        setCommissionData(
+          days.map((d) => ({
+            name: d,
+            rake: 0,
+            commissions: 0,
+          }))
+        );
+      }
+    } catch (err) {
+      console.error('Failed to load commission history:', err);
     }
   };
 
@@ -179,7 +185,7 @@ export const AgentFinancialPortal: React.FC<AgentPortalProps> = ({ agentId }) =>
           <div
             className="bg-red-500 h-4 transition-all duration-500"
             style={{
-              width: `${Math.min(((wallet.creditLimit - wallet.agentBal) / wallet.creditLimit) * 100, 100)}%`,
+              width: `${wallet.creditLimit > 0 ? Math.min(((wallet.creditLimit - wallet.agentBal) / wallet.creditLimit) * 100, 100) : 0}%`,
             }}
           />
         </div>
