@@ -9,7 +9,7 @@
  * Data source: Aggregated from session_history and player_position_stats
  */
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import { supabase } from '../../lib/supabase';
 import {
   playerStyleClassifier,
@@ -31,6 +31,14 @@ export default function PlayerStyleRadar({ userId }: PlayerStyleRadarProps) {
   const [axes, setAxes] = useState<RadarAxis[]>([]);
   const [style, setStyle] = useState<PlayerStyleResult | null>(null);
   const [loading, setLoading] = useState(true);
+  const isMounted = useRef(true);
+
+  useEffect(() => {
+    isMounted.current = true;
+    return () => {
+      isMounted.current = false;
+    };
+  }, []);
 
   useEffect(() => {
     if (!userId) return;
@@ -56,8 +64,8 @@ export default function PlayerStyleRadar({ userId }: PlayerStyleRadarProps) {
         const pos = posStats || [];
 
         if (sess.length === 0 && pos.length === 0) {
-          setAxes([]);
-          setLoading(false);
+          if (isMounted.current) setAxes([]);
+          if (isMounted.current) setLoading(false);
           return;
         }
 
@@ -95,7 +103,7 @@ export default function PlayerStyleRadar({ userId }: PlayerStyleRadarProps) {
           { label: 'Bluff Freq', value: Math.round(bluffFreq), color: '#ec4899' },
         ];
 
-        setAxes(radarAxes);
+        if (isMounted.current) setAxes(radarAxes);
 
         // Classify overall style
         const totalPosHands = pos.reduce((s, r) => s + r.hands_played, 0);
@@ -103,19 +111,21 @@ export default function PlayerStyleRadar({ userId }: PlayerStyleRadarProps) {
         const totalPosPFR = pos.reduce((s, r) => s + r.pfr_count, 0);
         const total3Bet = pos.reduce((s, r) => s + r.three_bet_count, 0);
 
-        setStyle(
-          playerStyleClassifier.classify({
-            handsPlayed: totalPosHands || totalHands,
-            vpipCount: totalPosVPIP || Math.round((avgVPIP / 100) * totalHands),
-            pfrCount: totalPosPFR || Math.round((avgPFR / 100) * totalHands),
-            threeBetCount: total3Bet,
-          })
-        );
+        if (isMounted.current) {
+          setStyle(
+            playerStyleClassifier.classify({
+              handsPlayed: totalPosHands || totalHands,
+              vpipCount: totalPosVPIP || Math.round((avgVPIP / 100) * totalHands),
+              pfrCount: totalPosPFR || Math.round((avgPFR / 100) * totalHands),
+              threeBetCount: total3Bet,
+            })
+          );
+        }
       } catch (err) {
         console.error('[PlayerStyleRadar] Error:', err);
-        setAxes([]);
+        if (isMounted.current) setAxes([]);
       } finally {
-        setLoading(false);
+        if (isMounted.current) setLoading(false);
       }
     })();
   }, [userId]);

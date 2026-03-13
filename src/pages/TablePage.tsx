@@ -112,12 +112,14 @@ import { monteCarloEquity } from '../engine/MonteCarloEquity';
 import './TablePage.css';
 import SessionSummary from '../components/table/SessionSummary';
 import { SessionHUD } from '../components/table/SessionHUD';
+import { sessionStatsService } from '../services/SessionStatsService';
 import { BombPotOverlay } from '../components/table/BombPotOverlay';
 import { ConnectionHUD } from '../components/table/ConnectionHUD';
 import { QuickChatPresets } from '../components/table/QuickChatPresets';
 import { TableErrorBoundary } from '../components/common/TableErrorBoundary';
 import { FinalTableOverlay } from '../components/tournament/FinalTableOverlay';
 import { HeadsUpOverlay } from '../components/tournament/HeadsUpOverlay';
+import { EmotePanel } from '../components/table/EmotePanel';
 // Phase 8-9 Premium Components
 import { QuickActionsBar } from '../components/table/QuickActionsBar';
 import { SpectatorOverlay } from '../components/table/SpectatorOverlay';
@@ -635,6 +637,7 @@ export default function TablePage({
 
   // Tip Dealer state
   const [showTipDealer, setShowTipDealer] = useState(false);
+  const [showEmotePanel, setShowEmotePanel] = useState(false);
 
   // Straddle state
   const [isStraddleEnabled, setIsStraddleEnabled] = useState(false);
@@ -802,6 +805,8 @@ export default function TablePage({
       masterBus.emit('CHIPS_WITHDRAWN', { tableId, userId, amount, newStack: newStack });
     } catch (error) {
       console.error('Failed to withdraw chips:', error);
+      const msg = error instanceof Error ? error.message : 'Failed to withdraw chips';
+      toast.error(msg);
     }
   };
 
@@ -2836,6 +2841,11 @@ export default function TablePage({
             // Track wins — check if hero is in the winners list
             if (userId && winnerInfo.playerIds.some((pid) => pid === userId)) {
               handsWonRef.current += 1;
+              // Trigger confetti on big wins (pot > 10x BB)
+              const bb = parseFloat(tableState.blinds.split('/')[1]) || 2;
+              if ((event.pot || 0) > bb * 10) {
+                setShowConfetti(true);
+              }
             }
             // Use event.pot (authoritative HC value) — currentState.pot is already 0
             // because WINNERS handler sets pot: 0 before HAND_COMPLETE fires
@@ -2845,6 +2855,20 @@ export default function TablePage({
             }
             if (heroEndStack > peakStackRef.current) {
               peakStackRef.current = heroEndStack;
+            }
+
+            // Feed SessionStatsService for trajectory graph + VPIP/PFR analytics
+            const heroWon = userId ? winnerInfo.playerIds.some((pid) => pid === userId) : false;
+            // Determine VPIP/PFR from hand actions (hero voluntarily put chips in preflop / raised preflop)
+            const heroActions = handActionsRef.current.filter(
+              (a: any) => a.playerId === userId && a.street === 'preflop'
+            );
+            const heroVPIP = heroActions.some((a: any) =>
+              ['call', 'raise', 'bet'].includes(a.action)
+            );
+            const heroPFR = heroActions.some((a: any) => a.action === 'raise');
+            if (tableId) {
+              sessionStatsService.recordHand(tableId, heroEndStack, heroWon, heroVPIP, heroPFR);
             }
           }
 
@@ -3938,6 +3962,33 @@ export default function TablePage({
               onOpenSettings={() => setShowSettings(true)}
             />
 
+            {/* Emote button */}
+            <button
+              className="emote-trigger-btn"
+              onClick={() => setShowEmotePanel(true)}
+              title="Send reaction"
+              style={{
+                position: 'absolute',
+                bottom: 90,
+                right: 12,
+                width: 40,
+                height: 40,
+                borderRadius: '50%',
+                background: 'rgba(255,255,255,0.1)',
+                border: '1px solid rgba(255,255,255,0.2)',
+                color: '#fff',
+                fontSize: 20,
+                cursor: 'pointer',
+                zIndex: 20,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                backdropFilter: 'blur(8px)',
+              }}
+            >
+              😀
+            </button>
+
             {tableState.currentPlayerSeat === tableState.heroSeat && tableState.isHandInProgress
               ? (() => {
                   const handState = handControllerRef.current?.getState();
@@ -4319,8 +4370,23 @@ export default function TablePage({
         onEventComplete={handleThrowComplete}
       />
 
-      {/* Win Confetti — disabled (cheesy and annoying on repeated wins) */}
-      {/* <ConfettiCanvas active={showConfetti} duration={3500} count={55} onComplete={() => setShowConfetti(false)} /> */}
+      {/* Win Confetti — fires on big wins (pot > 10x BB) */}
+      <ConfettiCanvas
+        active={showConfetti}
+        duration={3500}
+        count={55}
+        onComplete={() => setShowConfetti(false)}
+      />
+
+      {/* Emote Panel — table reactions */}
+      <EmotePanel
+        isOpen={showEmotePanel}
+        onClose={() => setShowEmotePanel(false)}
+        onEmote={(emoteId) => {
+          masterBus.emit('TABLE_EMOTE', { tableId: tableId ?? '', userId: userId ?? '', emoteId });
+          setShowEmotePanel(false);
+        }}
+      />
 
       {/* Tip Dealer Modal */}
       <TipDealer

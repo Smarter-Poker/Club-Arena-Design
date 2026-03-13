@@ -7,7 +7,7 @@
  * Pure SVG rendering — no chart library dependency.
  */
 
-import { useState, useEffect, useMemo, useCallback } from 'react';
+import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { supabase } from '../../lib/supabase';
 import './PerformanceTrends.css';
 
@@ -28,6 +28,14 @@ export default function PerformanceTrends({ userId }: PerformanceTrendsProps) {
   const [sessions, setSessions] = useState<SessionRecord[]>([]);
   const [range, setRange] = useState<TimeRange>('30d');
   const [loading, setLoading] = useState(true);
+  const isMounted = useRef(true);
+
+  useEffect(() => {
+    isMounted.current = true;
+    return () => {
+      isMounted.current = false;
+    };
+  }, []);
 
   useEffect(() => {
     if (!userId) return;
@@ -48,15 +56,15 @@ export default function PerformanceTrends({ userId }: PerformanceTrendsProps) {
 
         if (error) {
           console.warn('[PerformanceTrends] Fetch error:', error.message);
-          setSessions([]);
+          if (isMounted.current) setSessions([]);
         } else {
-          setSessions(data || []);
+          if (isMounted.current) setSessions(data || []);
         }
       } catch (err) {
         console.error('[PerformanceTrends] Error:', err);
-        setSessions([]);
+        if (isMounted.current) setSessions([]);
       } finally {
-        setLoading(false);
+        if (isMounted.current) setLoading(false);
       }
     })();
   }, [userId, range]);

@@ -47,6 +47,7 @@ export type BusEventType =
   | 'NOTIFICATION_READ'
   | 'WAITLIST_POSITION_CHANGED'
   | 'SESSION_SUMMARY_DISMISSED'
+  | 'TABLE_EMOTE'
   // Phase 5: Daily challenge game events
   | 'HAND_COMPLETED'
   | 'HAND_WON'
@@ -202,6 +203,7 @@ export interface BusPayloadMap {
   NOTIFICATION_READ: { notifId: string | null; allRead: boolean };
   WAITLIST_POSITION_CHANGED: { tableId: string; position: number; tableName: string };
   SESSION_SUMMARY_DISMISSED: { tableId: string };
+  TABLE_EMOTE: { tableId: string; userId: string; emoteId: string };
   // Gameplay events — strict payload types (#7)
   HAND_WON: { handId: string; winners: string[]; pot: number };
   HAND_COMPLETED: { handId: string; tableId: string };

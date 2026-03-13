@@ -4,8 +4,9 @@
  * ═══════════════════════════════════════════════════════════════════════════════
  */
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { supabase } from '../../lib/supabase';
+import { masterBus } from '../../core/MasterBus';
 import './PlayerActivityFeed.css';
 
 interface ActivityItem {
@@ -44,12 +45,8 @@ export default function PlayerActivityFeed({ userId }: PlayerActivityFeedProps) 
     };
   }, []);
 
-  useEffect(() => {
+  const loadActivity = useCallback(async () => {
     if (!userId) return;
-    loadActivity();
-  }, [userId]);
-
-  const loadActivity = async () => {
     setLoading(true);
     try {
       const feed: ActivityItem[] = [];
@@ -142,7 +139,33 @@ export default function PlayerActivityFeed({ userId }: PlayerActivityFeedProps) 
       console.error('[PlayerActivityFeed] load error:', err);
     }
     if (isMounted.current) setLoading(false);
-  };
+  }, [userId]);
+
+  // Load on mount and when userId changes
+  useEffect(() => {
+    if (!userId) return;
+    loadActivity();
+  }, [userId, loadActivity]);
+
+  // Auto-refresh when gamification events fire
+  useEffect(() => {
+    const unsubs = [
+      masterBus.subscribe('MISSION_CLAIMED', () => {
+        setTimeout(loadActivity, 1500);
+      }),
+      masterBus.subscribe('DAILY_REWARD_CLAIMED', () => {
+        setTimeout(loadActivity, 1500);
+      }),
+      masterBus.subscribe('WHEEL_SPIN_RESULT', () => {
+        setTimeout(loadActivity, 1500);
+      }),
+    ];
+    return () => {
+      unsubs.forEach((u) => {
+        if (typeof u === 'function') u();
+      });
+    };
+  }, [loadActivity]);
 
   if (loading) {
     return (

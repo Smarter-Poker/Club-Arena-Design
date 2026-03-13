@@ -10,10 +10,12 @@
 import { masterBus } from '../core/MasterBus';
 import { OfflineQueueService } from './OfflineQueueService';
 import { SettlementCronService } from './SettlementCronService';
+import { AutoRebuyService } from './AutoRebuyService';
 
 export interface BootResult {
   offlineQueue: boolean;
   settlementCron: boolean;
+  autoRebuy: boolean;
   timestamp: string;
 }
 
@@ -28,12 +30,18 @@ export async function bootServices(options?: {
 }): Promise<BootResult> {
   if (booted) {
     console.debug('[ServiceBootstrap] Already booted — skipping');
-    return { offlineQueue: true, settlementCron: true, timestamp: new Date().toISOString() };
+    return {
+      offlineQueue: true,
+      settlementCron: true,
+      autoRebuy: true,
+      timestamp: new Date().toISOString(),
+    };
   }
 
   const result: BootResult = {
     offlineQueue: false,
     settlementCron: false,
+    autoRebuy: false,
     timestamp: new Date().toISOString(),
   };
 
@@ -57,6 +65,15 @@ export async function bootServices(options?: {
     }
   }
 
+  // 3. Auto-Rebuy Service — monitors horse stacks across all tables
+  try {
+    AutoRebuyService.start();
+    result.autoRebuy = true;
+    console.debug('[ServiceBootstrap] ✓ AutoRebuyService started');
+  } catch (err) {
+    console.error('[ServiceBootstrap] ✗ AutoRebuyService failed:', err);
+  }
+
   booted = true;
 
   // Emit ready event so UI can react
@@ -64,6 +81,7 @@ export async function bootServices(options?: {
     services: {
       offlineQueue: result.offlineQueue,
       settlementCron: result.settlementCron,
+      autoRebuy: result.autoRebuy,
     } as Record<string, boolean>,
     timestamp: result.timestamp,
   });
@@ -78,6 +96,7 @@ export async function bootServices(options?: {
 export function shutdownServices(): void {
   OfflineQueueService.dispose();
   SettlementCronService.stop();
+  AutoRebuyService.stop();
   booted = false;
   console.debug('[ServiceBootstrap] Services shut down');
 }

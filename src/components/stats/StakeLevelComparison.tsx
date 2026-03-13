@@ -7,7 +7,7 @@
  * win rate, avg session P/L, VPIP, PFR, total hands, total profit.
  */
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import { supabase } from '../../lib/supabase';
 import './StakeLevelComparison.css';
 
@@ -42,6 +42,14 @@ interface StakeGroup {
 export default function StakeLevelComparison({ userId }: StakeLevelComparisonProps) {
   const [records, setRecords] = useState<SessionRecord[]>([]);
   const [loading, setLoading] = useState(true);
+  const isMounted = useRef(true);
+
+  useEffect(() => {
+    isMounted.current = true;
+    return () => {
+      isMounted.current = false;
+    };
+  }, []);
 
   useEffect(() => {
     if (!userId) return;
@@ -60,15 +68,15 @@ export default function StakeLevelComparison({ userId }: StakeLevelComparisonPro
 
         if (error) {
           console.warn('[StakeLevelComparison] Fetch error:', error.message);
-          setRecords([]);
+          if (isMounted.current) setRecords([]);
         } else {
-          setRecords(data || []);
+          if (isMounted.current) setRecords(data || []);
         }
       } catch (err) {
         console.error('[StakeLevelComparison] Error:', err);
-        setRecords([]);
+        if (isMounted.current) setRecords([]);
       } finally {
-        setLoading(false);
+        if (isMounted.current) setLoading(false);
       }
     })();
   }, [userId]);

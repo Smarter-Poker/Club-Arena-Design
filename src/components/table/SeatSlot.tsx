@@ -219,7 +219,7 @@ export const SeatSlot = memo(
       showHUD = false,
       playerStyle,
       deckStyle = '4color',
-      cardBack = 'classic_blue',
+      cardBack = 'black',
       showStackInBB = false,
       onSit,
       onAction,

@@ -6,6 +6,7 @@
 
 import { useState } from 'react';
 import { supabase } from '../../lib/supabase';
+import { masterBus } from '../../core/MasterBus';
 import { useToast } from '../common/Toast';
 import './FriendChallengeModal.css';
 
@@ -87,6 +88,13 @@ export default function FriendChallengeModal({
       });
 
       if (error) throw error;
+      masterBus.emit('NOTIFICATION_RECEIVED', {
+        notification: {
+          type: 'friend_challenge_sent',
+          title: 'Challenge Sent',
+          message: `You challenged ${challengeeName} to ${challenge.label}!`,
+        },
+      });
       toast.success(`Challenge sent to ${challengeeName}!`);
       onClose();
     } catch (err: any) {

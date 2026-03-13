@@ -33,6 +33,9 @@ export default function OnlineFriendsPill({ userId, onFriendClick }: OnlineFrien
   useEffect(() => {
     if (!userId) return;
     loadOnlineFriends();
+    // Refresh every 60 seconds to keep online status current
+    const interval = setInterval(loadOnlineFriends, 60_000);
+    return () => clearInterval(interval);
   }, [userId]);
 
   const loadOnlineFriends = async () => {
