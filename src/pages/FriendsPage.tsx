@@ -12,6 +12,7 @@ import FriendsList from '../components/social/FriendsList';
 import RecentPlayers from '../components/social/RecentPlayers';
 import FriendActivityFeed from '../components/social/FriendActivityFeed';
 import InviteToTable from '../components/social/InviteToTable';
+import FriendChallengeModal from '../components/social/FriendChallengeModal';
 import { useSwipeAction } from '../hooks/useSwipeAction';
 import './FriendsPage.css';
 import { useVisibilityRefresh } from '../hooks/useVisibilityRefresh';
@@ -42,6 +43,7 @@ export default function FriendsPage() {
   const [visibleFriendRows, setVisibleFriendRows] = useState(new Set<number>());
   const [visiblePendingRows, setVisiblePendingRows] = useState(new Set<number>());
   const [searchFocused, setSearchFocused] = useState(false);
+  const [challengeTarget, setChallengeTarget] = useState<{ id: string; name: string } | null>(null);
   const loadFriendsRef = useRef(async () => {});
 
   useEffect(() => {
@@ -432,6 +434,9 @@ export default function FriendsPage() {
                           visible={visibleFriendRows.has(filteredFriends.indexOf(friend))}
                           onMessage={() => navigate(`/messages/new?userId=${friend.user_id}`)}
                           onRemove={() => removeFriend(friend.id)}
+                          onChallenge={() =>
+                            setChallengeTarget({ id: friend.user_id, name: friend.username })
+                          }
                           navigate={navigate}
                         />
                       ))}
@@ -451,6 +456,9 @@ export default function FriendsPage() {
                           visible={visibleFriendRows.has(filteredFriends.indexOf(friend))}
                           onMessage={() => navigate(`/messages/new?userId=${friend.user_id}`)}
                           onRemove={() => removeFriend(friend.id)}
+                          onChallenge={() =>
+                            setChallengeTarget({ id: friend.user_id, name: friend.username })
+                          }
                           navigate={navigate}
                         />
                       ))}
@@ -518,11 +526,22 @@ export default function FriendsPage() {
           />
         </div>
       )}
+
+      {/* Friend Challenge Modal */}
+      {user?.id && challengeTarget && (
+        <FriendChallengeModal
+          isOpen={!!challengeTarget}
+          onClose={() => setChallengeTarget(null)}
+          challengerId={user.id}
+          challengeeId={challengeTarget.id}
+          challengeeName={challengeTarget.name}
+        />
+      )}
     </div>
   );
 }
 
-function SwipeableFriendRow({ friend, visible, onMessage, onRemove, navigate }: any) {
+function SwipeableFriendRow({ friend, visible, onMessage, onRemove, onChallenge, navigate }: any) {
   const { handlers, rowStyle, offset, reset } = useSwipeAction({
     actionWidth: 80,
     threshold: 40,
@@ -582,8 +601,28 @@ function SwipeableFriendRow({ friend, visible, onMessage, onRemove, navigate }: 
         </div>
         <div className="friend-info">
           <span className="friend-name">{friend.username}</span>
-          {/* fr-at-table-badge reserved for future current_table data */}
         </div>
+        <button
+          className="fr-challenge-btn"
+          onClick={(e) => {
+            e.stopPropagation();
+            onChallenge?.();
+          }}
+          title="Challenge"
+          style={{
+            background: 'rgba(0, 212, 255, 0.1)',
+            border: '1px solid rgba(0, 212, 255, 0.2)',
+            borderRadius: '8px',
+            padding: '4px 8px',
+            color: '#00d4ff',
+            fontSize: '0.65rem',
+            fontWeight: 700,
+            cursor: 'pointer',
+            flexShrink: 0,
+          }}
+        >
+          Challenge
+        </button>
       </div>
     </div>
   );

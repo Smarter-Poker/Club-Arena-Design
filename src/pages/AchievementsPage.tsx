@@ -665,10 +665,25 @@ export default function AchievementsPage() {
                   {new Date(selectedAchievement.unlockedAt || Date.now()).toLocaleDateString()}
                 </p>
                 <button
-                  onClick={() => {
+                  onClick={async () => {
                     const ach = selectedAchievement;
-                    setSelectedAchievement(null);
-                    setTimeout(() => setSharingAchievement(ach), 300);
+                    const shareText = `I just unlocked "${ach.name}" on Smarter.Poker! ${ach.description}`;
+                    try {
+                      if (navigator.share) {
+                        await navigator.share({
+                          title: `Achievement: ${ach.name}`,
+                          text: shareText,
+                          url: 'https://smarter.poker',
+                        });
+                      } else {
+                        await navigator.clipboard.writeText(shareText);
+                        toast?.success('Achievement copied to clipboard!');
+                      }
+                    } catch (_err) {
+                      // User cancelled share or clipboard failed — show share card fallback
+                      setSelectedAchievement(null);
+                      setTimeout(() => setSharingAchievement(ach), 300);
+                    }
                   }}
                   style={{
                     width: '100%',
@@ -683,7 +698,7 @@ export default function AchievementsPage() {
                     boxShadow: '0 4px 15px rgba(0, 212, 255, 0.4)',
                   }}
                 >
-                  📤 Share Achievement
+                  Share Achievement
                 </button>
               </>
             ) : (
