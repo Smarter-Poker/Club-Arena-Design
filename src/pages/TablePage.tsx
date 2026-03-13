@@ -357,19 +357,25 @@ export default function TablePage({
 
   useEffect(() => {
     async function initUser() {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
-      if (user) {
-        if (isMounted.current) setUserId(user.id);
-        const { data: profile } = await supabase
-          .from('profiles')
-          .select('display_name, username')
-          .eq('id', user.id)
-          .maybeSingle();
-        if (isMounted.current) setUsername(profile?.display_name || profile?.username || 'Player');
+      try {
+        const {
+          data: { user },
+        } = await supabase.auth.getUser();
+        if (user) {
+          if (isMounted.current) setUserId(user.id);
+          const { data: profile } = await supabase
+            .from('profiles')
+            .select('display_name, username')
+            .eq('id', user.id)
+            .maybeSingle();
+          if (isMounted.current)
+            setUsername(profile?.display_name || profile?.username || 'Player');
+        }
+      } catch (err) {
+        console.error('Failed to init user:', err);
+      } finally {
+        if (isMounted.current) setIsLoading(false);
       }
-      if (isMounted.current) setIsLoading(false);
     }
     initUser();
 
