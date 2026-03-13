@@ -18,6 +18,7 @@ import { WalletService } from './WalletService';
 import { masterBus } from '../core/MasterBus';
 import type { EvaluatedHand } from '../engine/PokerEngine';
 import { retryAsync } from '../utils/retryAsync';
+import { resolveClubUUID } from '../utils/clubIdResolver';
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // TYPES
@@ -203,7 +204,7 @@ export const BBJService = {
     if (unionId) {
       query = query.eq('union_id', unionId);
     } else if (clubId) {
-      query = query.eq('club_id', clubId);
+      query = query.eq('club_id', await resolveClubUUID(clubId));
     } else {
       console.error('BBJService.getPool: Must provide unionId or clubId');
       return null;
