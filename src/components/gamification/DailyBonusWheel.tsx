@@ -102,11 +102,13 @@ export function DailyBonusWheel({ isOpen, onClose, onReward }: DailyBonusWheelPr
 
       // Record spin and grant reward
       try {
-        await supabase.from('daily_spins').insert({
+        const { error: spinErr } = await supabase.from('daily_spins').insert({
           user_id: user.id,
           reward_type: prize.type,
           reward_amount: prize.amount,
         });
+
+        if (spinErr) throw spinErr;
 
         // Grant reward
         const { error: rewardErr } = await retryAsync(

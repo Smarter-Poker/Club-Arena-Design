@@ -310,21 +310,27 @@ export default function MessageThread({ conversationId, onBack }: MessageThreadP
       if (existing) {
         if (existing.reaction === emoji) {
           // Remove reaction
-          await supabase.from('message_reactions').delete().eq('id', existing.id);
+          const { error: delErr } = await supabase
+            .from('message_reactions')
+            .delete()
+            .eq('id', existing.id);
+          if (delErr) throw delErr;
         } else {
           // Change reaction
-          await supabase
+          const { error: updErr } = await supabase
             .from('message_reactions')
             .update({ reaction: emoji })
             .eq('id', existing.id);
+          if (updErr) throw updErr;
         }
       } else {
         // Add reaction
-        await supabase.from('message_reactions').insert({
+        const { error: insErr } = await supabase.from('message_reactions').insert({
           message_id: messageId,
           user_id: user.id,
           reaction: emoji,
         });
+        if (insErr) throw insErr;
       }
 
       // Refresh messages
