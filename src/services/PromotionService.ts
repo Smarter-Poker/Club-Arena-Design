@@ -315,7 +315,7 @@ class PromotionServiceClass {
 
   async updateLeaderboardScore(promotionId: string, userId: string, score: number): Promise<void> {
     // Upsert the score
-    await supabase.from('promotion_leaderboards').upsert(
+    const { error: upsertErr } = await supabase.from('promotion_leaderboards').upsert(
       {
         promotion_id: promotionId,
         user_id: userId,
@@ -324,6 +324,11 @@ class PromotionServiceClass {
       },
       { onConflict: 'promotion_id,user_id' }
     );
+
+    if (upsertErr) {
+      console.error('[PromotionService] Leaderboard upsert failed:', upsertErr.message);
+      return;
+    }
 
     // Recalculate ranks
     const { error: rankErr } = await retryAsync(
@@ -451,12 +456,15 @@ class PromotionServiceClass {
     masterBus.emit('BALANCE_UPDATED', { source: 'promotion_referral_bonus', userId: referrer.id });
 
     // Record the referral
-    await supabase.from('referrals').insert({
+    const { error: refInsertErr } = await supabase.from('referrals').insert({
       referrer_id: referrer.id,
       referred_id: referredUserId,
       promotion_id: promo.id,
       bonus_amount: promo.prizePool || 10,
     });
+    if (refInsertErr) {
+      console.error('[PromotionService] Referral record insert failed:', refInsertErr.message);
+    }
   }
 
   // ─────────────────────────────────────────────────────────────────────────────
