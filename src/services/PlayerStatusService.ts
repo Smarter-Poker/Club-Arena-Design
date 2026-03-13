@@ -44,7 +44,10 @@ class PlayerStatusServiceClass {
     }
 
     this.currentStatus = this.currentStatus ? { ...this.currentStatus, statusText: text } : null;
-    masterBus.emit('PROFILE_UPDATED', { userId, updates: { status_text: text } as Record<string, unknown> });
+    masterBus.emit('PROFILE_UPDATED', {
+      userId,
+      updates: { status_text: text } as Record<string, unknown>,
+    });
   }
 
   /**
@@ -71,7 +74,10 @@ class PlayerStatusServiceClass {
     this.currentStatus = this.currentStatus
       ? { ...this.currentStatus, playingAt: tableName, playingAtTableId: tableId }
       : null;
-    masterBus.emit('PROFILE_UPDATED', { userId, updates: { current_table: tableName, current_table_id: tableId } as Record<string, unknown> });
+    masterBus.emit('PROFILE_UPDATED', {
+      userId,
+      updates: { current_table: tableName, current_table_id: tableId } as Record<string, unknown>,
+    });
   }
 
   /**
@@ -105,9 +111,11 @@ class PlayerStatusServiceClass {
 
   /**
    * Get the "playing at" status of all online friends
+   * NOTE: Friendships are bidirectional — query BOTH directions
    */
   async getFriendsStatus(userId: string): Promise<PlayerStatus[]> {
-    const { data, error } = await supabase
+    // Direction 1: user_id = me → friend_id references the friend
+    const { data: dir1 } = await supabase
       .from('friendships')
       .select(
         `
@@ -120,17 +128,40 @@ class PlayerStatusServiceClass {
       .eq('user_id', userId)
       .eq('status', 'accepted');
 
-    if (error || !data) return [];
+    // Direction 2: friend_id = me → user_id references the friend
+    const { data: dir2 } = await supabase
+      .from('friendships')
+      .select(
+        `
+        user_id,
+        profiles!friendships_user_id_fkey(
+          id, status_text, current_table, current_table_id, is_online, last_seen
+        )
+      `
+      )
+      .eq('friend_id', userId)
+      .eq('status', 'accepted');
 
-    return data
-      .filter((f: any) => f.profiles?.is_online)
-      .map((f: any) => ({
-        userId: f.profiles.id,
-        statusText: f.profiles.status_text || null,
-        playingAt: f.profiles.current_table || null,
-        playingAtTableId: f.profiles.current_table_id || null,
+    const allFriends = [
+      ...(dir1 || []).filter((f: any) => f.profiles?.is_online).map((f: any) => f.profiles),
+      ...(dir2 || []).filter((f: any) => f.profiles?.is_online).map((f: any) => f.profiles),
+    ];
+
+    // Deduplicate by userId
+    const seen = new Set<string>();
+    return allFriends
+      .filter((p: any) => {
+        if (seen.has(p.id)) return false;
+        seen.add(p.id);
+        return true;
+      })
+      .map((p: any) => ({
+        userId: p.id,
+        statusText: p.status_text || null,
+        playingAt: p.current_table || null,
+        playingAtTableId: p.current_table_id || null,
         isOnline: true,
-        lastSeen: f.profiles.last_seen || new Date().toISOString(),
+        lastSeen: p.last_seen || new Date().toISOString(),
       }));
   }
 

@@ -1413,7 +1413,7 @@ describe('Phase 11 — StateVerifier Integration', () => {
     const result = stateVerifier.verify({
       tableId,
       handNumber: 1,
-      players: badPlayers,
+      players: badPlayers as any,
       communityCards: [],
       pot: 0,
       stage: 'flop',
@@ -1435,12 +1435,12 @@ describe('Phase 11 — StateVerifier Integration', () => {
     stateVerifier.recordInitialChipTotal(tableId, [
       { ...players[0], stack: players[0].stack + players[0].bet },
       { ...players[1], stack: players[1].stack + players[1].bet },
-    ]);
+    ] as any);
 
     const result = stateVerifier.verify({
       tableId,
       handNumber: 1,
-      players,
+      players: players as any,
       communityCards: [],
       pot: 0,
       stage: 'preflop',
@@ -1512,9 +1512,9 @@ describe('Phase 11 — EngineTelemetry Integration', () => {
     engineTelemetry.recordHandTiming('table1', 45, 25, 4500);
 
     const snapshot = engineTelemetry.getSnapshot();
-    expect(snapshot.activeTables).toBe(1);
-    expect(snapshot.totalHandsDealt).toBe(2);
-    expect(snapshot.avgHandDurationMs).toBeGreaterThan(0);
+    expect(snapshot.global.activeTables).toBe(1);
+    expect(snapshot.global.totalHandsDealt).toBe(2);
+    expect(snapshot.global.avgHandDurationMs).toBeGreaterThan(0);
   });
 
   it('should track per-table metrics separately', () => {
@@ -1522,17 +1522,17 @@ describe('Phase 11 — EngineTelemetry Integration', () => {
     engineTelemetry.recordHandTiming('table2', 60, 40, 6000);
 
     const snapshot = engineTelemetry.getSnapshot();
-    expect(snapshot.activeTables).toBe(2);
-    expect(snapshot.totalHandsDealt).toBe(2);
+    expect(snapshot.global.activeTables).toBe(2);
+    expect(snapshot.global.totalHandsDealt).toBe(2);
   });
 
   it('should track cache hit ratio', () => {
-    engineTelemetry.recordCacheHit('table1');
-    engineTelemetry.recordCacheHit('table1');
-    engineTelemetry.recordCacheMiss('table1');
+    engineTelemetry.recordCacheHit();
+    engineTelemetry.recordCacheHit();
+    engineTelemetry.recordCacheMiss();
 
     const snapshot = engineTelemetry.getSnapshot();
-    // 2 hits / 3 total = ~0.667
-    expect(snapshot.cacheHitRatio).toBeCloseTo(0.667, 1);
+    // 2 hits / 3 total = 67% (rounded)
+    expect(snapshot.global.cacheHitRatio).toBe(67);
   });
 });
