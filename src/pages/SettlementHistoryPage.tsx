@@ -42,8 +42,14 @@ export default function SettlementHistoryPage() {
 
   useEffect(() => {
     const unsub = masterBus.subscribeDebounced('SETTLEMENT_COMPLETED', () => loadHistory(), 1000);
+    const unsub2 = masterBus.subscribeDebounced(
+      'SETTLEMENT_CYCLE_COMPLETED',
+      () => loadHistory(),
+      1000
+    );
     return () => {
       unsub();
+      unsub2();
     };
   }, []);
 
