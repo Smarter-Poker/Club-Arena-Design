@@ -6,6 +6,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../../lib/supabase';
+import { masterBus } from '../../core/MasterBus';
 import { useToast } from '../common/Toast';
 import { resolveClubUUID } from '../../utils/clubIdResolver';
 import './ClubMemberManagement.css';
@@ -100,6 +101,7 @@ export function ClubMemberManagement({ clubId, isAdmin }: ClubMemberManagementPr
       if (error) throw error;
 
       toast.success('Role updated');
+      masterBus.emit('CLUB_UPDATED', { clubId });
       loadMembers();
     } catch {
       toast.error('Failed to update role');
@@ -118,6 +120,7 @@ export function ClubMemberManagement({ clubId, isAdmin }: ClubMemberManagementPr
       if (error) throw error;
 
       toast.success(currentlyBanned ? 'Member unbanned' : 'Member banned');
+      masterBus.emit('CLUB_UPDATED', { clubId });
       loadMembers();
     } catch {
       toast.error('Failed to update ban status');
@@ -136,6 +139,7 @@ export function ClubMemberManagement({ clubId, isAdmin }: ClubMemberManagementPr
       if (error) throw error;
 
       toast.success('Member removed from club');
+      masterBus.emit('CLUB_UPDATED', { clubId });
       loadMembers();
     } catch {
       toast.error('Failed to remove member');

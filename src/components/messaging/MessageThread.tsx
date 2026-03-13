@@ -441,9 +441,39 @@ export default function MessageThread({ conversationId, onBack }: MessageThreadP
       }
     });
 
+    // Q3 Phase 15: Bus listener for edited messages
+    const unsubEdited = masterBus.subscribe('MESSAGE_SENT', (ev) => {
+      if ((ev.payload.message as any)?.edited) {
+        setMessages((prev) =>
+          prev.map((m) =>
+            m.id === (ev.payload.message as any).id
+              ? { ...m, content: (ev.payload.message as any).content }
+              : m
+          )
+        );
+      }
+    });
+
+    // Q3 Phase 15: Bus listener for deleted messages
+    const unsubDeleted = masterBus.subscribe('MESSAGE_DELETED' as any, (ev: any) => {
+      if (ev.payload?.messageId) {
+        setMessages((prev) => prev.filter((m) => m.id !== ev.payload.messageId));
+      }
+    });
+
+    // Q3 Phase 15: Bus listener for conversation metadata updates
+    const unsubConvUpdated = masterBus.subscribe('CONVERSATION_UPDATED' as any, (ev: any) => {
+      if (ev.payload?.conversationId === conversationId) {
+        loadConversation();
+      }
+    });
+
     return () => {
       unsubReceived();
       unsubSent();
+      unsubEdited();
+      unsubDeleted();
+      unsubConvUpdated();
     };
   }, [loadMessages, conversationId]);
 
@@ -557,22 +587,35 @@ export default function MessageThread({ conversationId, onBack }: MessageThreadP
         ) : (
           messages.map((message, idx) => {
             // Q3 Phase 14: Unread separator line
-            const showUnreadSep = idx > 0 &&
+            const showUnreadSep =
+              idx > 0 &&
               !message.isSeen &&
               messages[idx - 1]?.isSeen &&
               message.userId !== user?.id;
-            const unreadCount = messages.slice(idx).filter(m => !m.isSeen && m.userId !== user?.id).length;
+            const unreadCount = messages
+              .slice(idx)
+              .filter((m) => !m.isSeen && m.userId !== user?.id).length;
 
             return (
               <div key={message.id}>
                 {showUnreadSep && (
-                  <div className={styles.unreadSeparator || ''} style={{
-                    display: 'flex', alignItems: 'center', gap: '8px',
-                    padding: '8px 16px', margin: '4px 0',
-                    color: '#00d4ff', fontSize: '0.75rem', fontWeight: 600,
-                  }}>
+                  <div
+                    className={styles.unreadSeparator || ''}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '8px',
+                      padding: '8px 16px',
+                      margin: '4px 0',
+                      color: '#00d4ff',
+                      fontSize: '0.75rem',
+                      fontWeight: 600,
+                    }}
+                  >
                     <div style={{ flex: 1, height: '1px', background: 'rgba(0,212,255,0.3)' }} />
-                    <span>{unreadCount} new message{unreadCount !== 1 ? 's' : ''}</span>
+                    <span>
+                      {unreadCount} new message{unreadCount !== 1 ? 's' : ''}
+                    </span>
                     <div style={{ flex: 1, height: '1px', background: 'rgba(0,212,255,0.3)' }} />
                   </div>
                 )}
@@ -597,11 +640,17 @@ export default function MessageThread({ conversationId, onBack }: MessageThreadP
                   />
                   {/* Q3: Reply count indicator */}
                   {message.threadReplyCount && message.threadReplyCount > 0 && (
-                    <div style={{
-                      fontSize: '0.7rem', color: '#00d4ff', padding: '2px 48px',
-                      cursor: 'pointer', fontWeight: 600,
-                    }}>
-                      💬 {message.threadReplyCount} repl{message.threadReplyCount !== 1 ? 'ies' : 'y'}
+                    <div
+                      style={{
+                        fontSize: '0.7rem',
+                        color: '#00d4ff',
+                        padding: '2px 48px',
+                        cursor: 'pointer',
+                        fontWeight: 600,
+                      }}
+                    >
+                      💬 {message.threadReplyCount} repl
+                      {message.threadReplyCount !== 1 ? 'ies' : 'y'}
                     </div>
                   )}
                 </div>
@@ -653,8 +702,12 @@ export default function MessageThread({ conversationId, onBack }: MessageThreadP
           }}
           title="Share Contact Card"
           style={{
-            background: 'none', border: 'none', cursor: 'pointer',
-            fontSize: '1.1rem', padding: '4px 8px', borderRadius: '8px',
+            background: 'none',
+            border: 'none',
+            cursor: 'pointer',
+            fontSize: '1.1rem',
+            padding: '4px 8px',
+            borderRadius: '8px',
             color: 'var(--text-secondary, #8b9dc3)',
           }}
         >

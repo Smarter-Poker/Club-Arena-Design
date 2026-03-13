@@ -849,44 +849,39 @@ export class HeadlessTableEngine {
         const offeredTo = activeIds[1];
         const handId = `${this.tableId}-${this.handCount}`;
 
-        // Insurance offering (cash games only, before RIT flow)
-        if (insuranceEngine.isEnabled(this.tableId) && activeIds.length >= 2) {
-          const allInPlayers = event.activePlayers.map((p: any) => ({
-            playerId: p.user_id,
-            holeCards: p.cards || [],
-          }));
-          const board = this.handController?.getState()?.communityCards || [];
-          insuranceEngine.createOffers(
-            this.tableId,
-            handId,
-            allInPlayers,
-            board,
-            event.pot
-          );
+        // Insurance offering + RIT flow (both async, combined in single IIFE)
+        (async () => {
+          // Insurance offering (cash games only, before RIT flow)
+          if (insuranceEngine.isEnabled(this.tableId) && activeIds.length >= 2) {
+            const allInPlayers = event.activePlayers.map((p: any) => ({
+              playerId: p.user_id,
+              holeCards: p.cards || [],
+            }));
+            const board = this.handController?.getState()?.communityCards || [];
+            insuranceEngine.createOffers(this.tableId, handId, allInPlayers, board, event.pot);
 
-          // Wait for insurance responses (max 15s, then auto-decline remaining)
-          await new Promise<void>((resolve) => {
-            const checkInterval = setInterval(() => {
-              if (insuranceEngine.allResponded(this.tableId)) {
+            // Wait for insurance responses (max 15s, then auto-decline remaining)
+            await new Promise<void>((resolve) => {
+              const checkInterval = setInterval(() => {
+                if (insuranceEngine.allResponded(this.tableId)) {
+                  clearInterval(checkInterval);
+                  resolve();
+                }
+              }, 500);
+              setTimeout(() => {
                 clearInterval(checkInterval);
                 resolve();
-              }
-            }, 500);
-            setTimeout(() => {
-              clearInterval(checkInterval);
-              resolve();
-            }, 16000); // 16s safety (15s offer timeout + 1s buffer)
-          });
-        }
+              }, 16000);
+            });
+          }
 
-        // Guard: only enter the RIT flow if the engine is configured for this table
-        if (!runItTwiceEngine.isEnabled(this.tableId) || activeIds.length < 2) {
-          if (this.handController) this.handController.resumeRunout();
-          break;
-        }
+          // Guard: only enter the RIT flow if the engine is configured for this table
+          if (!runItTwiceEngine.isEnabled(this.tableId) || activeIds.length < 2) {
+            if (this.handController) this.handController.resumeRunout();
+            return;
+          }
 
-        // Asynchronous flow for RIT Engine
-        (async () => {
+          // RIT flow
           return new Promise<void>((resolve) => {
             let handled = false;
             let unsubAccept: (() => void) | null = null;

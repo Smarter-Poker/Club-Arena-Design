@@ -142,6 +142,11 @@ export default function BonusPage() {
         return;
       }
       toast.success('Daily bonus claimed!');
+      masterBus.emit('DAILY_REWARD_CLAIMED', {
+        amount: currentDay === 7 ? 100 : currentDay * 10,
+        rewardType: currentDay === 7 ? 'diamonds' : 'chips',
+        streakDay: currentDay,
+      });
       setShowConfetti(true);
       haptic.medium();
       setTimeout(() => setShowConfetti(false), 2500);
