@@ -567,6 +567,9 @@ export default function ClubDetailPage() {
         return;
       }
 
+      // Use resolved UUID for all downstream FK queries — clubId from URL may be integer
+      const resolvedId = clubData.id;
+
       // Map to our internal format
       const mappedClub: ClubData = {
         id: clubData.id,
@@ -597,7 +600,7 @@ export default function ClubDetailPage() {
       const { data: memberData } = await supabase
         .from('club_members')
         .select('*, profiles(username, display_name)')
-        .eq('club_id', clubId)
+        .eq('club_id', resolvedId)
         .limit(50);
 
       if (memberData) {
@@ -632,7 +635,7 @@ export default function ClubDetailPage() {
       const { data: tableData } = await supabase
         .from('tables')
         .select('*')
-        .eq('club_id', clubId)
+        .eq('club_id', resolvedId)
         .eq('is_deleted', false);
 
       if (tableData) {

@@ -322,11 +322,7 @@ class NotificationServiceClass {
   setDnd(durationMinutes: number): void {
     this.dndUntil = Date.now() + durationMinutes * 60_000;
     localStorage.setItem('dnd_until', String(this.dndUntil));
-    masterBus.emit('SYSTEM_ALERT', {
-      type: 'info',
-      title: 'DND Enabled',
-      message: `Notifications muted for ${durationMinutes} minutes`,
-    });
+    console.info(`[DND] Notifications muted for ${durationMinutes} minutes`);
   }
 
   /**

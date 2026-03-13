@@ -4308,13 +4308,13 @@ export default function TablePage({
                   amount
                 );
               }
-              } else if (userId && userId !== 'guest' && tableId && selectedSeat) {
+            } else if (userId && userId !== 'guest' && tableId && selectedSeat) {
               try {
                 console.debug('[BuyIn] Calling atomic_table_buyin:', {
                   userId,
                   tableId,
                   amount,
-                  selectedSeat
+                  selectedSeat,
                 });
 
                 // Execute FULLY ATOMIC buy-in and seat insertion
@@ -4325,11 +4325,11 @@ export default function TablePage({
                       p_table_id: tableId,
                       p_seat_number: selectedSeat,
                       p_amount: amount,
-                      p_auto_rebuy: autoRebuy || false
+                      p_auto_rebuy: autoRebuy || false,
                     }),
                   3
                 );
-                
+
                 if (rpcErr) {
                   console.error('[BuyIn] atomic_table_buyin FAILED:', rpcErr);
                   throw new Error('Failed to buy-in: ' + rpcErr.message);
@@ -4648,6 +4648,8 @@ export default function TablePage({
         <SessionSummary
           duration={Math.floor((Date.now() - sessionStartRef.current) / 1000)}
           handsPlayed={handsPlayedRef.current}
+          handsWon={0}
+          totalRebuys={0}
           profitLoss={sessionPLRef.current}
           biggestPot={biggestPotRef.current}
           peakStack={peakStackRef.current}
