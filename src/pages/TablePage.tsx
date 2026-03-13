@@ -434,6 +434,22 @@ export default function TablePage({
   const [actionTimeRemaining, setActionTimeRemaining] = useState(15);
   const [preAction, setPreAction] = useState<'fold' | 'check' | 'callAny' | null>(null);
 
+  // Phase L: Deep Audit — Wire React state to MasterBus for cross-component telemetry
+  useEffect(() => {
+    if (preAction && tableId && userId) {
+      masterBus.emit('PRE_ACTION_SET', {
+        tableId,
+        playerId: userId,
+        action:
+          preAction === 'fold'
+            ? 'auto_fold'
+            : preAction === 'check'
+              ? 'auto_check'
+              : 'auto_call_any',
+      });
+    }
+  }, [preAction, tableId, userId]);
+
   const [isSideMenuOpen, setIsSideMenuOpen] = useState(false);
   const [showBuyInModal, setShowBuyInModal] = useState(false);
   const [selectedSeat, setSelectedSeat] = useState<number | null>(null);
@@ -3544,13 +3560,20 @@ export default function TablePage({
     if (
       tableState.currentPlayerSeat === tableState.heroSeat &&
       preAction &&
-      tableState.isHandInProgress
+      tableState.isHandInProgress &&
+      userId &&
+      tableId
     ) {
       // Small delay to ensure state is updated
       const timer = setTimeout(async () => {
         try {
           if (preAction === 'fold') {
             await handleFold();
+            masterBus.emit('PRE_ACTION_EXECUTED', {
+              tableId: tableId!,
+              playerId: userId!,
+              action: 'fold',
+            });
           } else if (preAction === 'check') {
             // Only check if can check (no bet to call)
             const handState = handControllerRef.current?.getState();
@@ -3559,9 +3582,25 @@ export default function TablePage({
             const callAmount = Math.max(0, currentBet - myEngineBet);
             if (callAmount === 0) {
               await handleCheck();
+              masterBus.emit('PRE_ACTION_EXECUTED', {
+                tableId: tableId!,
+                playerId: userId!,
+                action: 'check',
+              });
+            } else {
+              masterBus.emit('PRE_ACTION_INVALIDATED', {
+                tableId: tableId!,
+                playerId: userId!,
+                reason: 'bet_placed',
+              });
             }
           } else if (preAction === 'callAny') {
             await handleCall();
+            masterBus.emit('PRE_ACTION_EXECUTED', {
+              tableId: tableId!,
+              playerId: userId!,
+              action: 'call',
+            });
           }
           // Clear the pre-action after executing
           setPreAction(null);
@@ -3578,6 +3617,7 @@ export default function TablePage({
     preAction,
     tableState.isHandInProgress,
     userId,
+    tableId,
   ]);
 
   // Trigger board animation on stage transition
@@ -3612,6 +3652,8 @@ export default function TablePage({
               if (foldResult !== false) {
                 sendAction('fold', { seat: tableState.heroSeat, autoFold: true });
                 soundService.playFold();
+                broadcastLocalHandState();
+                if (tableId) submitAction(tableId, userId, 'fold').catch(() => {});
               } else {
                 console.warn(
                   '[AutoFold] performAction returned false — fold may not have executed'
