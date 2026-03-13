@@ -881,6 +881,9 @@ class MessagingServiceClass {
     if (!isAdmin) query = query.eq('sender_id', userId);
 
     const { error } = await query;
+    if (!error) {
+      masterBus.emit('MESSAGE_DELETED' as any, { messageId });
+    }
     return !error;
   }
 

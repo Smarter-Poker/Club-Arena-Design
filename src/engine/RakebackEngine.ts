@@ -17,7 +17,7 @@ import { masterBus } from '../core/MasterBus';
 // ═══════════════════════════════════════════════════════════════════════════════
 
 export interface RakebackTier {
-  /** Minimum monthly rake to qualify (in currency units) */
+  /** Minimum monthly rake to qualify (in chips) */
   minRake: number;
   /** Rakeback percentage for this tier (0-100) */
   rakebackPercent: number;

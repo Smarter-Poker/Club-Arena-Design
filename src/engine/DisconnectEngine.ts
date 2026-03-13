@@ -36,8 +36,6 @@ export interface PlayerConnectionState {
   lastHeartbeat: number;
   consecutiveTimeouts: number;
   isSittingOut: boolean;
-  /** Active timer for current disconnect */
-  timeoutTimer?: ReturnType<typeof setTimeout>;
   /** Timestamp when disconnect was detected */
   disconnectedAt?: number;
 }
