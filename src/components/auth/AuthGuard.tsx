@@ -96,46 +96,37 @@ function hydrateStoreFromLocalStorage(): void {
 }
 
 export function AuthGuard({ children }: AuthGuardProps) {
-  const [isLoading, setIsLoading] = useState(true);
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  // If IdentityDNA already proved we are authenticated globally, skip the loading flash entirely
+  const dncStatus = useUserStore.getState().isAuthenticated;
+
+  const [isLoading, setIsLoading] = useState(!dncStatus);
+  const [isAuthenticated, setIsAuthenticated] = useState(dncStatus);
+
   const location = useLocation();
-  // Subscribe to user store to re-render when IdentityDNA hydrates the user
   const storeUser = useUserStore((s) => s.user);
 
   useEffect(() => {
     let cancelled = false;
 
     async function checkAuth() {
+      // If we already know we're authenticated from a previous route, do nothing.
+      if (useUserStore.getState().isAuthenticated) {
+        if (!cancelled) {
+          setIsAuthenticated(true);
+          setIsLoading(false);
+        }
+        return;
+      }
+
       // FAST PATH: Check localStorage directly (no navigator.locks)
       if (hasLocalSession()) {
-        // We know there's a session token — try getSession with timeout
-        try {
-          const sessionPromise = supabase.auth.getSession();
-          const timeoutPromise = new Promise<never>((_, reject) =>
-            setTimeout(() => reject(new Error('getSession timeout')), SESSION_CHECK_TIMEOUT)
-          );
-          const {
-            data: { session },
-          } = await Promise.race([sessionPromise, timeoutPromise]);
-          if (!cancelled) {
-            if (session) {
-              // CRITICAL: Hydrate user store BEFORE rendering children
-              hydrateStoreFromSession(session);
-            }
-            setIsAuthenticated(!!session);
-            setIsLoading(false);
-          }
-          return;
-        } catch {
-          // getSession hung or timed out — trust localStorage
-          if (!cancelled) {
-            console.warn('[AUTH GUARD] getSession timed out — using localStorage session');
-            hydrateStoreFromLocalStorage();
-            setIsAuthenticated(true);
-            setIsLoading(false);
-          }
-          return;
+        if (!cancelled) {
+          console.warn('[AUTH GUARD] Trusting localStorage session for initial paint');
+          hydrateStoreFromLocalStorage();
+          setIsAuthenticated(true);
+          setIsLoading(false);
         }
+        return;
       }
 
       // NO localStorage session — try getSession with timeout for OAuth callbacks etc.
