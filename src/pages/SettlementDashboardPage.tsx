@@ -52,6 +52,131 @@ interface PeriodHistoryItem {
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
+// HOOKS & COMPONENTS FOR SVG RING
+// ═══════════════════════════════════════════════════════════════════════════════
+
+function useCountdown(targetDate: string | null) {
+  const [timeLeft, setTimeLeft] = useState({ days: 0, hours: 0, minutes: 0, seconds: 0, total: 0 });
+
+  useEffect(() => {
+    if (!targetDate) return;
+    const interval = setInterval(() => {
+      const difference = new Date(targetDate).getTime() - new Date().getTime();
+      if (difference <= 0) {
+        setTimeLeft({ days: 0, hours: 0, minutes: 0, seconds: 0, total: 0 });
+        clearInterval(interval);
+      } else {
+        setTimeLeft({
+          days: Math.floor(difference / (1000 * 60 * 60 * 24)),
+          hours: Math.floor((difference / (1000 * 60 * 60)) % 24),
+          minutes: Math.floor((difference / 1000 / 60) % 60),
+          seconds: Math.floor((difference / 1000) % 60),
+          total: difference,
+        });
+      }
+    }, 1000);
+    return () => clearInterval(interval);
+  }, [targetDate]);
+
+  return timeLeft;
+}
+
+function CountdownRing({ start, end }: { start: string; end: string }) {
+  const timeLeft = useCountdown(end);
+  const totalDuration = new Date(end).getTime() - new Date(start).getTime();
+  const progress = totalDuration > 0 ? timeLeft.total / totalDuration : 0;
+
+  const radius = 30;
+  const circumference = 2 * Math.PI * radius;
+  const strokeDashoffset = circumference - progress * circumference;
+
+  return (
+    <div
+      style={{
+        position: 'relative',
+        width: 72,
+        height: 72,
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+      }}
+    >
+      <svg width="72" height="72" viewBox="0 0 72 72" style={{ transform: 'rotate(-90deg)' }}>
+        <circle
+          cx="36"
+          cy="36"
+          r={radius}
+          fill="transparent"
+          stroke="rgba(255,255,255,0.05)"
+          strokeWidth="6"
+        />
+        <circle
+          cx="36"
+          cy="36"
+          r={radius}
+          fill="transparent"
+          stroke="url(#countdownGradient)"
+          strokeWidth="6"
+          strokeLinecap="round"
+          strokeDasharray={circumference}
+          strokeDashoffset={strokeDashoffset}
+          style={{ transition: 'stroke-dashoffset 1s linear' }}
+        />
+        <defs>
+          <linearGradient id="countdownGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+            <stop offset="0%" stopColor="#00d4ff" />
+            <stop offset="100%" stopColor="#8b5cf6" />
+          </linearGradient>
+        </defs>
+      </svg>
+      <div
+        style={{
+          position: 'absolute',
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+        }}
+      >
+        <span
+          style={{ fontSize: '0.8rem', fontWeight: 800, color: '#fff', fontFamily: 'monospace' }}
+        >
+          {timeLeft.days > 0
+            ? `${timeLeft.days}d`
+            : `${String(timeLeft.hours).padStart(2, '0')}:${String(timeLeft.minutes).padStart(2, '0')}`}
+        </span>
+      </div>
+    </div>
+  );
+}
+
+interface PeriodInfo {
+  id: string;
+  start: string;
+  end: string;
+  status: string;
+}
+
+interface AgentPayout {
+  id: string;
+  agentId: string;
+  agentName: string;
+  netSettlement: number;
+  commissionEarned: number;
+  status: string;
+  updatedAt: string;
+}
+
+interface PeriodHistoryItem {
+  id: string;
+  start: string;
+  end: string;
+  status: string;
+  totalDisbursed: number;
+  agentsPaid: number;
+  createdAt: string;
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
 // COMPONENT
 // ═══════════════════════════════════════════════════════════════════════════════
 
@@ -280,17 +405,67 @@ export default function SettlementDashboardPage() {
   };
 
   const getStatusColor = (status: string) => {
-    const map: Record<string, { bg: string; text: string; border: string }> = {
-      open: { bg: 'rgba(16,185,129,0.12)', text: '#10b981', border: 'rgba(16,185,129,0.3)' },
-      closed: { bg: 'rgba(245,158,11,0.12)', text: '#f59e0b', border: 'rgba(245,158,11,0.3)' },
-      processing: { bg: 'rgba(59,130,246,0.12)', text: '#3b82f6', border: 'rgba(59,130,246,0.3)' },
-      completed: { bg: 'rgba(139,92,246,0.12)', text: '#8b5cf6', border: 'rgba(139,92,246,0.3)' },
-      settled: { bg: 'rgba(139,92,246,0.12)', text: '#8b5cf6', border: 'rgba(139,92,246,0.3)' },
-      approved: { bg: 'rgba(16,185,129,0.12)', text: '#10b981', border: 'rgba(16,185,129,0.3)' },
-      paid: { bg: 'rgba(139,92,246,0.12)', text: '#8b5cf6', border: 'rgba(139,92,246,0.3)' },
-      failed: { bg: 'rgba(239,68,68,0.12)', text: '#ef4444', border: 'rgba(239,68,68,0.3)' },
-      pending: { bg: 'rgba(107,114,128,0.12)', text: '#6b7280', border: 'rgba(107,114,128,0.3)' },
-      partial: { bg: 'rgba(245,158,11,0.12)', text: '#f59e0b', border: 'rgba(245,158,11,0.3)' },
+    const map: Record<string, { bg: string; text: string; border: string; shadow: string }> = {
+      open: {
+        bg: 'rgba(16,185,129,0.1)',
+        text: '#10b981',
+        border: 'rgba(16,185,129,0.4)',
+        shadow: '0 0 10px rgba(16,185,129,0.2)',
+      },
+      closed: {
+        bg: 'rgba(245,158,11,0.1)',
+        text: '#f59e0b',
+        border: 'rgba(245,158,11,0.4)',
+        shadow: '0 0 10px rgba(245,158,11,0.2)',
+      },
+      processing: {
+        bg: 'rgba(59,130,246,0.1)',
+        text: '#3b82f6',
+        border: 'rgba(59,130,246,0.4)',
+        shadow: '0 0 10px rgba(59,130,246,0.2)',
+      },
+      completed: {
+        bg: 'rgba(139,92,246,0.1)',
+        text: '#00d4ff',
+        border: 'rgba(0,212,255,0.4)',
+        shadow: '0 0 10px rgba(0,212,255,0.2)',
+      },
+      settled: {
+        bg: 'rgba(139,92,246,0.1)',
+        text: '#8b5cf6',
+        border: 'rgba(139,92,246,0.4)',
+        shadow: '0 0 10px rgba(139,92,246,0.2)',
+      },
+      approved: {
+        bg: 'rgba(16,185,129,0.1)',
+        text: '#10b981',
+        border: 'rgba(16,185,129,0.4)',
+        shadow: '0 0 10px rgba(16,185,129,0.2)',
+      },
+      paid: {
+        bg: 'rgba(139,92,246,0.1)',
+        text: '#8b5cf6',
+        border: 'rgba(139,92,246,0.4)',
+        shadow: '0 0 10px rgba(139,92,246,0.2)',
+      },
+      failed: {
+        bg: 'rgba(239,68,68,0.1)',
+        text: '#ef4444',
+        border: 'rgba(239,68,68,0.4)',
+        shadow: '0 0 10px rgba(239,68,68,0.2)',
+      },
+      pending: {
+        bg: 'rgba(107,114,128,0.1)',
+        text: '#9ca3af',
+        border: 'rgba(107,114,128,0.4)',
+        shadow: 'none',
+      },
+      partial: {
+        bg: 'rgba(245,158,11,0.1)',
+        text: '#f59e0b',
+        border: 'rgba(245,158,11,0.4)',
+        shadow: '0 0 10px rgba(245,158,11,0.2)',
+      },
     };
     return map[status] || map.pending;
   };
@@ -342,60 +517,102 @@ export default function SettlementDashboardPage() {
       {currentPeriod && (
         <div
           style={{
-            padding: '16px',
-            background: 'rgba(255,255,255,0.03)',
-            borderRadius: '14px',
-            border: '1px solid rgba(255,255,255,0.06)',
-            marginBottom: '16px',
+            padding: '16px 20px',
+            background:
+              'linear-gradient(145deg, rgba(20, 30, 48, 0.7) 0%, rgba(36, 59, 85, 0.4) 100%)',
+            borderRadius: '16px',
+            border: '1px solid rgba(0, 212, 255, 0.15)',
+            boxShadow: '0 8px 32px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.05)',
+            marginBottom: '20px',
+            position: 'relative',
+            overflow: 'hidden',
             opacity: visibleCards.has(0) ? 1 : 0,
             transform: visibleCards.has(0) ? 'translateY(0)' : 'translateY(10px)',
             transition: 'all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275)',
+            backdropFilter: 'blur(12px)',
+            WebkitBackdropFilter: 'blur(12px)',
           }}
         >
+          {/* Decorative glow */}
           <div
             style={{
-              display: 'flex',
-              justifyContent: 'space-between',
-              alignItems: 'center',
-              marginBottom: '12px',
+              position: 'absolute',
+              top: '-50%',
+              right: '-10%',
+              width: 200,
+              height: 200,
+              background: 'radial-gradient(circle, rgba(0,212,255,0.1) 0%, transparent 70%)',
+              borderRadius: '50%',
+              pointerEvents: 'none',
             }}
+          />
+
+          <div
+            style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}
           >
-            <div
-              style={{
-                fontSize: '0.75rem',
-                color: 'rgba(255,255,255,0.4)',
-                textTransform: 'uppercase',
-                letterSpacing: '0.5px',
-                fontWeight: 600,
-              }}
-            >
-              Current Period
+            <div>
+              <div
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '12px',
+                  marginBottom: '12px',
+                }}
+              >
+                <div
+                  style={{
+                    fontSize: '0.75rem',
+                    color: '#00d4ff',
+                    textTransform: 'uppercase',
+                    letterSpacing: '1px',
+                    fontWeight: 700,
+                  }}
+                >
+                  Current Period
+                </div>
+                <span
+                  style={{
+                    padding: '4px 12px',
+                    borderRadius: '20px',
+                    fontSize: '0.7rem',
+                    fontWeight: 800,
+                    textTransform: 'uppercase',
+                    letterSpacing: '0.5px',
+                    ...(() => {
+                      const s = getStatusColor(currentPeriod.status);
+                      return {
+                        background: s.bg,
+                        color: s.text,
+                        border: `1px solid ${s.border}`,
+                        boxShadow: s.shadow,
+                      };
+                    })(),
+                  }}
+                >
+                  {currentPeriod.status}
+                </span>
+              </div>
+              <div
+                style={{
+                  fontSize: '1.2rem',
+                  fontWeight: 800,
+                  marginBottom: '4px',
+                  letterSpacing: '0.5px',
+                }}
+              >
+                {formatDate(currentPeriod.start)}{' '}
+                <span style={{ color: 'rgba(255,255,255,0.3)', margin: '0 6px' }}>→</span>{' '}
+                {formatDate(currentPeriod.end)}
+              </div>
+              <div style={{ fontSize: '0.75rem', color: '#5a6a7a', fontFamily: 'monospace' }}>
+                PID: {currentPeriod.id.split('-')[0]}...
+              </div>
             </div>
-            <span
-              style={{
-                padding: '3px 10px',
-                borderRadius: '6px',
-                fontSize: '0.7rem',
-                fontWeight: 700,
-                textTransform: 'uppercase',
-                ...(() => {
-                  const s = getStatusColor(currentPeriod.status);
-                  return {
-                    background: s.bg,
-                    color: s.text,
-                    border: `1px solid ${s.border}`,
-                  };
-                })(),
-              }}
-            >
-              {currentPeriod.status}
-            </span>
-          </div>
-          <div style={{ fontSize: '1rem', fontWeight: 700, marginBottom: '6px' }}>
-            {formatDate(currentPeriod.start)} — {formatDate(currentPeriod.end)}
-          </div>
-          <div style={{ fontSize: '0.75rem', color: 'rgba(255,255,255,0.4)' }}>
-            Period ID: {currentPeriod.id.slice(0, 12)}...
+
+            {/* SVG Countdown Ring */}
+            {currentPeriod.status !== 'completed' && currentPeriod.status !== 'closed' && (
+              <CountdownRing start={currentPeriod.start} end={currentPeriod.end} />
+            )}
           </div>
         </div>
       )}
@@ -650,14 +867,16 @@ export default function SettlementDashboardPage() {
               >
                 <span
                   style={{
-                    padding: '3px 8px',
-                    borderRadius: '6px',
+                    padding: '4px 10px',
+                    borderRadius: '20px',
                     fontSize: '0.65rem',
-                    fontWeight: 700,
+                    fontWeight: 800,
                     textTransform: 'uppercase',
+                    letterSpacing: '0.5px',
                     background: statusStyle.bg,
                     color: statusStyle.text,
                     border: `1px solid ${statusStyle.border}`,
+                    boxShadow: statusStyle.shadow,
                     flexShrink: 0,
                   }}
                 >
@@ -743,14 +962,16 @@ export default function SettlementDashboardPage() {
                 <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                   <span
                     style={{
-                      padding: '3px 8px',
-                      borderRadius: '6px',
+                      padding: '4px 10px',
+                      borderRadius: '20px',
                       fontSize: '0.65rem',
-                      fontWeight: 700,
+                      fontWeight: 800,
                       textTransform: 'uppercase',
+                      letterSpacing: '0.5px',
                       background: statusStyle.bg,
                       color: statusStyle.text,
                       border: `1px solid ${statusStyle.border}`,
+                      boxShadow: statusStyle.shadow,
                       flexShrink: 0,
                     }}
                   >
