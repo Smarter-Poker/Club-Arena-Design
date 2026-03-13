@@ -94,7 +94,7 @@ export default function LobbyPage() {
         }
       })
       .catch((err) => {
-        console.warn('[LobbyPage] Daily bonus check failed:', err);
+        // Non-critical: daily bonus check failed
       });
 
     // Check spin eligibility and fetch stats
@@ -153,7 +153,7 @@ export default function LobbyPage() {
         }
       } catch (err) {
         if (!isMounted.current) return;
-        console.warn('[LobbyPage] Union check failed, showing all tables:', err);
+        // Non-critical: union check failed, showing all tables
       }
     };
 

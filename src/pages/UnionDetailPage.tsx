@@ -129,7 +129,7 @@ export default function UnionDetailPage() {
 
         setOnlineCount(presenceService.getUnionOnlineCount(unionId));
       } catch (err) {
-        console.warn('[UnionDetailPage] Presence setup failed (non-critical):', err);
+        // Non-critical: presence setup failed
       }
     };
 
@@ -300,7 +300,7 @@ export default function UnionDetailPage() {
         const clubsData = await unionService.getUnionClubs(unionId);
         setClubs(clubsData);
       } catch (err) {
-        console.warn('[UnionDetailPage] Failed to reload clubs:', err);
+        // Non-critical: clubs reload failed
       }
     };
 
@@ -351,7 +351,7 @@ export default function UnionDetailPage() {
           setUnionTournaments(sorted);
         }
       } catch (err) {
-        console.warn('[UnionDetailPage] Failed to reload tournaments:', err);
+        // Non-critical: tournaments reload failed
       }
     };
 
@@ -360,7 +360,7 @@ export default function UnionDetailPage() {
         const unionData = await unionService.getUnion(unionId);
         setUnion(unionData);
       } catch (err) {
-        console.warn('[UnionDetailPage] Failed to reload union:', err);
+        // Non-critical: union reload failed
       }
     };
 
