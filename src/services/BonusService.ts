@@ -160,9 +160,33 @@ class BonusServiceClass {
   }
 
   /**
+   * Check if user is eligible to spin the Lucky Wheel today
+   */
+  async canSpinToday(userId: string): Promise<boolean> {
+    const { data, error } = await supabase
+      .from('user_lucky_wheel_spins')
+      .select('last_spin_date')
+      .eq('user_id', userId)
+      .maybeSingle();
+
+    if (error && error.code !== 'PGRST116') {
+      console.error('[Bonus] Failed to check spin status:', error);
+      return false; // Fail safe
+    }
+
+    if (!data || !data.last_spin_date) return true;
+
+    // Check if last spin was today UTC
+    const today = new Date().toISOString().split('T')[0];
+    return data.last_spin_date !== today;
+  }
+
+  /**
    * Spin Lucky Draw Wheel (Atomic + Server RNG)
    */
-  async spinLuckyWheel(userId: string): Promise<{ segmentId: string; rewardType: string; amount: number }> {
+  async spinLuckyWheel(
+    userId: string
+  ): Promise<{ segmentId: string; rewardType: string; amount: number }> {
     const { data, error } = await retryAsync(
       () =>
         supabase.rpc('claim_lucky_wheel_spin', {
@@ -270,7 +294,7 @@ class BonusServiceClass {
               p_description: `Bonus chip reward`,
               p_table_id: null,
               p_hand_id: null,
-              p_related_entity_id: null
+              p_related_entity_id: null,
             }),
           3
         ));

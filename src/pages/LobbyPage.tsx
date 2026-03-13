@@ -19,11 +19,13 @@ import type { PokerTable } from '../types/database.types';
 import DailyLoginReward from '../components/gamification/DailyLoginReward';
 import LuckyDrawWheel from '../components/gamification/LuckyDrawWheel';
 import { bonusService } from '../services/BonusService';
+import { useToast } from '../components/common/Toast';
 
 type GameFilter = 'all' | 'nlh' | 'plo' | 'ofc' | 'tournaments' | 'favorites';
 
 export default function LobbyPage() {
   const navigate = useNavigate();
+  const toast = useToast();
   const { user } = useUserStore();
   const [activeFilter, setActiveFilter] = useState<GameFilter>('all');
   const [searchQuery, setSearchQuery] = useState('');
@@ -41,6 +43,7 @@ export default function LobbyPage() {
     streakDay: number;
   } | null>(null);
   const [showLuckyWheel, setShowLuckyWheel] = useState(false);
+  const [canSpin, setCanSpin] = useState(false);
 
   // Favorite Tables (stored in localStorage)
   const [favorites, setFavorites] = useState<Set<string>>(() => {
@@ -89,6 +92,11 @@ export default function LobbyPage() {
       .catch((err) => {
         console.warn('[LobbyPage] Daily bonus check failed:', err);
       });
+
+    // Check spin eligibility
+    bonusService.canSpinToday(user.id).then((eligible) => {
+      if (isMounted.current) setCanSpin(eligible);
+    });
   }, [user?.id]);
 
   // UNION-FIRST: Check if user belongs to a union and redirect to union lobby
@@ -479,7 +487,12 @@ export default function LobbyPage() {
           rewardType={dailyRewardData.rewardType}
           streakDay={dailyRewardData.streakDay}
           onClaim={() => {
-            if (user?.id) bonusService.claimDailyBonus(user.id).catch(() => {});
+            if (user?.id) {
+              bonusService
+                .claimDailyBonus(user.id)
+                .then(() => toast.success('Daily reward claimed!'))
+                .catch((err) => toast.error(err.message || 'Failed to claim reward'));
+            }
           }}
           onClose={() => setShowDailyReward(false)}
         />
@@ -487,10 +500,18 @@ export default function LobbyPage() {
 
       {showLuckyWheel && (
         <LuckyDrawWheel
+          spinsRemaining={canSpin ? 1 : 0}
           onSpin={async () => {
             if (!user?.id) throw new Error('User not loaded');
-            const result = await bonusService.spinLuckyWheel(user.id);
-            return result.segmentId;
+            if (!canSpin) throw new Error('You have already spun the wheel today!');
+            try {
+              const result = await bonusService.spinLuckyWheel(user.id);
+              setCanSpin(false); // Optimistically disable further spins
+              return result.segmentId;
+            } catch (err: any) {
+              toast.error(err.message || 'Failed to spin wheel');
+              throw err;
+            }
           }}
           onClose={() => setShowLuckyWheel(false)}
         />

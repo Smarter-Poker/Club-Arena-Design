@@ -161,6 +161,75 @@ export const CHALLENGE_POOL: DailyChallenge[] = [
   },
 ];
 
+export const WEEKLY_CHALLENGE_POOL: DailyChallenge[] = [
+  {
+    id: 'weekly_hands_250',
+    name: 'Weekly Grinder',
+    description: 'Play 250 hands this week',
+    type: 'hands_played',
+    requirement: 250,
+    chipReward: 1000,
+    icon: '🔥',
+  },
+  {
+    id: 'weekly_wins_50',
+    name: 'Weekly Winner',
+    description: 'Win 50 hands this week',
+    type: 'hands_won',
+    requirement: 50,
+    chipReward: 1500,
+    icon: '👑',
+  },
+  {
+    id: 'weekly_tourneys_10',
+    name: 'Tournament Specialist',
+    description: 'Play 10 tournaments this week',
+    type: 'tournaments_played',
+    requirement: 10,
+    chipReward: 2000,
+    icon: '🏆',
+  },
+  {
+    id: 'weekly_showdowns_20',
+    name: 'Showdown Machine',
+    description: 'Reach 20 showdowns this week',
+    type: 'showdowns',
+    requirement: 20,
+    chipReward: 800,
+    icon: '👀',
+  },
+];
+
+export const MONTHLY_CHALLENGE_POOL: DailyChallenge[] = [
+  {
+    id: 'monthly_hands_1000',
+    name: 'Monthly Marathon',
+    description: 'Play 1,000 hands this month',
+    type: 'hands_played',
+    requirement: 1000,
+    chipReward: 5000,
+    icon: '🌋',
+  },
+  {
+    id: 'monthly_wins_250',
+    name: 'Monthly Dominator',
+    description: 'Win 250 hands this month',
+    type: 'hands_won',
+    requirement: 250,
+    chipReward: 10000,
+    icon: '💎',
+  },
+  {
+    id: 'monthly_tourneys_50',
+    name: 'Tournament Master',
+    description: 'Play 50 tournaments this month',
+    type: 'tournaments_played',
+    requirement: 50,
+    chipReward: 15000,
+    icon: '🚀',
+  },
+];
+
 // ═══════════════════════════════════════════════════════════════════════════════
 // SERVICE
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -204,6 +273,89 @@ class DailyChallengeServiceClass {
       progress: 0,
       completed: false,
       claimed: false,
+      tier: 'daily' as const,
+      challenge: c,
+    }));
+  }
+
+  /**
+   * Get this week's challenges for a user
+   */
+  async getWeeklyChallenges(userId: string): Promise<(UserDailyChallenge & { tier: 'weekly' })[]> {
+    const weekKey = this.getWeekKey();
+
+    const { data: existing } = await supabase
+      .from('user_daily_challenges')
+      .select('*, challenge:challenge_id(*)')
+      .eq('user_id', userId)
+      .eq('assigned_date', weekKey);
+
+    if (existing && existing.length > 0) {
+      return existing.map((row) => ({ ...this.mapToUserChallenge(row), tier: 'weekly' as const }));
+    }
+
+    // Assign new weekly challenges
+    const weeklyChallenges = this.selectChallenges(WEEKLY_CHALLENGE_POOL, 3);
+    const inserts = weeklyChallenges.map((c) => ({
+      user_id: userId,
+      challenge_id: c.id,
+      assigned_date: weekKey,
+      progress: 0,
+      completed: false,
+    }));
+
+    await supabase.from('user_daily_challenges').insert(inserts);
+
+    return weeklyChallenges.map((c, i) => ({
+      id: `${userId}-${c.id}-${weekKey}`,
+      challengeId: c.id,
+      userId,
+      progress: 0,
+      completed: false,
+      claimed: false,
+      tier: 'weekly' as const,
+      challenge: c,
+    }));
+  }
+
+  /**
+   * Get this month's challenges for a user
+   */
+  async getMonthlyChallenges(
+    userId: string
+  ): Promise<(UserDailyChallenge & { tier: 'monthly' })[]> {
+    const monthKey = this.getMonthKey();
+
+    const { data: existing } = await supabase
+      .from('user_daily_challenges')
+      .select('*, challenge:challenge_id(*)')
+      .eq('user_id', userId)
+      .eq('assigned_date', monthKey);
+
+    if (existing && existing.length > 0) {
+      return existing.map((row) => ({ ...this.mapToUserChallenge(row), tier: 'monthly' as const }));
+    }
+
+    // Assign new monthly challenges
+    const monthlyChallenges = this.selectChallenges(MONTHLY_CHALLENGE_POOL, 2);
+    const inserts = monthlyChallenges.map((c) => ({
+      user_id: userId,
+      challenge_id: c.id,
+      assigned_date: monthKey,
+      progress: 0,
+      completed: false,
+    }));
+
+    await supabase.from('user_daily_challenges').insert(inserts);
+
+    return monthlyChallenges.map((c, i) => ({
+      id: `${userId}-${c.id}-${monthKey}`,
+      challengeId: c.id,
+      userId,
+      progress: 0,
+      completed: false,
+      claimed: false,
+      tier: 'monthly' as const,
       challenge: c,
     }));
   }
@@ -218,20 +370,27 @@ class DailyChallengeServiceClass {
     amount: number = 1
   ): Promise<{ completed: UserDailyChallenge[] }> {
     const today = this.getTodayKey();
+    const weekKey = this.getWeekKey();
+    const monthKey = this.getMonthKey();
     const completed: UserDailyChallenge[] = [];
 
-    // Get today's challenges of this type
+    // Get today's/week's/month's active challenges of this type
     const { data: challenges } = await supabase
       .from('user_daily_challenges')
       .select('*, challenge:challenge_id(*)')
       .eq('user_id', userId)
-      .eq('assigned_date', today)
+      .in('assigned_date', [today, weekKey, monthKey])
       .eq('completed', false);
 
     if (!challenges) return { completed };
 
     for (const uc of challenges) {
-      const challenge = CHALLENGE_POOL.find((c) => c.id === uc.challenge_id);
+      // Find challenge from all pools
+      const challenge =
+        CHALLENGE_POOL.find((c) => c.id === uc.challenge_id) ||
+        WEEKLY_CHALLENGE_POOL.find((c) => c.id === uc.challenge_id) ||
+        MONTHLY_CHALLENGE_POOL.find((c) => c.id === uc.challenge_id);
+
       if (!challenge || challenge.type !== type) continue;
 
       const newProgress = Math.min(uc.progress + amount, challenge.requirement);
