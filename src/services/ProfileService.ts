@@ -150,10 +150,15 @@ class ProfileServiceClass {
     else if (newPoints >= VIP_THRESHOLDS.gold) newTier = 'gold';
     else if (newPoints >= VIP_THRESHOLDS.silver) newTier = 'silver';
 
-    await supabase
+    const { error: vipErr } = await supabase
       .from('profiles')
       .update({ vip_points: newPoints, vip_level: newTier })
       .eq('id', userId);
+
+    if (vipErr) {
+      console.error('[Profile] VIP points update failed:', vipErr);
+      throw new Error('Failed to update VIP points');
+    }
 
     masterBus.emit('PROFILE_UPDATED', {
       userId,
@@ -190,7 +195,7 @@ class ProfileServiceClass {
 
       const longestStreak = Math.max(currentStreak, profile.longestStreak);
 
-      await supabase
+      const { error: streakErr } = await supabase
         .from('profiles')
         .update({
           current_streak: currentStreak,
@@ -198,6 +203,10 @@ class ProfileServiceClass {
           last_login: new Date().toISOString(),
         })
         .eq('id', userId);
+
+      if (streakErr) {
+        console.error('[Profile] Streak update failed:', streakErr);
+      }
 
       masterBus.emit('PROFILE_UPDATED', {
         userId,

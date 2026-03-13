@@ -147,10 +147,11 @@ export default function HamburgerMenu({ isOpen, onClose }: HamburgerMenuProps) {
     }
     if (user?.id) {
       try {
-        await supabase
+        const { error: updateErr } = await supabase
           .from('profiles')
           .update({ [dbKey]: value })
           .eq('id', user.id);
+        if (updateErr) console.error('[HamburgerMenu] Setting save failed:', updateErr);
       } catch (error) {
         console.error('Error updating setting:', error);
       }
