@@ -1908,6 +1908,7 @@ export default function TablePage({
     return () => {
       unsubscribe();
       roomService.leaveRoom(tableId);
+      timeBankEngine.dispose(tableId); // Clean up timer entries to prevent zombie accumulation
       if (breakChannelRef.current) {
         masterBus.removeRegisteredChannel(`t-break-${tableState.tournamentId || tableId}`);
         breakChannelRef.current = null;
