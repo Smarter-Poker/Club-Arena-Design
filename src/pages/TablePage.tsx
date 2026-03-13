@@ -441,6 +441,7 @@ export default function TablePage({
   const [showSessionSummary, setShowSessionSummary] = useState(false);
   const sessionStartRef = useRef(Date.now());
   const handsPlayedRef = useRef(0);
+  const handsWonRef = useRef(0);
   const biggestPotRef = useRef(0);
   const peakStackRef = useRef(0);
   const sessionPLRef = useRef(0);
@@ -2820,6 +2821,10 @@ export default function TablePage({
 
             // ── Session Tracking: update refs for end-of-session summary ──
             handsPlayedRef.current += 1;
+            // Track wins — check if hero is in the winners list
+            if (userId && winnerInfo.playerIds.some((pid) => pid === userId)) {
+              handsWonRef.current += 1;
+            }
             // Use event.pot (authoritative HC value) — currentState.pot is already 0
             // because WINNERS handler sets pot: 0 before HAND_COMPLETE fires
             const handPotForSession = event.pot || 0;
@@ -4794,12 +4799,15 @@ export default function TablePage({
         <SessionSummary
           duration={Math.floor((Date.now() - sessionStartRef.current) / 1000)}
           handsPlayed={handsPlayedRef.current}
+          handsWon={handsWonRef.current}
+          totalRebuys={autoRebuyCountRef.current}
           profitLoss={sessionPLRef.current}
           biggestPot={biggestPotRef.current}
           peakStack={peakStackRef.current}
           onClose={() => {
             // #6: Reset all session tracking refs to prevent stale data on re-seat
             handsPlayedRef.current = 0;
+            handsWonRef.current = 0;
             biggestPotRef.current = 0;
             peakStackRef.current = 0;
             sessionPLRef.current = 0;
