@@ -15,20 +15,20 @@
    ═══════════════════════════════════════════════════════════════════════════════ */
 
 .container {
-    min-height: 100vh;
-    width: 100%;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: flex-start;
-    position: relative;
-    overflow-x: hidden;
-    overflow-y: auto;
-    background: linear-gradient(180deg, #0a0a12 0%, #050510 50%, #0a1218 100%);
-    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-    /* Enhancement #6: Parallax perspective context */
-    perspective: 1200px;
-    perspective-origin: center 30%;
+  min-height: 100vh;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  position: relative;
+  overflow-x: hidden;
+  overflow-y: auto;
+  background: linear-gradient(180deg, #0a0a12 0%, #050510 50%, #0a1218 100%);
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  /* Enhancement #6: Parallax perspective context */
+  perspective: 1200px;
+  perspective-origin: center 30%;
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════════
@@ -37,109 +37,137 @@
 
 /* Hexagonal grid floor — perspective-rotated at viewport bottom */
 .gridFloor {
-    position: fixed;
-    bottom: 0;
-    left: 0;
-    right: 0;
-    height: 50vh;
-    background:
-        linear-gradient(180deg, transparent 0%, rgba(0, 212, 255, 0.03) 100%),
-        repeating-linear-gradient(
-            0deg, transparent, transparent 40px,
-            rgba(0, 212, 255, 0.05) 40px, rgba(0, 212, 255, 0.05) 41px
-        ),
-        repeating-linear-gradient(
-            90deg, transparent, transparent 40px,
-            rgba(0, 212, 255, 0.05) 40px, rgba(0, 212, 255, 0.05) 41px
-        );
-    transform: perspective(500px) rotateX(60deg) translateY(50%);
-    transform-origin: center bottom;
-    z-index: 0;
-    pointer-events: none;
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 50vh;
+  background:
+    linear-gradient(180deg, transparent 0%, rgba(0, 212, 255, 0.03) 100%),
+    repeating-linear-gradient(
+      0deg,
+      transparent,
+      transparent 40px,
+      rgba(0, 212, 255, 0.05) 40px,
+      rgba(0, 212, 255, 0.05) 41px
+    ),
+    repeating-linear-gradient(
+      90deg,
+      transparent,
+      transparent 40px,
+      rgba(0, 212, 255, 0.05) 40px,
+      rgba(0, 212, 255, 0.05) 41px
+    );
+  transform: perspective(500px) rotateX(60deg) translateY(50%);
+  transform-origin: center bottom;
+  z-index: 0;
+  pointer-events: none;
 }
 
 /* Volumetric light beam from top center */
 .volumetricLight {
-    position: fixed;
-    top: 0;
-    left: 50%;
-    width: 60vw;
-    height: 70vh;
-    transform: translateX(-50%);
-    background: radial-gradient(ellipse at top center, rgba(0, 212, 255, 0.08) 0%, transparent 60%);
-    pointer-events: none;
-    z-index: 0;
+  position: fixed;
+  top: 0;
+  left: 50%;
+  width: 60vw;
+  height: 70vh;
+  transform: translateX(-50%);
+  background: radial-gradient(ellipse at top center, rgba(0, 212, 255, 0.08) 0%, transparent 60%);
+  pointer-events: none;
+  z-index: 0;
 }
 
 /* Cinematic vignette */
 .vignette {
-    position: fixed;
-    inset: 0;
-    background: radial-gradient(ellipse at center, transparent 40%, rgba(0, 0, 0, 0.4) 100%);
-    z-index: 0;
-    pointer-events: none;
+  position: fixed;
+  inset: 0;
+  background: radial-gradient(ellipse at center, transparent 40%, rgba(0, 0, 0, 0.4) 100%);
+  z-index: 0;
+  pointer-events: none;
 }
 
 /* Enhancement #6: Circuit brain background overlay — unifies World Hub visual language */
 .circuitOverlay {
-    position: fixed;
-    inset: 0;
-    background-image: url('/images/backgrounds/circuit-brain-bg.png');
-    background-size: cover;
-    background-position: center;
-    background-repeat: no-repeat;
-    opacity: 0.04;
-    z-index: 0;
-    pointer-events: none;
-    mix-blend-mode: screen;
+  position: fixed;
+  inset: 0;
+  background-image: url('/images/backgrounds/circuit-brain-bg.png');
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  opacity: 0.04;
+  z-index: 0;
+  pointer-events: none;
+  mix-blend-mode: screen;
 }
 
 /* Enhancement #1: Neuron lights — traveling cyan pulses along grid lines */
 .neuronLights {
-    position: fixed;
-    bottom: 0;
-    left: 0;
-    right: 0;
-    height: 50vh;
-    z-index: 0;
-    pointer-events: none;
-    overflow: hidden;
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 50vh;
+  z-index: 0;
+  pointer-events: none;
+  overflow: hidden;
 }
 
 .neuronLights::before,
 .neuronLights::after {
-    content: '';
-    position: absolute;
-    width: 6px;
-    height: 6px;
-    border-radius: 50%;
-    background: rgba(0, 212, 255, 0.8);
-    box-shadow: 0 0 12px rgba(0, 212, 255, 0.6), 0 0 24px rgba(0, 212, 255, 0.3);
-    filter: blur(1px);
+  content: '';
+  position: absolute;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: rgba(0, 212, 255, 0.8);
+  box-shadow:
+    0 0 12px rgba(0, 212, 255, 0.6),
+    0 0 24px rgba(0, 212, 255, 0.3);
+  filter: blur(1px);
 }
 
 .neuronLights::before {
-    animation: neuronTravelH 8s linear infinite;
-    top: 30%;
+  animation: neuronTravelH 8s linear infinite;
+  top: 30%;
 }
 
 .neuronLights::after {
-    animation: neuronTravelV 10s linear infinite 3s;
-    left: 60%;
+  animation: neuronTravelV 10s linear infinite 3s;
+  left: 60%;
 }
 
 @keyframes neuronTravelH {
-    0% { left: -10px; opacity: 0; }
-    5% { opacity: 1; }
-    95% { opacity: 1; }
-    100% { left: 100%; opacity: 0; }
+  0% {
+    left: -10px;
+    opacity: 0;
+  }
+  5% {
+    opacity: 1;
+  }
+  95% {
+    opacity: 1;
+  }
+  100% {
+    left: 100%;
+    opacity: 0;
+  }
 }
 
 @keyframes neuronTravelV {
-    0% { top: 100%; opacity: 0; }
-    5% { opacity: 0.8; }
-    95% { opacity: 0.8; }
-    100% { top: -10px; opacity: 0; }
+  0% {
+    top: 100%;
+    opacity: 0;
+  }
+  5% {
+    opacity: 0.8;
+  }
+  95% {
+    opacity: 0.8;
+  }
+  100% {
+    top: -10px;
+    opacity: 0;
+  }
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════════
@@ -147,18 +175,18 @@
    ═══════════════════════════════════════════════════════════════════════════════ */
 
 .mainContent {
-    width: 100%;
-    max-width: 960px;
-    margin: 0 auto;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    padding: 0 16px 100px 16px;
-    box-sizing: border-box;
-    z-index: 10;
-    position: relative;
-    /* Enhancement #6: Content stays flat in parallax context */
-    transform: translateZ(0);
+  width: 100%;
+  max-width: 960px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 0 16px 100px 16px;
+  box-sizing: border-box;
+  z-index: 10;
+  position: relative;
+  /* Enhancement #6: Content stays flat in parallax context */
+  transform: translateZ(0);
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════════
@@ -166,117 +194,171 @@
    ═══════════════════════════════════════════════════════════════════════════════ */
 
 .actionBarRow {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    width: 100%;
-    z-index: 20;
-    margin: 8px 0 16px 0;
-    padding: 0;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 100%;
+  z-index: 20;
+  margin: 8px 0 4px 0;
+  padding: 0;
 }
 
 .actionBarWrapper {
-    position: relative;
-    width: 100%;
-    max-width: 600px;
-    border-radius: 12px;
-    overflow: hidden;
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+  position: relative;
+  width: 100%;
+  max-width: 600px;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+  transition: box-shadow 0.3s ease;
+}
+
+.actionBarWrapper:hover {
+  box-shadow:
+    0 6px 30px rgba(0, 0, 0, 0.5),
+    0 0 20px rgba(0, 212, 255, 0.1);
 }
 
 .actionBarImage {
-    width: 100%;
-    height: auto;
-    object-fit: contain;
-    display: block;
+  width: 100%;
+  height: auto;
+  object-fit: contain;
+  display: block;
 }
 
 /* Clickable zones overlaid on action bar */
 .actionZoneLeft,
 .actionZoneCenter,
 .actionZoneRight {
-    position: absolute;
-    top: 15%;
-    height: 70%;
-    background: transparent;
-    border: none;
-    cursor: pointer;
+  position: absolute;
+  top: 15%;
+  height: 70%;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  transition:
+    background 0.25s ease,
+    box-shadow 0.25s ease;
+  border-radius: 8px;
 }
 
-.actionZoneLeft { left: 0; width: 25%; }
-.actionZoneCenter { left: 25%; width: 50%; }
-.actionZoneRight { right: 0; width: 25%; }
+.actionZoneLeft:hover,
+.actionZoneCenter:hover,
+.actionZoneRight:hover {
+  background: rgba(0, 212, 255, 0.08);
+  box-shadow: inset 0 0 20px rgba(0, 212, 255, 0.1);
+}
+
+.actionZoneLeft:active,
+.actionZoneCenter:active,
+.actionZoneRight:active {
+  background: rgba(0, 212, 255, 0.15);
+  box-shadow: inset 0 0 30px rgba(0, 212, 255, 0.15);
+}
+
+.actionZoneLeft {
+  left: 0;
+  width: 25%;
+}
+.actionZoneCenter {
+  left: 25%;
+  width: 50%;
+}
+.actionZoneRight {
+  right: 0;
+  width: 25%;
+}
 
 /* ═══════════════════════════════════════════════════════════════════════════════
    FEATURED CARD — Center Holographic Card (Shark Club)
    ═══════════════════════════════════════════════════════════════════════════════ */
 
 .featuredCardContainer {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    margin: 8px 0 24px 0;
-    position: relative;
-    animation: scaleIn 0.7s ease-out 100ms both;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin: 8px 0 24px 0;
+  position: relative;
+  animation: scaleIn 0.7s ease-out 100ms both;
 }
 
 /* Holographic pedestal glow under featured card */
 .featuredPedestal {
-    position: absolute;
-    bottom: -10px;
-    width: 260px;
-    height: 40px;
-    border-radius: 50%;
-    background: radial-gradient(ellipse, rgba(0, 212, 255, 0.35), rgba(0, 136, 255, 0.15), transparent 70%);
-    filter: blur(10px);
-    animation: pedestalPulse 4s ease-in-out infinite;
-    z-index: 0;
+  position: absolute;
+  bottom: -10px;
+  width: 260px;
+  height: 40px;
+  border-radius: 50%;
+  background: radial-gradient(
+    ellipse,
+    rgba(0, 212, 255, 0.35),
+    rgba(0, 136, 255, 0.15),
+    transparent 70%
+  );
+  filter: blur(10px);
+  animation: pedestalPulse 4s ease-in-out infinite;
+  z-index: 0;
 }
 
 .featuredCard {
-    position: relative;
-    width: 280px;
-    cursor: pointer;
-    transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
-    border-radius: 12px;
-    overflow: hidden;
-    flex-shrink: 0;
-    z-index: 10;
-    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5), 0 0 30px rgba(0, 212, 255, 0.15);
+  position: relative;
+  width: 280px;
+  cursor: pointer;
+  transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+  border-radius: 12px;
+  overflow: hidden;
+  flex-shrink: 0;
+  z-index: 10;
+  box-shadow:
+    0 20px 50px rgba(0, 0, 0, 0.5),
+    0 0 30px rgba(0, 212, 255, 0.15);
 }
 
 .featuredCard:hover {
-    transform: scale(1.04) translateY(-6px);
-    box-shadow: 0 30px 70px rgba(0, 0, 0, 0.5), 0 0 50px rgba(0, 212, 255, 0.25);
+  transform: scale(1.04) translateY(-6px);
+  box-shadow:
+    0 30px 70px rgba(0, 0, 0, 0.5),
+    0 0 50px rgba(0, 212, 255, 0.25);
 }
 
 .cardSkeleton {
-    width: 280px;
-    height: 475px;
-    background: linear-gradient(
-        90deg,
-        rgba(10, 20, 40, 0.8) 0%,
-        rgba(15, 30, 55, 0.8) 50%,
-        rgba(10, 20, 40, 0.8) 100%
-    );
-    background-size: 200% 100%;
-    animation: skeletonShimmer 2s infinite;
-    border-radius: 12px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: rgba(0, 212, 255, 0.4);
-    font-size: 14px;
+  width: 280px;
+  height: 475px;
+  background: linear-gradient(
+    90deg,
+    rgba(10, 20, 40, 0.8) 0%,
+    rgba(15, 30, 55, 0.8) 50%,
+    rgba(10, 20, 40, 0.8) 100%
+  );
+  background-size: 200% 100%;
+  animation: skeletonShimmer 2s infinite;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: rgba(0, 212, 255, 0.4);
+  font-size: 14px;
 }
 
 @keyframes skeletonShimmer {
-    0% { background-position: 200% 0; }
-    100% { background-position: -200% 0; }
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
 }
 
 @keyframes pedestalPulse {
-    0%, 100% { opacity: 0.6; transform: scale(1); }
-    50% { opacity: 1; transform: scale(1.05); }
+  0%,
+  100% {
+    opacity: 0.6;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.05);
+  }
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════════
@@ -284,421 +366,513 @@
    ═══════════════════════════════════════════════════════════════════════════════ */
 
 .clubCarousel {
-    display: flex;
-    align-items: flex-end;
-    gap: 20px;
-    width: 100%;
-    padding: 20px 40px 40px 40px;
-    box-sizing: border-box;
-    overflow-x: auto;
-    scroll-snap-type: x mandatory;
-    -webkit-overflow-scrolling: touch;
-    scrollbar-width: none;
-    z-index: 10;
-    position: relative;
+  display: flex;
+  align-items: flex-end;
+  gap: 20px;
+  width: 100%;
+  padding: 20px 40px 40px 40px;
+  box-sizing: border-box;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+  z-index: 10;
+  position: relative;
 }
 
 .clubCarousel::-webkit-scrollbar {
-    display: none;
+  display: none;
 }
 
 /* ── USER CLUB CARDS in the carousel ────────────────────────────────────── */
 
 .carouselCard {
-    flex: 0 0 auto;
-    width: 220px;
-    aspect-ratio: 7 / 11;
-    cursor: pointer;
-    position: relative;
-    scroll-snap-align: center;
-    transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
-    animation: cardRise 0.6s ease-out both;
-    perspective: 800px;
+  flex: 0 0 auto;
+  width: 220px;
+  aspect-ratio: 7 / 11;
+  cursor: pointer;
+  position: relative;
+  scroll-snap-align: center;
+  transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+  animation: cardRise 0.6s ease-out both;
+  perspective: 800px;
 }
 
-.carouselCard:nth-child(1) { animation-delay: 200ms; }
-.carouselCard:nth-child(2) { animation-delay: 280ms; }
-.carouselCard:nth-child(3) { animation-delay: 360ms; }
-.carouselCard:nth-child(4) { animation-delay: 440ms; }
-.carouselCard:nth-child(5) { animation-delay: 520ms; }
-.carouselCard:nth-child(6) { animation-delay: 600ms; }
-.carouselCard:nth-child(7) { animation-delay: 680ms; }
+.carouselCard:nth-child(1) {
+  animation-delay: 200ms;
+}
+.carouselCard:nth-child(2) {
+  animation-delay: 280ms;
+}
+.carouselCard:nth-child(3) {
+  animation-delay: 360ms;
+}
+.carouselCard:nth-child(4) {
+  animation-delay: 440ms;
+}
+.carouselCard:nth-child(5) {
+  animation-delay: 520ms;
+}
+.carouselCard:nth-child(6) {
+  animation-delay: 600ms;
+}
+.carouselCard:nth-child(7) {
+  animation-delay: 680ms;
+}
 
 .carouselCard:hover {
-    transform: translateY(-10px) scale(1.05);
+  transform: translateY(-10px) scale(1.05);
 }
 
 .carouselCard:hover .carouselCardFace {
-    box-shadow: 0 24px 60px rgba(0, 0, 0, 0.6), 0 0 30px rgba(0, 212, 255, 0.2);
+  box-shadow:
+    0 24px 60px rgba(0, 0, 0, 0.6),
+    0 0 30px rgba(0, 212, 255, 0.2);
 }
 
 /* Pedestal glow under carousel cards */
 .carouselCardPedestal {
-    position: absolute;
-    bottom: -8px;
-    left: 50%;
-    transform: translateX(-50%);
-    width: 180px;
-    height: 35px;
-    border-radius: 50%;
-    background: radial-gradient(ellipse, rgba(0, 212, 255, 0.3), rgba(0, 136, 255, 0.15), transparent 70%);
-    filter: blur(8px);
-    opacity: 0.5;
-    z-index: 0;
-    animation: pedestalPulse 4s ease-in-out infinite;
+  position: absolute;
+  bottom: -8px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 180px;
+  height: 35px;
+  border-radius: 50%;
+  background: radial-gradient(
+    ellipse,
+    rgba(0, 212, 255, 0.3),
+    rgba(0, 136, 255, 0.15),
+    transparent 70%
+  );
+  filter: blur(8px);
+  opacity: 0.5;
+  z-index: 0;
+  animation: pedestalPulse 4s ease-in-out infinite;
 }
 
 /* Card face — tall, premium glass style matching Shark Club */
 .carouselCardFace {
-    position: relative;
-    width: 100%;
-    aspect-ratio: 7 / 11;
-    border-radius: 12px;
-    overflow: hidden;
-    background: linear-gradient(145deg, rgba(8, 20, 40, 0.92), rgba(5, 12, 28, 0.96));
-    border: 1px solid rgba(0, 212, 255, 0.18);
-    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5), 0 0 20px rgba(0, 212, 255, 0.1);
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: space-between;
-    padding: 20px 14px;
-    z-index: 2;
-    transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.4s ease;
+  position: relative;
+  width: 100%;
+  aspect-ratio: 7 / 11;
+  border-radius: 12px;
+  overflow: hidden;
+  background: linear-gradient(145deg, rgba(8, 20, 40, 0.92), rgba(5, 12, 28, 0.96));
+  border: 1px solid rgba(0, 212, 255, 0.18);
+  box-shadow:
+    0 20px 50px rgba(0, 0, 0, 0.5),
+    0 0 20px rgba(0, 212, 255, 0.1);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: space-between;
+  padding: 20px 14px;
+  z-index: 2;
+  transition:
+    transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1),
+    box-shadow 0.4s ease;
 }
 
 .carouselCardFace::before {
-    content: '';
-    position: absolute;
-    inset: 0;
-    border-radius: 12px;
-    background: linear-gradient(135deg, rgba(0, 212, 255, 0.06) 0%, transparent 50%, rgba(0, 255, 136, 0.04) 100%);
-    pointer-events: none;
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 12px;
+  background: linear-gradient(
+    135deg,
+    rgba(0, 212, 255, 0.06) 0%,
+    transparent 50%,
+    rgba(0, 255, 136, 0.04) 100%
+  );
+  pointer-events: none;
 }
 
 /* Unique color accents per carousel card */
-.carouselCard:nth-child(6n+1) .carouselCardFace { border-color: rgba(0, 212, 255, 0.22); }
-.carouselCard:nth-child(6n+2) .carouselCardFace { border-color: rgba(0, 255, 136, 0.2); }
-.carouselCard:nth-child(6n+3) .carouselCardFace { border-color: rgba(0, 191, 255, 0.2); }
-.carouselCard:nth-child(6n+4) .carouselCardFace { border-color: rgba(77, 210, 255, 0.2); }
-.carouselCard:nth-child(6n+5) .carouselCardFace { border-color: rgba(0, 255, 159, 0.2); }
-.carouselCard:nth-child(6n+6) .carouselCardFace { border-color: rgba(200, 255, 255, 0.17); }
+.carouselCard:nth-child(6n + 1) .carouselCardFace {
+  border-color: rgba(0, 212, 255, 0.22);
+}
+.carouselCard:nth-child(6n + 2) .carouselCardFace {
+  border-color: rgba(0, 255, 136, 0.2);
+}
+.carouselCard:nth-child(6n + 3) .carouselCardFace {
+  border-color: rgba(0, 191, 255, 0.2);
+}
+.carouselCard:nth-child(6n + 4) .carouselCardFace {
+  border-color: rgba(77, 210, 255, 0.2);
+}
+.carouselCard:nth-child(6n + 5) .carouselCardFace {
+  border-color: rgba(0, 255, 159, 0.2);
+}
+.carouselCard:nth-child(6n + 6) .carouselCardFace {
+  border-color: rgba(200, 255, 255, 0.17);
+}
 
 .carouselCardTitle {
-    font-size: 13px;
-    font-weight: 800;
-    color: #fff;
-    text-transform: uppercase;
-    letter-spacing: 1.5px;
-    text-shadow: 0 0 14px rgba(0, 212, 255, 0.5);
-    margin: 0;
-    text-align: center;
-    line-height: 1.3;
-    word-wrap: break-word;
+  font-size: 13px;
+  font-weight: 800;
+  color: #fff;
+  text-transform: uppercase;
+  letter-spacing: 1.5px;
+  text-shadow: 0 0 14px rgba(0, 212, 255, 0.5);
+  margin: 0;
+  text-align: center;
+  line-height: 1.3;
+  word-wrap: break-word;
 }
 
 .carouselCardRole {
-    font-size: 9px;
-    font-weight: 700;
-    color: rgba(0, 212, 255, 0.85);
-    text-transform: uppercase;
-    letter-spacing: 2.5px;
-    margin-top: 2px;
+  font-size: 9px;
+  font-weight: 700;
+  color: rgba(0, 212, 255, 0.85);
+  text-transform: uppercase;
+  letter-spacing: 2.5px;
+  margin-top: 2px;
 }
 
 .carouselCardCenter {
-    flex: 1;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    padding: 12px 0;
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 12px 0;
 }
 
 .carouselCardLogo {
-    width: 64px;
-    height: 64px;
-    object-fit: contain;
-    border-radius: 10px;
-    filter: drop-shadow(0 0 10px rgba(0, 212, 255, 0.3));
+  width: 64px;
+  height: 64px;
+  object-fit: contain;
+  border-radius: 10px;
+  filter: drop-shadow(0 0 10px rgba(0, 212, 255, 0.3));
 }
 
 .carouselCardIcon {
-    width: 64px;
-    height: 64px;
-    border-radius: 50%;
-    background: radial-gradient(circle, rgba(0, 212, 255, 0.12) 0%, transparent 70%);
-    border: 2px solid rgba(0, 212, 255, 0.22);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 28px;
-    color: rgba(0, 212, 255, 0.65);
-    filter: drop-shadow(0 0 10px rgba(0, 212, 255, 0.3));
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(0, 212, 255, 0.12) 0%, transparent 70%);
+  border: 2px solid rgba(0, 212, 255, 0.22);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 28px;
+  color: rgba(0, 212, 255, 0.65);
+  filter: drop-shadow(0 0 10px rgba(0, 212, 255, 0.3));
 }
 
 .carouselCardMeta {
-    font-size: 10px;
-    font-weight: 600;
-    color: rgba(255, 255, 255, 0.65);
-    text-transform: uppercase;
-    letter-spacing: 1.2px;
-    text-align: center;
+  font-size: 10px;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.65);
+  text-transform: uppercase;
+  letter-spacing: 1.2px;
+  text-align: center;
 }
 
 /* ── SHARK CLUB FEATURED CARD in the carousel ──────────────────────────── */
 
 .carouselCardFeatured {
-    flex: 0 0 auto;
-    width: 280px;
-    cursor: pointer;
-    position: relative;
-    scroll-snap-align: center;
-    transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
-    animation: scaleIn 0.7s ease-out 100ms both, idleFloat 6s ease-in-out infinite;
-    border-radius: 12px;
-    z-index: 10;
-    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5), 0 0 30px rgba(0, 212, 255, 0.15);
+  flex: 0 0 auto;
+  width: 280px;
+  cursor: pointer;
+  position: relative;
+  scroll-snap-align: center;
+  transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+  animation:
+    scaleIn 0.7s ease-out 100ms both,
+    idleFloat 6s ease-in-out infinite;
+  border-radius: 12px;
+  z-index: 10;
+  box-shadow:
+    0 20px 50px rgba(0, 0, 0, 0.5),
+    0 0 30px rgba(0, 212, 255, 0.15);
 }
 
 .carouselCardFeatured:hover {
-    transform: scale(1.04) translateY(-6px);
-    box-shadow: 0 30px 70px rgba(0, 0, 0, 0.5), 0 0 50px rgba(0, 212, 255, 0.25);
+  transform: scale(1.04) translateY(-6px);
+  box-shadow:
+    0 30px 70px rgba(0, 0, 0, 0.5),
+    0 0 50px rgba(0, 212, 255, 0.25);
 }
 
 /* Pedestal glow under the featured Shark Club card */
 .carouselFeaturedPedestal {
-    position: absolute;
-    bottom: -10px;
-    left: 50%;
-    transform: translateX(-50%);
-    width: 260px;
-    height: 40px;
-    border-radius: 50%;
-    background: radial-gradient(ellipse, rgba(0, 212, 255, 0.4), rgba(0, 136, 255, 0.2), transparent 70%);
-    filter: blur(10px);
-    animation: pedestalPulse 4s ease-in-out infinite;
-    z-index: 0;
+  position: absolute;
+  bottom: -10px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 260px;
+  height: 40px;
+  border-radius: 50%;
+  background: radial-gradient(
+    ellipse,
+    rgba(0, 212, 255, 0.4),
+    rgba(0, 136, 255, 0.2),
+    transparent 70%
+  );
+  filter: blur(10px);
+  animation: pedestalPulse 4s ease-in-out infinite;
+  z-index: 0;
 }
 
 /* ── ENHANCEMENT #2: Empty State CTA Cards ─────────────────────────────── */
 
 .ctaCard {
-    flex: 0 0 auto;
-    width: 220px;
-    aspect-ratio: 7 / 11;
-    cursor: pointer;
-    position: relative;
-    scroll-snap-align: center;
-    transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1), border-color 0.3s;
-    animation: cardRise 0.6s ease-out both;
-    border-radius: 12px;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    gap: 16px;
-    border: 2px dashed rgba(0, 212, 255, 0.25);
-    background: linear-gradient(145deg, rgba(8, 20, 40, 0.5), rgba(5, 12, 28, 0.6));
-    backdrop-filter: blur(8px);
-    -webkit-backdrop-filter: blur(8px);
-    padding: 24px;
-    box-sizing: border-box;
+  flex: 0 0 auto;
+  width: 220px;
+  aspect-ratio: 7 / 11;
+  cursor: pointer;
+  position: relative;
+  scroll-snap-align: center;
+  transition:
+    transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1),
+    border-color 0.3s;
+  animation: cardRise 0.6s ease-out both;
+  border-radius: 12px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  border: 2px dashed rgba(0, 212, 255, 0.25);
+  background: linear-gradient(145deg, rgba(8, 20, 40, 0.5), rgba(5, 12, 28, 0.6));
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  padding: 24px;
+  box-sizing: border-box;
 }
 
-.ctaCard:nth-child(1) { animation-delay: 300ms; }
-.ctaCard:nth-child(odd):not(:first-child) { animation-delay: 500ms; }
+.ctaCard:nth-child(1) {
+  animation-delay: 300ms;
+}
+.ctaCard:nth-child(odd):not(:first-child) {
+  animation-delay: 500ms;
+}
 
 .ctaCard:hover {
-    transform: translateY(-8px) scale(1.03);
-    border-color: rgba(0, 212, 255, 0.5);
-    background: linear-gradient(145deg, rgba(8, 20, 40, 0.7), rgba(5, 12, 28, 0.8));
+  transform: translateY(-8px) scale(1.03);
+  border-color: rgba(0, 212, 255, 0.5);
+  background: linear-gradient(145deg, rgba(8, 20, 40, 0.7), rgba(5, 12, 28, 0.8));
 }
 
 .ctaCardIcon {
-    width: 64px;
-    height: 64px;
-    border-radius: 50%;
-    background: radial-gradient(circle, rgba(0, 212, 255, 0.15) 0%, transparent 70%);
-    border: 2px solid rgba(0, 212, 255, 0.3);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 28px;
-    color: rgba(0, 212, 255, 0.8);
-    transition: all 0.3s;
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(0, 212, 255, 0.15) 0%, transparent 70%);
+  border: 2px solid rgba(0, 212, 255, 0.3);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 28px;
+  color: rgba(0, 212, 255, 0.8);
+  transition: all 0.3s;
 }
 
 .ctaCard:hover .ctaCardIcon {
-    border-color: rgba(0, 212, 255, 0.6);
-    color: rgba(0, 212, 255, 1);
-    box-shadow: 0 0 20px rgba(0, 212, 255, 0.2);
+  border-color: rgba(0, 212, 255, 0.6);
+  color: rgba(0, 212, 255, 1);
+  box-shadow: 0 0 20px rgba(0, 212, 255, 0.2);
 }
 
 .ctaCardLabel {
-    font-size: 12px;
-    font-weight: 700;
-    color: rgba(0, 212, 255, 0.75);
-    text-transform: uppercase;
-    letter-spacing: 2px;
-    text-align: center;
+  font-size: 12px;
+  font-weight: 700;
+  color: rgba(0, 212, 255, 0.75);
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  text-align: center;
 }
 
 .ctaCardSub {
-    font-size: 10px;
-    font-weight: 500;
-    color: rgba(255, 255, 255, 0.4);
-    text-align: center;
-    line-height: 1.4;
+  font-size: 10px;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.4);
+  text-align: center;
+  line-height: 1.4;
 }
 
 /* ── ENHANCEMENT #3: Quick-Flip Stats Back ─────────────────────────────── */
 
 .carouselCardQuickFlipped .clubCardFlipInner {
-    transform: rotateY(180deg) !important;
+  transform: rotateY(180deg) !important;
 }
 
 .carouselCardStatsBack {
-    position: relative;
-    width: 100%;
-    height: 100%;
-    border-radius: 12px;
-    background: linear-gradient(145deg, rgba(5, 15, 35, 0.96), rgba(3, 10, 25, 0.98));
-    border: 1px solid rgba(0, 212, 255, 0.22);
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    gap: 10px;
-    padding: 20px 14px;
-    box-sizing: border-box;
-    overflow: hidden;
+  position: relative;
+  width: 100%;
+  height: 100%;
+  border-radius: 12px;
+  background: linear-gradient(145deg, rgba(5, 15, 35, 0.96), rgba(3, 10, 25, 0.98));
+  border: 1px solid rgba(0, 212, 255, 0.22);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 20px 14px;
+  box-sizing: border-box;
+  overflow: hidden;
 }
 
 .carouselCardStatsBack::before {
-    content: '';
-    position: absolute;
-    inset: 0;
-    border-radius: 12px;
-    background: linear-gradient(135deg, rgba(0, 212, 255, 0.04) 0%, transparent 50%, rgba(0, 255, 136, 0.03) 100%);
-    pointer-events: none;
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 12px;
+  background: linear-gradient(
+    135deg,
+    rgba(0, 212, 255, 0.04) 0%,
+    transparent 50%,
+    rgba(0, 255, 136, 0.03) 100%
+  );
+  pointer-events: none;
 }
 
 .statsBackTitle {
-    font-size: 11px;
-    font-weight: 800;
-    color: rgba(0, 212, 255, 0.9);
-    text-transform: uppercase;
-    letter-spacing: 2px;
-    text-shadow: 0 0 10px rgba(0, 212, 255, 0.4);
+  font-size: 11px;
+  font-weight: 800;
+  color: rgba(0, 212, 255, 0.9);
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  text-shadow: 0 0 10px rgba(0, 212, 255, 0.4);
 }
 
 .statsBackRow {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    width: 100%;
-    padding: 6px 0;
-    border-bottom: 1px solid rgba(0, 212, 255, 0.06);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  padding: 6px 0;
+  border-bottom: 1px solid rgba(0, 212, 255, 0.06);
 }
 
 .statsBackLabel {
-    font-size: 9px;
-    font-weight: 600;
-    color: rgba(255, 255, 255, 0.5);
-    text-transform: uppercase;
-    letter-spacing: 1px;
+  font-size: 9px;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.5);
+  text-transform: uppercase;
+  letter-spacing: 1px;
 }
 
 .statsBackValue {
-    font-size: 13px;
-    font-weight: 700;
-    color: #fff;
-    text-shadow: 0 0 8px rgba(0, 212, 255, 0.3);
+  font-size: 13px;
+  font-weight: 700;
+  color: #fff;
+  text-shadow: 0 0 8px rgba(0, 212, 255, 0.3);
 }
 
 .statsBackHint {
-    font-size: 8px;
-    font-weight: 600;
-    color: rgba(0, 212, 255, 0.5);
-    text-transform: uppercase;
-    letter-spacing: 1.5px;
-    margin-top: 8px;
+  font-size: 8px;
+  font-weight: 600;
+  color: rgba(0, 212, 255, 0.5);
+  text-transform: uppercase;
+  letter-spacing: 1.5px;
+  margin-top: 8px;
 }
 
 /* ── ENHANCEMENT #8: Drag-to-Reorder Visual States ─────────────────────── */
 
 .cardDragging {
-    opacity: 0.4;
-    transform: scale(0.92) !important;
-    filter: grayscale(0.3);
-    transition: all 0.2s ease;
+  opacity: 0.4;
+  transform: scale(0.92) !important;
+  filter: grayscale(0.3);
+  transition: all 0.2s ease;
 }
 
 .cardDragOver {
-    border: 2px solid rgba(0, 212, 255, 0.5) !important;
-    border-radius: 14px;
-    box-shadow: 0 0 30px rgba(0, 212, 255, 0.15);
+  border: 2px solid rgba(0, 212, 255, 0.5) !important;
+  border-radius: 14px;
+  box-shadow: 0 0 30px rgba(0, 212, 255, 0.15);
 }
 
 /* ── ENHANCEMENT #9: Holographic Shimmer Effect ────────────────────────── */
 
 .carouselCardFace::after {
-    content: '';
-    position: absolute;
-    inset: 0;
-    border-radius: 12px;
-    background: linear-gradient(
-        105deg,
-        transparent 30%,
-        rgba(255, 255, 255, 0.06) 45%,
-        rgba(0, 212, 255, 0.08) 50%,
-        rgba(255, 255, 255, 0.06) 55%,
-        transparent 70%
-    );
-    background-size: 250% 100%;
-    animation: shimmerSweep 6s ease-in-out infinite;
-    pointer-events: none;
-    z-index: 5;
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 12px;
+  background: linear-gradient(
+    105deg,
+    transparent 30%,
+    rgba(255, 255, 255, 0.06) 45%,
+    rgba(0, 212, 255, 0.08) 50%,
+    rgba(255, 255, 255, 0.06) 55%,
+    transparent 70%
+  );
+  background-size: 250% 100%;
+  animation: shimmerSweep 6s ease-in-out infinite;
+  pointer-events: none;
+  z-index: 5;
 }
 
-.carouselCard:nth-child(6n+1) .carouselCardFace::after { animation-delay: 0s; }
-.carouselCard:nth-child(6n+2) .carouselCardFace::after { animation-delay: 1s; }
-.carouselCard:nth-child(6n+3) .carouselCardFace::after { animation-delay: 2s; }
-.carouselCard:nth-child(6n+4) .carouselCardFace::after { animation-delay: 3s; }
-.carouselCard:nth-child(6n+5) .carouselCardFace::after { animation-delay: 4s; }
-.carouselCard:nth-child(6n+6) .carouselCardFace::after { animation-delay: 5s; }
+.carouselCard:nth-child(6n + 1) .carouselCardFace::after {
+  animation-delay: 0s;
+}
+.carouselCard:nth-child(6n + 2) .carouselCardFace::after {
+  animation-delay: 1s;
+}
+.carouselCard:nth-child(6n + 3) .carouselCardFace::after {
+  animation-delay: 2s;
+}
+.carouselCard:nth-child(6n + 4) .carouselCardFace::after {
+  animation-delay: 3s;
+}
+.carouselCard:nth-child(6n + 5) .carouselCardFace::after {
+  animation-delay: 4s;
+}
+.carouselCard:nth-child(6n + 6) .carouselCardFace::after {
+  animation-delay: 5s;
+}
 
 @keyframes shimmerSweep {
-    0%   { background-position: 200% 0; }
-    50%  { background-position: -50% 0; }
-    100% { background-position: 200% 0; }
+  0% {
+    background-position: 200% 0;
+  }
+  50% {
+    background-position: -50% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
 }
 
 /* ── ENHANCEMENT #10: Active Table Pulsing Green Ring ──────────────────── */
 
 .carouselCardLive {
-    border: 2px solid rgba(0, 255, 100, 0.4);
-    border-radius: 14px;
-    animation: cardRise 0.6s ease-out both, pulseRing 2.5s ease-in-out infinite;
+  border: 2px solid rgba(0, 255, 100, 0.4);
+  border-radius: 14px;
+  animation:
+    cardRise 0.6s ease-out both,
+    pulseRing 2.5s ease-in-out infinite;
 }
 
 .carouselCardLive .carouselCardPedestal {
-    background: radial-gradient(ellipse, rgba(0, 255, 100, 0.35), rgba(0, 200, 80, 0.15), transparent 70%) !important;
+  background: radial-gradient(
+    ellipse,
+    rgba(0, 255, 100, 0.35),
+    rgba(0, 200, 80, 0.15),
+    transparent 70%
+  ) !important;
 }
 
 .carouselCardLive .carouselCardFace {
-    border-color: rgba(0, 255, 100, 0.25);
+  border-color: rgba(0, 255, 100, 0.25);
 }
 
 @keyframes pulseRing {
-    0%, 100% {
-        border-color: rgba(0, 255, 100, 0.3);
-        box-shadow: 0 0 15px rgba(0, 255, 100, 0.1);
-    }
-    50% {
-        border-color: rgba(0, 255, 100, 0.6);
-        box-shadow: 0 0 30px rgba(0, 255, 100, 0.2), 0 0 60px rgba(0, 255, 100, 0.08);
-    }
+  0%,
+  100% {
+    border-color: rgba(0, 255, 100, 0.3);
+    box-shadow: 0 0 15px rgba(0, 255, 100, 0.1);
+  }
+  50% {
+    border-color: rgba(0, 255, 100, 0.6);
+    box-shadow:
+      0 0 30px rgba(0, 255, 100, 0.2),
+      0 0 60px rgba(0, 255, 100, 0.08);
+  }
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════════
@@ -707,256 +881,323 @@
    ═══════════════════════════════════════════════════════════════════════════════ */
 
 .clubCardsRow {
-    display: flex;
-    gap: 16px;
-    width: 100%;
-    justify-content: center;
-    flex-wrap: wrap;
-    padding: 0 0 20px 0;
-    z-index: 10;
+  display: flex;
+  gap: 16px;
+  width: 100%;
+  justify-content: center;
+  flex-wrap: wrap;
+  padding: 0 0 20px 0;
+  z-index: 10;
 }
 
 .clubCard {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    cursor: pointer;
-    width: clamp(130px, 20vw, 170px);
-    transform: translateY(0) scale(1);
-    transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
-    position: relative;
-    animation: cardRise 0.6s ease-out both;
-    /* Enhancement #3: 3D perspective context for hover tilt */
-    perspective: 800px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  cursor: pointer;
+  width: clamp(130px, 20vw, 170px);
+  transform: translateY(0) scale(1);
+  transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+  position: relative;
+  animation: cardRise 0.6s ease-out both;
+  /* Enhancement #3: 3D perspective context for hover tilt */
+  perspective: 800px;
 }
 
 /* Enhancement #3: Holographic hover tilt — 3D perspective */
 .clubCard:hover {
-    transform: translateY(-10px) scale(1.08);
+  transform: translateY(-10px) scale(1.08);
 }
 
 .clubCard:hover .clubCardFace {
-    transform: rotateY(-5deg) rotateX(2deg);
-    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5), 0 0 25px rgba(0, 212, 255, 0.15);
+  transform: rotateY(-5deg) rotateX(2deg);
+  box-shadow:
+    0 20px 50px rgba(0, 0, 0, 0.5),
+    0 0 25px rgba(0, 212, 255, 0.15);
 }
 
 /* Enhancement #2: Staggered entrance delays per card */
-.clubCard:nth-child(1) { animation-delay: 200ms; }
-.clubCard:nth-child(2) { animation-delay: 280ms; }
-.clubCard:nth-child(3) { animation-delay: 360ms; }
-.clubCard:nth-child(4) { animation-delay: 440ms; }
-.clubCard:nth-child(5) { animation-delay: 520ms; }
-.clubCard:nth-child(6) { animation-delay: 600ms; }
+.clubCard:nth-child(1) {
+  animation-delay: 200ms;
+}
+.clubCard:nth-child(2) {
+  animation-delay: 280ms;
+}
+.clubCard:nth-child(3) {
+  animation-delay: 360ms;
+}
+.clubCard:nth-child(4) {
+  animation-delay: 440ms;
+}
+.clubCard:nth-child(5) {
+  animation-delay: 520ms;
+}
+.clubCard:nth-child(6) {
+  animation-delay: 600ms;
+}
 
 /* Enhancement #9: Unique color accents per club card */
-.clubCard:nth-child(6n+1) .clubCardFace { border-color: rgba(0, 212, 255, 0.2); }
-.clubCard:nth-child(6n+2) .clubCardFace { border-color: rgba(0, 255, 136, 0.18); }
-.clubCard:nth-child(6n+3) .clubCardFace { border-color: rgba(0, 191, 255, 0.18); }
-.clubCard:nth-child(6n+4) .clubCardFace { border-color: rgba(77, 210, 255, 0.18); }
-.clubCard:nth-child(6n+5) .clubCardFace { border-color: rgba(0, 255, 159, 0.18); }
-.clubCard:nth-child(6n+6) .clubCardFace { border-color: rgba(200, 255, 255, 0.15); }
+.clubCard:nth-child(6n + 1) .clubCardFace {
+  border-color: rgba(0, 212, 255, 0.2);
+}
+.clubCard:nth-child(6n + 2) .clubCardFace {
+  border-color: rgba(0, 255, 136, 0.18);
+}
+.clubCard:nth-child(6n + 3) .clubCardFace {
+  border-color: rgba(0, 191, 255, 0.18);
+}
+.clubCard:nth-child(6n + 4) .clubCardFace {
+  border-color: rgba(77, 210, 255, 0.18);
+}
+.clubCard:nth-child(6n + 5) .clubCardFace {
+  border-color: rgba(0, 255, 159, 0.18);
+}
+.clubCard:nth-child(6n + 6) .clubCardFace {
+  border-color: rgba(200, 255, 255, 0.15);
+}
 
 /* Pedestal glow under each club card */
 .clubCardPedestal {
-    position: absolute;
-    bottom: 22px;
-    width: 120px;
-    height: 30px;
-    border-radius: 50%;
-    background: radial-gradient(ellipse, rgba(0, 212, 255, 0.3), rgba(0, 136, 255, 0.15), transparent 70%);
-    filter: blur(6px);
-    opacity: 0.5;
-    z-index: 0;
+  position: absolute;
+  bottom: 22px;
+  width: 120px;
+  height: 30px;
+  border-radius: 50%;
+  background: radial-gradient(
+    ellipse,
+    rgba(0, 212, 255, 0.3),
+    rgba(0, 136, 255, 0.15),
+    transparent 70%
+  );
+  filter: blur(6px);
+  opacity: 0.5;
+  z-index: 0;
 }
 
 /* Glass card face */
 .clubCardFace {
-    position: relative;
-    width: 100%;
-    aspect-ratio: 2 / 3;
-    border-radius: 10px;
-    overflow: hidden;
-    background: linear-gradient(145deg, rgba(8, 20, 40, 0.9), rgba(5, 12, 28, 0.95));
-    border: 1px solid rgba(0, 212, 255, 0.15);
-    box-shadow: 0 16px 40px rgba(0, 0, 0, 0.5), 0 0 15px rgba(0, 212, 255, 0.08);
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: space-between;
-    padding: 16px 10px;
-    z-index: 2;
-    transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.4s ease;
+  position: relative;
+  width: 100%;
+  aspect-ratio: 2 / 3;
+  border-radius: 10px;
+  overflow: hidden;
+  background: linear-gradient(145deg, rgba(8, 20, 40, 0.9), rgba(5, 12, 28, 0.95));
+  border: 1px solid rgba(0, 212, 255, 0.15);
+  box-shadow:
+    0 16px 40px rgba(0, 0, 0, 0.5),
+    0 0 15px rgba(0, 212, 255, 0.08);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 10px;
+  z-index: 2;
+  transition:
+    transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1),
+    box-shadow 0.4s ease;
 }
 
 .clubCardFace::before {
-    content: '';
-    position: absolute;
-    inset: 0;
-    border-radius: 10px;
-    background: linear-gradient(135deg, rgba(0, 212, 255, 0.06) 0%, transparent 50%, rgba(0, 255, 136, 0.04) 100%);
-    pointer-events: none;
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 10px;
+  background: linear-gradient(
+    135deg,
+    rgba(0, 212, 255, 0.06) 0%,
+    transparent 50%,
+    rgba(0, 255, 136, 0.04) 100%
+  );
+  pointer-events: none;
 }
 
 /* Glass bottom edge for 3D depth */
 .clubCardEdge {
-    position: absolute;
-    left: 3px;
-    bottom: -5px;
-    width: calc(100% - 6px);
-    height: 8px;
-    background: linear-gradient(90deg, rgba(50, 150, 200, 0.3), rgba(0, 180, 255, 0.2), rgba(100, 200, 255, 0.2));
-    border-radius: 0 0 6px 6px;
-    z-index: 1;
+  position: absolute;
+  left: 3px;
+  bottom: -5px;
+  width: calc(100% - 6px);
+  height: 8px;
+  background: linear-gradient(
+    90deg,
+    rgba(50, 150, 200, 0.3),
+    rgba(0, 180, 255, 0.2),
+    rgba(100, 200, 255, 0.2)
+  );
+  border-radius: 0 0 6px 6px;
+  z-index: 1;
 }
 
 .clubCardTitle {
-    font-size: 11px;
-    font-weight: 800;
-    color: #fff;
-    text-transform: uppercase;
-    letter-spacing: 1px;
-    text-shadow: 0 0 12px rgba(0, 212, 255, 0.4);
-    margin: 0;
-    text-align: center;
-    line-height: 1.2;
-    word-wrap: break-word;
+  font-size: 11px;
+  font-weight: 800;
+  color: #fff;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  text-shadow: 0 0 12px rgba(0, 212, 255, 0.4);
+  margin: 0;
+  text-align: center;
+  line-height: 1.2;
+  word-wrap: break-word;
 }
 
 .clubCardRole {
-    font-size: 8px;
-    font-weight: 600;
-    color: rgba(0, 212, 255, 0.85);
-    text-transform: uppercase;
-    letter-spacing: 2px;
-    margin-top: 2px;
+  font-size: 8px;
+  font-weight: 600;
+  color: rgba(0, 212, 255, 0.85);
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  margin-top: 2px;
 }
 
 .clubCardCenter {
-    flex: 1;
-    display: flex;
-    align-items: center;
-    justify-content: center;
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .clubCardLogo {
-    width: 52px;
-    height: 52px;
-    object-fit: contain;
-    border-radius: 8px;
-    filter: drop-shadow(0 0 8px rgba(0, 212, 255, 0.3));
+  width: 52px;
+  height: 52px;
+  object-fit: contain;
+  border-radius: 8px;
+  filter: drop-shadow(0 0 8px rgba(0, 212, 255, 0.3));
 }
 
 .clubCardIcon {
-    width: 52px;
-    height: 52px;
-    border-radius: 50%;
-    background: radial-gradient(circle, rgba(0, 212, 255, 0.1) 0%, transparent 70%);
-    border: 2px solid rgba(0, 212, 255, 0.2);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 22px;
-    color: rgba(0, 212, 255, 0.6);
-    filter: drop-shadow(0 0 8px rgba(0, 212, 255, 0.3));
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(0, 212, 255, 0.1) 0%, transparent 70%);
+  border: 2px solid rgba(0, 212, 255, 0.2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 22px;
+  color: rgba(0, 212, 255, 0.6);
+  filter: drop-shadow(0 0 8px rgba(0, 212, 255, 0.3));
 }
 
 .clubCardStats {
-    font-size: 9px;
-    font-weight: 600;
-    color: rgba(255, 255, 255, 0.6);
-    text-transform: uppercase;
-    letter-spacing: 1px;
-    text-align: center;
+  font-size: 9px;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.6);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  text-align: center;
 }
 
 .clubCardLabel {
-    margin-top: 8px;
-    font-size: 10px;
-    font-weight: 600;
-    color: rgba(255, 255, 255, 0.75);
-    text-align: center;
-    text-shadow: 0 0 8px rgba(0, 212, 255, 0.4);
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    max-width: 100%;
+  margin-top: 8px;
+  font-size: 10px;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.75);
+  text-align: center;
+  text-shadow: 0 0 8px rgba(0, 212, 255, 0.4);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
 }
 
 /* Enhancement #5: Skeleton loading for club cards while data loads */
 .clubCardsSkeleton {
-    display: flex;
-    gap: 16px;
-    width: 100%;
-    justify-content: center;
-    padding: 0 0 20px 0;
-    z-index: 10;
+  display: flex;
+  gap: 16px;
+  width: 100%;
+  justify-content: center;
+  padding: 0 0 20px 0;
+  z-index: 10;
 }
 
 .clubCardSkeletonItem {
-    width: clamp(130px, 20vw, 170px);
-    aspect-ratio: 2 / 3;
-    border-radius: 10px;
-    background: linear-gradient(
-        90deg,
-        rgba(10, 20, 40, 0.8) 0%,
-        rgba(15, 30, 55, 0.8) 50%,
-        rgba(10, 20, 40, 0.8) 100%
-    );
-    background-size: 200% 100%;
-    animation: skeletonShimmer 2s infinite;
-    border: 1px solid rgba(0, 212, 255, 0.06);
+  width: clamp(130px, 20vw, 170px);
+  aspect-ratio: 2 / 3;
+  border-radius: 10px;
+  background: linear-gradient(
+    90deg,
+    rgba(10, 20, 40, 0.8) 0%,
+    rgba(15, 30, 55, 0.8) 50%,
+    rgba(10, 20, 40, 0.8) 100%
+  );
+  background-size: 200% 100%;
+  animation: skeletonShimmer 2s infinite;
+  border: 1px solid rgba(0, 212, 255, 0.06);
 }
 
-.clubCardSkeletonItem:nth-child(1) { animation-delay: 0ms; }
-.clubCardSkeletonItem:nth-child(2) { animation-delay: 200ms; }
-.clubCardSkeletonItem:nth-child(3) { animation-delay: 400ms; }
+.clubCardSkeletonItem:nth-child(1) {
+  animation-delay: 0ms;
+}
+.clubCardSkeletonItem:nth-child(2) {
+  animation-delay: 200ms;
+}
+.clubCardSkeletonItem:nth-child(3) {
+  animation-delay: 400ms;
+}
 
 /* Enhancement #9: Unique gradient patterns for club cards without logos */
 .clubCardGradient1 {
-    background: radial-gradient(circle at 30% 40%, rgba(0, 212, 255, 0.15) 0%, transparent 60%),
-               radial-gradient(circle at 70% 60%, rgba(0, 136, 255, 0.1) 0%, transparent 50%);
+  background:
+    radial-gradient(circle at 30% 40%, rgba(0, 212, 255, 0.15) 0%, transparent 60%),
+    radial-gradient(circle at 70% 60%, rgba(0, 136, 255, 0.1) 0%, transparent 50%);
 }
 
 .clubCardGradient2 {
-    background: radial-gradient(circle at 60% 30%, rgba(0, 255, 136, 0.12) 0%, transparent 60%),
-               radial-gradient(circle at 30% 70%, rgba(0, 191, 255, 0.1) 0%, transparent 50%);
+  background:
+    radial-gradient(circle at 60% 30%, rgba(0, 255, 136, 0.12) 0%, transparent 60%),
+    radial-gradient(circle at 30% 70%, rgba(0, 191, 255, 0.1) 0%, transparent 50%);
 }
 
 .clubCardGradient3 {
-    background: radial-gradient(circle at 50% 50%, rgba(77, 210, 255, 0.12) 0%, transparent 55%),
-               radial-gradient(circle at 20% 80%, rgba(0, 255, 159, 0.1) 0%, transparent 50%);
+  background:
+    radial-gradient(circle at 50% 50%, rgba(77, 210, 255, 0.12) 0%, transparent 55%),
+    radial-gradient(circle at 20% 80%, rgba(0, 255, 159, 0.1) 0%, transparent 50%);
 }
 
 .clubCardGradient4 {
-    background: radial-gradient(circle at 40% 60%, rgba(200, 255, 255, 0.1) 0%, transparent 55%),
-               radial-gradient(circle at 70% 30%, rgba(0, 212, 255, 0.12) 0%, transparent 50%);
+  background:
+    radial-gradient(circle at 40% 60%, rgba(200, 255, 255, 0.1) 0%, transparent 55%),
+    radial-gradient(circle at 70% 30%, rgba(0, 212, 255, 0.12) 0%, transparent 50%);
 }
 
 .clubCardGradient5 {
-    background: radial-gradient(circle at 70% 40%, rgba(0, 255, 136, 0.15) 0%, transparent 60%),
-               radial-gradient(circle at 30% 60%, rgba(77, 210, 255, 0.08) 0%, transparent 50%);
+  background:
+    radial-gradient(circle at 70% 40%, rgba(0, 255, 136, 0.15) 0%, transparent 60%),
+    radial-gradient(circle at 30% 60%, rgba(77, 210, 255, 0.08) 0%, transparent 50%);
 }
 
 /* Enhancement #4: Active player pulse dot */
 .livePulseWrapper {
-    display: inline-flex;
-    align-items: center;
-    gap: 5px;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
 }
 
 .livePulseDot {
-    display: inline-block;
-    width: 8px;
-    height: 8px;
-    border-radius: 50%;
-    background: #00ff88;
-    box-shadow: 0 0 6px rgba(0, 255, 136, 0.6), 0 0 12px rgba(0, 255, 136, 0.3);
-    animation: livePulse 2s ease-in-out infinite;
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #00ff88;
+  box-shadow:
+    0 0 6px rgba(0, 255, 136, 0.6),
+    0 0 12px rgba(0, 255, 136, 0.3);
+  animation: livePulse 2s ease-in-out infinite;
 }
 
 @keyframes livePulse {
-    0%, 100% { opacity: 1; transform: scale(1); box-shadow: 0 0 6px rgba(0, 255, 136, 0.6); }
-    50% { opacity: 0.5; transform: scale(0.7); box-shadow: 0 0 3px rgba(0, 255, 136, 0.3); }
+  0%,
+  100% {
+    opacity: 1;
+    transform: scale(1);
+    box-shadow: 0 0 6px rgba(0, 255, 136, 0.6);
+  }
+  50% {
+    opacity: 0.5;
+    transform: scale(0.7);
+    box-shadow: 0 0 3px rgba(0, 255, 136, 0.3);
+  }
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════════
@@ -964,34 +1205,34 @@
    ═══════════════════════════════════════════════════════════════════════════════ */
 
 .noClubsMessage {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    text-align: center;
-    padding: 40px 30px;
-    background: rgba(8, 20, 40, 0.6);
-    border: 1px solid rgba(0, 212, 255, 0.15);
-    border-radius: 16px;
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
-    margin: 20px 0;
-    width: 100%;
-    max-width: 400px;
-    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 40px 30px;
+  background: rgba(8, 20, 40, 0.6);
+  border: 1px solid rgba(0, 212, 255, 0.15);
+  border-radius: 16px;
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  margin: 20px 0;
+  width: 100%;
+  max-width: 400px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
 }
 
 .noClubsMessage p {
-    color: rgba(255, 255, 255, 0.7);
-    font-size: 15px;
-    margin: 6px 0;
-    line-height: 1.5;
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 15px;
+  margin: 6px 0;
+  line-height: 1.5;
 }
 
 .noClubsMessage p:first-child {
-    font-size: 17px;
-    color: rgba(255, 255, 255, 0.9);
-    font-weight: 600;
+  font-size: 17px;
+  color: rgba(255, 255, 255, 0.9);
+  font-weight: 600;
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════════
@@ -999,54 +1240,54 @@
    ═══════════════════════════════════════════════════════════════════════════════ */
 
 .challengesSection {
-    width: 100%;
-    padding: 0;
-    margin-bottom: 20px;
+  width: 100%;
+  padding: 0;
+  margin-bottom: 20px;
 }
 
 .challengesTitle {
-    font-size: 0.8rem;
-    font-weight: 800;
-    color: rgba(0, 212, 255, 0.85);
-    margin: 0 0 12px;
-    letter-spacing: 2px;
-    text-transform: uppercase;
-    text-shadow: 0 0 10px rgba(0, 212, 255, 0.3);
+  font-size: 0.8rem;
+  font-weight: 800;
+  color: rgba(0, 212, 255, 0.85);
+  margin: 0 0 12px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  text-shadow: 0 0 10px rgba(0, 212, 255, 0.3);
 }
 
 .challengesList {
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
 }
 
 .challengeItem {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    padding: 10px 14px;
-    border-radius: 10px;
-    background: rgba(8, 20, 40, 0.5);
-    border: 1px solid rgba(0, 212, 255, 0.08);
-    backdrop-filter: blur(6px);
-    -webkit-backdrop-filter: blur(6px);
-    transition: border-color 0.3s;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  border-radius: 10px;
+  background: rgba(8, 20, 40, 0.5);
+  border: 1px solid rgba(0, 212, 255, 0.08);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  transition: border-color 0.3s;
 }
 
 .challengeItem:hover {
-    border-color: rgba(0, 212, 255, 0.2);
+  border-color: rgba(0, 212, 255, 0.2);
 }
 
 .challengeItemComplete {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    padding: 10px 14px;
-    border-radius: 10px;
-    backdrop-filter: blur(6px);
-    -webkit-backdrop-filter: blur(6px);
-    background: rgba(0, 255, 136, 0.04);
-    border: 1px solid rgba(0, 255, 136, 0.15);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  border-radius: 10px;
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  background: rgba(0, 255, 136, 0.04);
+  border: 1px solid rgba(0, 255, 136, 0.15);
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════════
@@ -1054,104 +1295,156 @@
    ═══════════════════════════════════════════════════════════════════════════════ */
 
 .bottomRow {
-    display: flex;
-    gap: 16px;
-    z-index: 10;
-    padding: 20px 4px 40px 4px;
-    margin-top: 12px;
-    overflow-x: auto;
-    overflow-y: visible;
-    scroll-snap-type: x mandatory;
-    -webkit-overflow-scrolling: touch;
-    scrollbar-width: none;
-    width: 100%;
-    justify-content: center;
+  display: flex;
+  gap: 16px;
+  z-index: 10;
+  padding: 12px 4px 40px 4px;
+  margin-top: 4px;
+  overflow-x: auto;
+  overflow-y: visible;
+  scroll-snap-type: x mandatory;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+  width: 100%;
+  justify-content: center;
 }
 
 .bottomRow::-webkit-scrollbar {
-    display: none;
+  display: none;
 }
 
 .tileCard {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    cursor: pointer;
-    flex: 0 0 auto;
-    width: clamp(120px, 17vw, 162px);
-    scroll-snap-align: start;
-    transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
-    position: relative;
-    animation: cardRise 0.5s ease-out both;
-    /* Button reset — native <button> styling bleeds on Safari/Firefox */
-    background: none;
-    border: none;
-    padding: 0;
-    font: inherit;
-    color: inherit;
-    outline: inherit;
-    /* Enhancement #3: 3D perspective context for hover tilt */
-    perspective: 800px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  cursor: pointer;
+  flex: 0 0 auto;
+  width: clamp(120px, 17vw, 162px);
+  scroll-snap-align: start;
+  transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+  position: relative;
+  animation: cardRise 0.5s ease-out both;
+  /* Button reset — native <button> styling bleeds on Safari/Firefox */
+  background: none;
+  border: none;
+  padding: 0;
+  font: inherit;
+  color: inherit;
+  outline: inherit;
+  /* Enhancement #3: 3D perspective context for hover tilt */
+  perspective: 800px;
 }
 
 /* Enhancement #2: Staggered entrance delays per tile */
-.tileCard:nth-child(1) { animation-delay: 400ms; }
-.tileCard:nth-child(2) { animation-delay: 480ms; }
-.tileCard:nth-child(3) { animation-delay: 560ms; }
-.tileCard:nth-child(4) { animation-delay: 640ms; }
-.tileCard:nth-child(5) { animation-delay: 720ms; }
+.tileCard:nth-child(1) {
+  animation-delay: 400ms;
+}
+.tileCard:nth-child(2) {
+  animation-delay: 480ms;
+}
+.tileCard:nth-child(3) {
+  animation-delay: 560ms;
+}
+.tileCard:nth-child(4) {
+  animation-delay: 640ms;
+}
+.tileCard:nth-child(5) {
+  animation-delay: 720ms;
+}
 
 /* Enhancement #3: Holographic hover tilt for tile cards */
 .tileCard:hover {
-    transform: translateY(-10px) scale(1.08);
+  transform: translateY(-10px) scale(1.08);
 }
 
 .tileCard:hover .tileImageWrapper {
-    transform: rotateY(5deg) rotateX(2deg);
-    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5), 0 0 20px rgba(0, 212, 255, 0.12);
+  transform: rotateY(5deg) rotateX(2deg);
+  box-shadow:
+    0 20px 50px rgba(0, 0, 0, 0.5),
+    0 0 20px rgba(0, 212, 255, 0.12);
 }
 
 /* Pedestal glow under tile cards */
 .tilePedestal {
-    position: absolute;
-    bottom: 15px;
-    width: 120px;
-    height: 30px;
-    border-radius: 50%;
-    background: radial-gradient(ellipse, rgba(0, 212, 255, 0.3), rgba(0, 136, 255, 0.15), transparent 70%);
-    filter: blur(6px);
-    opacity: 0.5;
-    z-index: 0;
+  position: absolute;
+  bottom: 15px;
+  width: 120px;
+  height: 30px;
+  border-radius: 50%;
+  background: radial-gradient(
+    ellipse,
+    rgba(0, 212, 255, 0.3),
+    rgba(0, 136, 255, 0.15),
+    transparent 70%
+  );
+  filter: blur(6px);
+  opacity: 0.5;
+  z-index: 0;
 }
 
 .tileImageWrapper {
-    position: relative;
-    width: 100%;
-    aspect-ratio: 2 / 3;
-    border-radius: 10px;
-    overflow: hidden;
-    box-shadow: 0 16px 40px rgba(0, 0, 0, 0.5);
-    z-index: 2;
-    transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.4s ease;
+  position: relative;
+  width: 100%;
+  aspect-ratio: 2 / 3;
+  border-radius: 10px;
+  overflow: hidden;
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.5);
+  z-index: 2;
+  transition:
+    transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1),
+    box-shadow 0.4s ease;
 }
 
 .tileImage {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-    border-radius: 10px;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 10px;
+  transition:
+    transform 0.4s ease,
+    filter 0.4s ease;
+}
+
+.tileCard:hover .tileImage {
+  transform: scale(1.05);
+  filter: brightness(1.1);
+}
+
+/* Tile label overlay — visible when tile image loads or as fallback */
+.tileLabel {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  padding: 8px 6px 6px;
+  background: linear-gradient(transparent, rgba(0, 0, 0, 0.85));
+  border-radius: 0 0 10px 10px;
+  font-size: 9px;
+  font-weight: 700;
+  color: rgba(255, 255, 255, 0.9);
+  text-transform: uppercase;
+  letter-spacing: 1.5px;
+  text-align: center;
+  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.6);
+  z-index: 3;
+  pointer-events: none;
 }
 
 /* Glass bottom edge for 3D depth */
 .tileEdge {
-    position: absolute;
-    left: 3px;
-    bottom: -5px;
-    width: calc(100% - 6px);
-    height: 8px;
-    background: linear-gradient(90deg, rgba(50, 150, 200, 0.3), rgba(0, 180, 255, 0.2), rgba(100, 200, 255, 0.2));
-    border-radius: 0 0 6px 6px;
-    z-index: 1;
+  position: absolute;
+  left: 3px;
+  bottom: -5px;
+  width: calc(100% - 6px);
+  height: 8px;
+  background: linear-gradient(
+    90deg,
+    rgba(50, 150, 200, 0.3),
+    rgba(0, 180, 255, 0.2),
+    rgba(100, 200, 255, 0.2)
+  );
+  border-radius: 0 0 6px 6px;
+  z-index: 1;
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════════
@@ -1159,26 +1452,52 @@
    ═══════════════════════════════════════════════════════════════════════════════ */
 
 .loadingOverlay {
-    position: fixed;
-    inset: 0;
-    background: rgba(5, 5, 16, 0.92);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    z-index: 100;
+  position: fixed;
+  inset: 0;
+  background: rgba(5, 5, 16, 0.92);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  z-index: 100;
 }
 
 .spinner {
-    width: 50px;
-    height: 50px;
-    border: 3px solid rgba(0, 212, 255, 0.15);
-    border-top-color: rgba(0, 212, 255, 0.8);
-    border-radius: 50%;
-    animation: spin 1s linear infinite;
+  width: 50px;
+  height: 50px;
+  border: 3px solid rgba(0, 212, 255, 0.15);
+  border-top-color: rgba(0, 212, 255, 0.8);
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  box-shadow:
+    0 0 20px rgba(0, 212, 255, 0.15),
+    inset 0 0 10px rgba(0, 212, 255, 0.05);
+}
+
+.loadingText {
+  font-size: 11px;
+  font-weight: 700;
+  color: rgba(0, 212, 255, 0.6);
+  text-transform: uppercase;
+  letter-spacing: 3px;
+  animation: loadingPulse 2s ease-in-out infinite;
+}
+
+@keyframes loadingPulse {
+  0%,
+  100% {
+    opacity: 0.4;
+  }
+  50% {
+    opacity: 1;
+  }
 }
 
 @keyframes spin {
-    to { transform: rotate(360deg); }
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════════
@@ -1186,36 +1505,36 @@
    ═══════════════════════════════════════════════════════════════════════════════ */
 
 @keyframes fadeInUp {
-    from {
-        opacity: 0;
-        transform: translateY(30px) scale(0.9);
-    }
-    to {
-        opacity: 1;
-        transform: translateY(0) scale(1);
-    }
+  from {
+    opacity: 0;
+    transform: translateY(30px) scale(0.9);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
 }
 
 @keyframes scaleIn {
-    from {
-        opacity: 0;
-        transform: scale(0.92);
-    }
-    to {
-        opacity: 1;
-        transform: scale(1);
-    }
+  from {
+    opacity: 0;
+    transform: scale(0.92);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
 }
 
 @keyframes cardRise {
-    from {
-        opacity: 0;
-        transform: translateY(80px) scale(0.7);
-    }
-    to {
-        opacity: 1;
-        transform: translateY(0) scale(1);
-    }
+  from {
+    opacity: 0;
+    transform: translateY(80px) scale(0.7);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════════
@@ -1223,144 +1542,156 @@
    ═══════════════════════════════════════════════════════════════════════════════ */
 
 .modalOverlay {
-    position: fixed;
-    inset: 0;
-    background: rgba(0, 0, 0, 0.8);
-    backdrop-filter: blur(10px);
-    -webkit-backdrop-filter: blur(10px);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    z-index: 1000;
-    animation: fadeIn 0.2s ease-out;
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.8);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  animation: fadeIn 0.2s ease-out;
 }
 
 @keyframes fadeIn {
-    from { opacity: 0; }
-    to { opacity: 1; }
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
 }
 
 .modalContent {
-    background: linear-gradient(145deg, rgba(8, 20, 40, 0.95), rgba(5, 15, 35, 0.95));
-    border: 1px solid rgba(0, 212, 255, 0.2);
-    border-radius: 16px;
-    padding: 40px;
-    min-width: 320px;
-    max-width: 400px;
-    backdrop-filter: blur(16px);
-    -webkit-backdrop-filter: blur(16px);
-    box-shadow: 0 24px 64px rgba(0, 0, 0, 0.6), 0 0 40px rgba(0, 212, 255, 0.1);
-    animation: slideUp 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+  background: linear-gradient(145deg, rgba(8, 20, 40, 0.95), rgba(5, 15, 35, 0.95));
+  border: 1px solid rgba(0, 212, 255, 0.2);
+  border-radius: 16px;
+  padding: 40px;
+  min-width: 320px;
+  max-width: 400px;
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  box-shadow:
+    0 24px 64px rgba(0, 0, 0, 0.6),
+    0 0 40px rgba(0, 212, 255, 0.1);
+  animation: slideUp 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
 @keyframes slideUp {
-    from { opacity: 0; transform: translateY(30px); }
-    to { opacity: 1; transform: translateY(0); }
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .modalTitle {
-    font-size: 22px;
-    font-weight: 800;
-    color: #fff;
-    text-transform: uppercase;
-    letter-spacing: 2px;
-    text-align: center;
-    margin-bottom: 20px;
-    text-shadow: 0 0 16px rgba(0, 212, 255, 0.4);
+  font-size: 22px;
+  font-weight: 800;
+  color: #fff;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  text-align: center;
+  margin-bottom: 20px;
+  text-shadow: 0 0 16px rgba(0, 212, 255, 0.4);
 }
 
 .modalSubtitle {
-    font-size: 14px;
-    color: rgba(255, 255, 255, 0.6);
-    text-align: center;
-    margin-bottom: 20px;
+  font-size: 14px;
+  color: rgba(255, 255, 255, 0.6);
+  text-align: center;
+  margin-bottom: 20px;
 }
 
 .inputGroup {
-    margin-bottom: 24px;
+  margin-bottom: 24px;
 }
 
 .clubCodeInput {
-    width: 100%;
-    padding: 16px 20px;
-    font-size: 18px;
-    font-weight: 700;
-    color: #fff;
-    background: rgba(5, 15, 35, 0.8);
-    border: 1px solid rgba(0, 212, 255, 0.2);
-    border-radius: 10px;
-    text-align: center;
-    text-transform: uppercase;
-    letter-spacing: 4px;
-    transition: all 0.3s ease;
-    box-sizing: border-box;
+  width: 100%;
+  padding: 16px 20px;
+  font-size: 18px;
+  font-weight: 700;
+  color: #fff;
+  background: rgba(5, 15, 35, 0.8);
+  border: 1px solid rgba(0, 212, 255, 0.2);
+  border-radius: 10px;
+  text-align: center;
+  text-transform: uppercase;
+  letter-spacing: 4px;
+  transition: all 0.3s ease;
+  box-sizing: border-box;
 }
 
 .clubCodeInput::placeholder {
-    color: rgba(0, 212, 255, 0.3);
-    letter-spacing: 1px;
-    text-transform: none;
-    font-weight: 400;
+  color: rgba(0, 212, 255, 0.3);
+  letter-spacing: 1px;
+  text-transform: none;
+  font-weight: 400;
 }
 
 .clubCodeInput:focus {
-    outline: none;
-    border-color: rgba(0, 212, 255, 0.6);
-    box-shadow: 0 0 20px rgba(0, 212, 255, 0.15);
+  outline: none;
+  border-color: rgba(0, 212, 255, 0.6);
+  box-shadow: 0 0 20px rgba(0, 212, 255, 0.15);
 }
 
 .modalButtons {
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
 }
 
 .modalButtonPrimary {
-    width: 100%;
-    padding: 14px 24px;
-    font-size: 14px;
-    font-weight: 700;
-    color: #000;
-    background: linear-gradient(135deg, #00d4ff, #0099ff);
-    border: none;
-    border-radius: 10px;
-    cursor: pointer;
-    text-transform: uppercase;
-    letter-spacing: 2px;
-    transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+  width: 100%;
+  padding: 14px 24px;
+  font-size: 14px;
+  font-weight: 700;
+  color: #000;
+  background: linear-gradient(135deg, #00d4ff, #0099ff);
+  border: none;
+  border-radius: 10px;
+  cursor: pointer;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
 .modalButtonPrimary:hover {
-    background: linear-gradient(135deg, #33ddff, #33aaff);
-    box-shadow: 0 12px 30px rgba(0, 212, 255, 0.3);
-    transform: translateY(-2px);
+  background: linear-gradient(135deg, #33ddff, #33aaff);
+  box-shadow: 0 12px 30px rgba(0, 212, 255, 0.3);
+  transform: translateY(-2px);
 }
 
 .modalButtonPrimary:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
-    transform: none;
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
 }
 
 .modalButtonSecondary {
-    width: 100%;
-    padding: 14px 24px;
-    font-size: 14px;
-    font-weight: 700;
-    color: rgba(255, 255, 255, 0.7);
-    background: transparent;
-    border: 1px solid rgba(255, 255, 255, 0.2);
-    border-radius: 10px;
-    cursor: pointer;
-    text-transform: uppercase;
-    letter-spacing: 2px;
-    transition: all 0.3s ease;
+  width: 100%;
+  padding: 14px 24px;
+  font-size: 14px;
+  font-weight: 700;
+  color: rgba(255, 255, 255, 0.7);
+  background: transparent;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 10px;
+  cursor: pointer;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  transition: all 0.3s ease;
 }
 
 .modalButtonSecondary:hover {
-    border-color: rgba(255, 255, 255, 0.5);
-    color: #fff;
-    background: rgba(255, 255, 255, 0.06);
+  border-color: rgba(255, 255, 255, 0.5);
+  color: #fff;
+  background: rgba(255, 255, 255, 0.06);
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════════
@@ -1368,244 +1699,244 @@
    ═══════════════════════════════════════════════════════════════════════════════ */
 
 @media (max-width: 700px) {
-    .mainContent {
-        padding: 0 8px 80px 8px;
-        max-width: 100%;
-    }
+  .mainContent {
+    padding: 0 8px 80px 8px;
+    max-width: 100%;
+  }
 
-    .featuredCard {
-        width: 240px;
-    }
+  .featuredCard {
+    width: 240px;
+  }
 
-    .cardSkeleton {
-        width: 240px;
-        height: 407px;
-    }
+  .cardSkeleton {
+    width: 240px;
+    height: 407px;
+  }
 
-    .clubCarousel {
-        gap: 14px;
-        padding: 12px 20px 24px 20px;
-    }
+  .clubCarousel {
+    gap: 14px;
+    padding: 12px 20px 24px 20px;
+  }
 
-    .carouselCard {
-        width: 180px;
-    }
+  .carouselCard {
+    width: 180px;
+  }
 
-    .ctaCard {
-        width: 180px;
-    }
+  .ctaCard {
+    width: 180px;
+  }
 
-    .carouselCardFeatured {
-        width: 240px;
-    }
+  .carouselCardFeatured {
+    width: 240px;
+  }
 
-    .carouselCardTitle {
-        font-size: 11px;
-    }
+  .carouselCardTitle {
+    font-size: 11px;
+  }
 
-    .carouselCardIcon,
-    .carouselCardLogo {
-        width: 52px;
-        height: 52px;
-    }
+  .carouselCardIcon,
+  .carouselCardLogo {
+    width: 52px;
+    height: 52px;
+  }
 
-    .clubCardsRow {
-        gap: 12px;
-        overflow-x: auto;
-        flex-wrap: nowrap;
-        justify-content: flex-start;
-        padding: 0 12px 20px 12px;
-        scrollbar-width: none;
-    }
+  .clubCardsRow {
+    gap: 12px;
+    overflow-x: auto;
+    flex-wrap: nowrap;
+    justify-content: flex-start;
+    padding: 0 12px 20px 12px;
+    scrollbar-width: none;
+  }
 
-    .clubCardsRow::-webkit-scrollbar {
-        display: none;
-    }
+  .clubCardsRow::-webkit-scrollbar {
+    display: none;
+  }
 
-    .clubCard {
-        width: clamp(110px, 22vw, 140px);
-        flex: 0 0 auto;
-    }
+  .clubCard {
+    width: clamp(110px, 22vw, 140px);
+    flex: 0 0 auto;
+  }
 }
 
 @media (max-width: 480px) {
-    .mainContent {
-        padding: 0 6px 60px 6px;
-    }
+  .mainContent {
+    padding: 0 6px 60px 6px;
+  }
 
-    .featuredCard {
-        width: 200px;
-    }
+  .featuredCard {
+    width: 200px;
+  }
 
-    .cardSkeleton {
-        width: 200px;
-        height: 340px;
-    }
+  .cardSkeleton {
+    width: 200px;
+    height: 340px;
+  }
 
-    .clubCarousel {
-        gap: 10px;
-        padding: 8px 12px 20px 12px;
-    }
+  .clubCarousel {
+    gap: 10px;
+    padding: 8px 12px 20px 12px;
+  }
 
-    .carouselCard {
-        width: 150px;
-    }
+  .carouselCard {
+    width: 150px;
+  }
 
-    .ctaCard {
-        width: 150px;
-        gap: 10px;
-    }
+  .ctaCard {
+    width: 150px;
+    gap: 10px;
+  }
 
-    .ctaCardIcon {
-        width: 48px;
-        height: 48px;
-        font-size: 22px;
-    }
+  .ctaCardIcon {
+    width: 48px;
+    height: 48px;
+    font-size: 22px;
+  }
 
-    .ctaCardLabel {
-        font-size: 10px;
-    }
+  .ctaCardLabel {
+    font-size: 10px;
+  }
 
-    .carouselCardFeatured {
-        width: 200px;
-    }
+  .carouselCardFeatured {
+    width: 200px;
+  }
 
-    .carouselCardTitle {
-        font-size: 10px;
-    }
+  .carouselCardTitle {
+    font-size: 10px;
+  }
 
-    .carouselCardIcon,
-    .carouselCardLogo {
-        width: 44px;
-        height: 44px;
-    }
+  .carouselCardIcon,
+  .carouselCardLogo {
+    width: 44px;
+    height: 44px;
+  }
 
-    .carouselCardIcon {
-        font-size: 20px;
-    }
+  .carouselCardIcon {
+    font-size: 20px;
+  }
 
-    .clubCard {
-        width: clamp(100px, 26vw, 120px);
-    }
+  .clubCard {
+    width: clamp(100px, 26vw, 120px);
+  }
 
-    .clubCardTitle {
-        font-size: 9px;
-    }
+  .clubCardTitle {
+    font-size: 9px;
+  }
 
-    .clubCardIcon {
-        width: 40px;
-        height: 40px;
-        font-size: 18px;
-    }
+  .clubCardIcon {
+    width: 40px;
+    height: 40px;
+    font-size: 18px;
+  }
 
-    .clubCardLogo {
-        width: 40px;
-        height: 40px;
-    }
+  .clubCardLogo {
+    width: 40px;
+    height: 40px;
+  }
 
-    .bottomRow {
-        gap: 10px;
-        padding: 12px 4px 30px;
-    }
+  .bottomRow {
+    gap: 10px;
+    padding: 12px 4px 30px;
+  }
 
-    .tileCard {
-        width: clamp(100px, 22vw, 130px);
-    }
+  .tileCard {
+    width: clamp(100px, 22vw, 130px);
+  }
 
-    .modalContent {
-        padding: 24px 16px;
-        min-width: 260px;
-    }
+  .modalContent {
+    padding: 24px 16px;
+    min-width: 260px;
+  }
 
-    .modalTitle {
-        font-size: 18px;
-    }
+  .modalTitle {
+    font-size: 18px;
+  }
 
-    .clubCodeInput {
-        padding: 12px 16px;
-        font-size: 16px;
-    }
+  .clubCodeInput {
+    padding: 12px 16px;
+    font-size: 16px;
+  }
 }
 
 @media (max-width: 380px) {
-    .featuredCard {
-        width: 170px;
-    }
+  .featuredCard {
+    width: 170px;
+  }
 
-    .cardSkeleton {
-        width: 170px;
-        height: 289px;
-    }
+  .cardSkeleton {
+    width: 170px;
+    height: 289px;
+  }
 
-    .clubCarousel {
-        gap: 8px;
-        padding: 6px 8px 16px 8px;
-    }
+  .clubCarousel {
+    gap: 8px;
+    padding: 6px 8px 16px 8px;
+  }
 
-    .carouselCard {
-        width: 130px;
-    }
+  .carouselCard {
+    width: 130px;
+  }
 
-    .ctaCard {
-        width: 130px;
-        gap: 8px;
-        padding: 14px;
-    }
+  .ctaCard {
+    width: 130px;
+    gap: 8px;
+    padding: 14px;
+  }
 
-    .ctaCardIcon {
-        width: 40px;
-        height: 40px;
-        font-size: 18px;
-    }
+  .ctaCardIcon {
+    width: 40px;
+    height: 40px;
+    font-size: 18px;
+  }
 
-    .ctaCardLabel {
-        font-size: 9px;
-        letter-spacing: 1px;
-    }
+  .ctaCardLabel {
+    font-size: 9px;
+    letter-spacing: 1px;
+  }
 
-    .ctaCardSub {
-        display: none;
-    }
+  .ctaCardSub {
+    display: none;
+  }
 
-    .carouselCardFeatured {
-        width: 170px;
-    }
+  .carouselCardFeatured {
+    width: 170px;
+  }
 
-    .carouselCardTitle {
-        font-size: 9px;
-    }
+  .carouselCardTitle {
+    font-size: 9px;
+  }
 
-    .carouselCardFace {
-        padding: 14px 10px;
-    }
+  .carouselCardFace {
+    padding: 14px 10px;
+  }
 
-    .carouselCardIcon,
-    .carouselCardLogo {
-        width: 36px;
-        height: 36px;
-    }
+  .carouselCardIcon,
+  .carouselCardLogo {
+    width: 36px;
+    height: 36px;
+  }
 
-    .carouselCardIcon {
-        font-size: 16px;
-    }
+  .carouselCardIcon {
+    font-size: 16px;
+  }
 
-    .clubCard {
-        width: 90px;
-    }
+  .clubCard {
+    width: 90px;
+  }
 
-    .clubCardTitle {
-        font-size: 8px;
-    }
+  .clubCardTitle {
+    font-size: 8px;
+  }
 
-    .clubCardIcon {
-        width: 32px;
-        height: 32px;
-        font-size: 14px;
-    }
+  .clubCardIcon {
+    width: 32px;
+    height: 32px;
+    font-size: 14px;
+  }
 
-    .tileCard {
-        width: 100px;
-    }
+  .tileCard {
+    width: 100px;
+  }
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════════
@@ -1614,266 +1945,287 @@
 
 /* Enhancement #1: Pull-to-Refresh */
 .pullToRefresh {
-    width: 100%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    overflow: hidden;
-    height: 0;
-    transition: height 0.3s ease;
-    z-index: 20;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  height: 0;
+  transition: height 0.3s ease;
+  z-index: 20;
 }
 
 .pullToRefreshActive {
-    height: 50px;
+  height: 50px;
 }
 
 .pullSpinner {
-    width: 24px;
-    height: 24px;
-    border: 2px solid rgba(0, 212, 255, 0.2);
-    border-top-color: rgba(0, 212, 255, 0.8);
-    border-radius: 50%;
-    animation: spin 0.8s linear infinite;
+  width: 24px;
+  height: 24px;
+  border: 2px solid rgba(0, 212, 255, 0.2);
+  border-top-color: rgba(0, 212, 255, 0.8);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
 }
 
 .pullText {
-    font-size: 11px;
-    font-weight: 600;
-    color: rgba(0, 212, 255, 0.7);
-    text-transform: uppercase;
-    letter-spacing: 1px;
-    margin-left: 10px;
+  font-size: 11px;
+  font-weight: 600;
+  color: rgba(0, 212, 255, 0.7);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  margin-left: 10px;
 }
 
 /* Enhancement #2: Context Menu */
 .contextMenuOverlay {
-    position: fixed;
-    inset: 0;
-    z-index: 900;
-    background: rgba(0, 0, 0, 0.3);
+  position: fixed;
+  inset: 0;
+  z-index: 900;
+  background: rgba(0, 0, 0, 0.3);
 }
 
 .contextMenu {
-    position: fixed;
-    z-index: 910;
-    min-width: 180px;
-    background: linear-gradient(145deg, rgba(12, 25, 50, 0.97), rgba(8, 18, 38, 0.97));
-    border: 1px solid rgba(0, 212, 255, 0.2);
-    border-radius: 12px;
-    padding: 6px 0;
-    backdrop-filter: blur(16px);
-    -webkit-backdrop-filter: blur(16px);
-    box-shadow: 0 16px 48px rgba(0, 0, 0, 0.6), 0 0 20px rgba(0, 212, 255, 0.08);
-    animation: contextMenuIn 0.15s ease-out;
+  position: fixed;
+  z-index: 910;
+  min-width: 180px;
+  background: linear-gradient(145deg, rgba(12, 25, 50, 0.97), rgba(8, 18, 38, 0.97));
+  border: 1px solid rgba(0, 212, 255, 0.2);
+  border-radius: 12px;
+  padding: 6px 0;
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  box-shadow:
+    0 16px 48px rgba(0, 0, 0, 0.6),
+    0 0 20px rgba(0, 212, 255, 0.08);
+  animation: contextMenuIn 0.15s ease-out;
 }
 
 .contextMenuItem {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    width: 100%;
-    padding: 12px 16px;
-    background: none;
-    border: none;
-    color: rgba(255, 255, 255, 0.85);
-    font-size: 13px;
-    font-weight: 600;
-    cursor: pointer;
-    transition: background 0.15s;
-    font-family: inherit;
-    text-align: left;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 12px 16px;
+  background: none;
+  border: none;
+  color: rgba(255, 255, 255, 0.85);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s;
+  font-family: inherit;
+  text-align: left;
 }
 
 .contextMenuItem:hover {
-    background: rgba(0, 212, 255, 0.08);
+  background: rgba(0, 212, 255, 0.08);
 }
 
 .contextMenuDivider {
-    height: 1px;
-    background: rgba(0, 212, 255, 0.1);
-    margin: 4px 0;
+  height: 1px;
+  background: rgba(0, 212, 255, 0.1);
+  margin: 4px 0;
 }
 
 .contextMenuDanger {
-    color: rgba(255, 80, 80, 0.9);
+  color: rgba(255, 80, 80, 0.9);
 }
 
 @keyframes contextMenuIn {
-    from { opacity: 0; transform: scale(0.95) translateY(-4px); }
-    to { opacity: 1; transform: scale(1) translateY(0); }
+  from {
+    opacity: 0;
+    transform: scale(0.95) translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
 }
 
 /* Enhancement #4: Active Tables Badge */
 .activeTablesBadge {
-    display: inline-flex;
-    align-items: center;
-    gap: 4px;
-    margin-top: 3px;
-    font-size: 8px;
-    font-weight: 700;
-    color: rgba(0, 255, 136, 0.9);
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin-top: 3px;
+  font-size: 8px;
+  font-weight: 700;
+  color: rgba(0, 255, 136, 0.9);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
 }
 
 .activeTablesDot {
-    width: 5px;
-    height: 5px;
-    border-radius: 50%;
-    background: #00ff88;
-    box-shadow: 0 0 4px rgba(0, 255, 136, 0.5);
-    animation: livePulse 2s ease-in-out infinite;
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: #00ff88;
+  box-shadow: 0 0 4px rgba(0, 255, 136, 0.5);
+  animation: livePulse 2s ease-in-out infinite;
 }
 
 /* Enhancement #5: Card Flip Animation */
 .clubCardFlipInner {
-    position: relative;
-    width: 100%;
-    height: 100%;
-    transition: transform 0.8s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-    transform-style: preserve-3d;
+  position: relative;
+  width: 100%;
+  height: 100%;
+  transition: transform 0.8s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  transform-style: preserve-3d;
 }
 
 .clubCardFlipped .clubCardFlipInner {
-    transform: rotateY(180deg);
+  transform: rotateY(180deg);
 }
 
 .clubCardFront,
 .clubCardBack {
-    position: absolute;
-    inset: 0;
-    backface-visibility: hidden;
-    -webkit-backface-visibility: hidden;
-    border-radius: 10px;
+  position: absolute;
+  inset: 0;
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+  border-radius: 10px;
 }
 
 .clubCardBack {
-    transform: rotateY(180deg);
+  transform: rotateY(180deg);
 }
 
 .clubCardBackFace {
-    width: 100%;
-    height: 100%;
-    border-radius: 10px;
-    background: linear-gradient(145deg, rgba(8, 20, 40, 0.95), rgba(5, 12, 28, 0.95));
-    border: 1px solid rgba(0, 212, 255, 0.12);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    overflow: hidden;
+  width: 100%;
+  height: 100%;
+  border-radius: 10px;
+  background: linear-gradient(145deg, rgba(8, 20, 40, 0.95), rgba(5, 12, 28, 0.95));
+  border: 1px solid rgba(0, 212, 255, 0.12);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
 }
 
 .clubCardBackFace::before {
-    content: '♠';
-    font-size: 40px;
-    color: rgba(0, 212, 255, 0.15);
-    text-shadow: 0 0 20px rgba(0, 212, 255, 0.1);
+  content: '♠';
+  font-size: 40px;
+  color: rgba(0, 212, 255, 0.15);
+  text-shadow: 0 0 20px rgba(0, 212, 255, 0.1);
 }
 
 .clubCardBackFace::after {
-    content: '';
-    position: absolute;
-    inset: 8px;
-    border: 1px solid rgba(0, 212, 255, 0.06);
-    border-radius: 6px;
+  content: '';
+  position: absolute;
+  inset: 8px;
+  border: 1px solid rgba(0, 212, 255, 0.06);
+  border-radius: 6px;
 }
 
 /* Enhancement #6: Parallax Background Layers */
 .gridFloorParallax {
-    transform: perspective(500px) rotateX(60deg) translateY(50%) translateZ(-80px);
+  transform: perspective(500px) rotateX(60deg) translateY(50%) translateZ(-80px);
 }
 
 /* Enhancement #7: Featured Card Idle Float */
 .featuredCardFloat {
-    animation: idleFloat 6s ease-in-out infinite, scaleIn 0.7s ease-out 100ms both;
+  animation:
+    idleFloat 6s ease-in-out infinite,
+    scaleIn 0.7s ease-out 100ms both;
 }
 
 @keyframes idleFloat {
-    0%, 100% { transform: translateY(0); }
-    50% { transform: translateY(-6px); }
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-6px);
+  }
 }
 
 /* Enhancement #8: Notification Badge on Tiles */
 .tileBadge {
-    position: absolute;
-    top: 6px;
-    right: 6px;
-    min-width: 18px;
-    height: 18px;
-    border-radius: 9px;
-    background: linear-gradient(135deg, #ff4444, #ff2222);
-    color: #fff;
-    font-size: 10px;
-    font-weight: 800;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    z-index: 20;
-    box-shadow: 0 2px 8px rgba(255, 0, 0, 0.4);
-    animation: badgePop 0.3s ease-out;
-    padding: 0 4px;
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  min-width: 18px;
+  height: 18px;
+  border-radius: 9px;
+  background: linear-gradient(135deg, #ff4444, #ff2222);
+  color: #fff;
+  font-size: 10px;
+  font-weight: 800;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 20;
+  box-shadow: 0 2px 8px rgba(255, 0, 0, 0.4);
+  animation: badgePop 0.3s ease-out;
+  padding: 0 4px;
 }
 
 @keyframes badgePop {
-    0% { transform: scale(0); }
-    70% { transform: scale(1.2); }
-    100% { transform: scale(1); }
+  0% {
+    transform: scale(0);
+  }
+  70% {
+    transform: scale(1.2);
+  }
+  100% {
+    transform: scale(1);
+  }
 }
 
 /* Enhancement #10: Error Boundary */
 .errorBoundary {
-    min-height: 100vh;
-    width: 100%;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    background: linear-gradient(180deg, #0a0a12 0%, #050510 100%);
-    color: #fff;
-    text-align: center;
-    padding: 40px 20px;
+  min-height: 100vh;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(180deg, #0a0a12 0%, #050510 100%);
+  color: #fff;
+  text-align: center;
+  padding: 40px 20px;
 }
 
 .errorBoundaryIcon {
-    font-size: 48px;
-    margin-bottom: 20px;
-    opacity: 0.6;
+  font-size: 48px;
+  margin-bottom: 20px;
+  opacity: 0.6;
 }
 
 .errorBoundaryTitle {
-    font-size: 20px;
-    font-weight: 800;
-    margin-bottom: 8px;
-    text-transform: uppercase;
-    letter-spacing: 2px;
-    color: rgba(0, 212, 255, 0.9);
+  font-size: 20px;
+  font-weight: 800;
+  margin-bottom: 8px;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  color: rgba(0, 212, 255, 0.9);
 }
 
 .errorBoundaryMessage {
-    font-size: 14px;
-    color: rgba(255, 255, 255, 0.6);
-    margin-bottom: 24px;
-    max-width: 360px;
+  font-size: 14px;
+  color: rgba(255, 255, 255, 0.6);
+  margin-bottom: 24px;
+  max-width: 360px;
 }
 
 .errorBoundaryRetry {
-    padding: 14px 32px;
-    background: linear-gradient(135deg, #00d4ff, #0099ff);
-    color: #000;
-    border: none;
-    border-radius: 10px;
-    font-size: 14px;
-    font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: 2px;
-    cursor: pointer;
-    transition: all 0.3s ease;
+  padding: 14px 32px;
+  background: linear-gradient(135deg, #00d4ff, #0099ff);
+  color: #000;
+  border: none;
+  border-radius: 10px;
+  font-size: 14px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  cursor: pointer;
+  transition: all 0.3s ease;
 }
 
 .errorBoundaryRetry:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 8px 24px rgba(0, 212, 255, 0.3);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(0, 212, 255, 0.3);
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════════
@@ -1882,280 +2234,313 @@
 
 /* #9: Search Bar */
 .searchBarContainer {
-    width: 100%;
-    max-width: 400px;
-    position: relative;
-    margin: 0 auto 16px;
-    z-index: 10;
+  width: 100%;
+  max-width: 400px;
+  position: relative;
+  margin: 0 auto 16px;
+  z-index: 10;
 }
 
 .searchInput {
-    width: 100%;
-    padding: 10px 40px 10px 38px;
-    font-size: 13px;
-    font-weight: 600;
-    color: #fff;
-    background: rgba(8, 20, 40, 0.7);
-    border: 1px solid rgba(0, 212, 255, 0.15);
-    border-radius: 10px;
-    backdrop-filter: blur(8px);
-    -webkit-backdrop-filter: blur(8px);
-    transition: border-color 0.3s;
-    box-sizing: border-box;
-    font-family: inherit;
-    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='rgba(0,212,255,0.4)' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='11' cy='11' r='8'/%3E%3Cline x1='21' y1='21' x2='16.65' y2='16.65'/%3E%3C/svg%3E");
-    background-repeat: no-repeat;
-    background-position: 12px center;
-    background-size: 16px;
+  width: 100%;
+  padding: 10px 40px 10px 38px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #fff;
+  background: rgba(8, 20, 40, 0.7);
+  border: 1px solid rgba(0, 212, 255, 0.15);
+  border-radius: 10px;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  transition: border-color 0.3s;
+  box-sizing: border-box;
+  font-family: inherit;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='rgba(0,212,255,0.4)' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='11' cy='11' r='8'/%3E%3Cline x1='21' y1='21' x2='16.65' y2='16.65'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: 12px center;
+  background-size: 16px;
 }
 
-.searchInput::placeholder { color: rgba(0, 212, 255, 0.3); }
+.searchInput::placeholder {
+  color: rgba(0, 212, 255, 0.3);
+}
 .searchInput:focus {
-    outline: none;
-    border-color: rgba(0, 212, 255, 0.5);
-    box-shadow: 0 0 15px rgba(0, 212, 255, 0.1);
+  outline: none;
+  border-color: rgba(0, 212, 255, 0.5);
+  box-shadow: 0 0 15px rgba(0, 212, 255, 0.1);
 }
 
 .searchClear {
-    position: absolute;
-    right: 10px;
-    top: 50%;
-    transform: translateY(-50%);
-    background: none;
-    border: none;
-    color: rgba(255, 255, 255, 0.5);
-    font-size: 14px;
-    cursor: pointer;
-    padding: 4px 8px;
+  position: absolute;
+  right: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: none;
+  border: none;
+  color: rgba(255, 255, 255, 0.5);
+  font-size: 14px;
+  cursor: pointer;
+  padding: 4px 8px;
 }
 
 /* Phase 7 #10: Offline Banner with pulse animation */
 .offlineBanner {
-    position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    padding: 8px 16px;
-    background: linear-gradient(90deg, rgba(255, 80, 0, 0.9), rgba(255, 40, 0, 0.9));
-    color: #fff;
-    font-size: 12px;
-    font-weight: 700;
-    text-align: center;
-    z-index: 2000;
-    text-transform: uppercase;
-    letter-spacing: 1px;
-    animation: offlineSlideIn 0.3s ease-out, offlinePulse 2s ease-in-out infinite 0.3s;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 8px;
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  padding: 8px 16px;
+  background: linear-gradient(90deg, rgba(255, 80, 0, 0.9), rgba(255, 40, 0, 0.9));
+  color: #fff;
+  font-size: 12px;
+  font-weight: 700;
+  text-align: center;
+  z-index: 2000;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  animation:
+    offlineSlideIn 0.3s ease-out,
+    offlinePulse 2s ease-in-out infinite 0.3s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
 }
 
 .offlineBanner::before {
-    content: '';
-    display: inline-block;
-    width: 8px;
-    height: 8px;
-    border-radius: 50%;
-    background: #fff;
-    animation: offlineDot 1.5s ease-in-out infinite;
+  content: '';
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #fff;
+  animation: offlineDot 1.5s ease-in-out infinite;
 }
 
 @keyframes offlinePulse {
-    0%, 100% { box-shadow: 0 2px 12px rgba(255, 60, 0, 0.3); }
-    50% { box-shadow: 0 2px 20px rgba(255, 60, 0, 0.6); }
+  0%,
+  100% {
+    box-shadow: 0 2px 12px rgba(255, 60, 0, 0.3);
+  }
+  50% {
+    box-shadow: 0 2px 20px rgba(255, 60, 0, 0.6);
+  }
 }
 
 @keyframes offlineDot {
-    0%, 100% { opacity: 1; }
-    50% { opacity: 0.3; }
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.3;
+  }
 }
 
 @keyframes offlineSlideIn {
-    from { transform: translateY(-100%); }
-    to { transform: translateY(0); }
+  from {
+    transform: translateY(-100%);
+  }
+  to {
+    transform: translateY(0);
+  }
 }
 
 /* #1: Keyboard Shortcut Overlay */
 .shortcutOverlay {
-    position: fixed;
-    inset: 0;
-    background: rgba(0, 0, 0, 0.85);
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
-    z-index: 1500;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    animation: fadeIn 0.2s ease-out;
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.85);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  z-index: 1500;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: fadeIn 0.2s ease-out;
 }
 
 .shortcutPanel {
-    background: linear-gradient(145deg, rgba(8, 20, 40, 0.95), rgba(5, 15, 35, 0.95));
-    border: 1px solid rgba(0, 212, 255, 0.2);
-    border-radius: 16px;
-    padding: 32px;
-    min-width: 280px;
-    max-width: 360px;
-    box-shadow: 0 24px 64px rgba(0, 0, 0, 0.6), 0 0 40px rgba(0, 212, 255, 0.1);
-    animation: slideUp 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+  background: linear-gradient(145deg, rgba(8, 20, 40, 0.95), rgba(5, 15, 35, 0.95));
+  border: 1px solid rgba(0, 212, 255, 0.2);
+  border-radius: 16px;
+  padding: 32px;
+  min-width: 280px;
+  max-width: 360px;
+  box-shadow:
+    0 24px 64px rgba(0, 0, 0, 0.6),
+    0 0 40px rgba(0, 212, 255, 0.1);
+  animation: slideUp 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
 .shortcutTitle {
-    font-size: 16px;
-    font-weight: 800;
-    color: rgba(0, 212, 255, 0.9);
-    text-transform: uppercase;
-    letter-spacing: 2px;
-    margin: 0 0 20px;
-    text-align: center;
-    text-shadow: 0 0 12px rgba(0, 212, 255, 0.3);
+  font-size: 16px;
+  font-weight: 800;
+  color: rgba(0, 212, 255, 0.9);
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  margin: 0 0 20px;
+  text-align: center;
+  text-shadow: 0 0 12px rgba(0, 212, 255, 0.3);
 }
 
 .shortcutGrid {
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
 }
 
 .shortcutRow {
-    display: flex;
-    align-items: center;
-    gap: 14px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
 }
 
 .shortcutKey {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    min-width: 36px;
-    height: 28px;
-    padding: 0 8px;
-    background: rgba(0, 212, 255, 0.1);
-    border: 1px solid rgba(0, 212, 255, 0.25);
-    border-radius: 6px;
-    color: rgba(0, 212, 255, 0.9);
-    font-size: 12px;
-    font-weight: 700;
-    font-family: 'SF Mono', 'Cousine', monospace;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 36px;
+  height: 28px;
+  padding: 0 8px;
+  background: rgba(0, 212, 255, 0.1);
+  border: 1px solid rgba(0, 212, 255, 0.25);
+  border-radius: 6px;
+  color: rgba(0, 212, 255, 0.9);
+  font-size: 12px;
+  font-weight: 700;
+  font-family: 'SF Mono', 'Cousine', monospace;
 }
 
 .shortcutDesc {
-    font-size: 13px;
-    color: rgba(255, 255, 255, 0.7);
-    font-weight: 500;
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.7);
+  font-weight: 500;
 }
 
 /* Duplicate removed -- see #11 below */
 
 /* #13: Club Tooltip (desktop hover) */
 .clubTooltip {
-    position: fixed;
-    z-index: 1200;
-    min-width: 180px;
-    background: linear-gradient(145deg, rgba(12, 25, 50, 0.97), rgba(8, 18, 38, 0.97));
-    border: 1px solid rgba(0, 212, 255, 0.2);
-    border-radius: 10px;
-    padding: 12px 16px;
-    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.5), 0 0 15px rgba(0, 212, 255, 0.06);
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
-    pointer-events: none;
-    animation: contextMenuIn 0.12s ease-out;
+  position: fixed;
+  z-index: 1200;
+  min-width: 180px;
+  background: linear-gradient(145deg, rgba(12, 25, 50, 0.97), rgba(8, 18, 38, 0.97));
+  border: 1px solid rgba(0, 212, 255, 0.2);
+  border-radius: 10px;
+  padding: 12px 16px;
+  box-shadow:
+    0 12px 40px rgba(0, 0, 0, 0.5),
+    0 0 15px rgba(0, 212, 255, 0.06);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  pointer-events: none;
+  animation: contextMenuIn 0.12s ease-out;
 }
 
 .tooltipTitle {
-    font-size: 13px;
-    font-weight: 800;
-    color: #fff;
-    margin-bottom: 8px;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
+  font-size: 13px;
+  font-weight: 800;
+  color: #fff;
+  margin-bottom: 8px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
 }
 
 .tooltipRow {
-    font-size: 11px;
-    color: rgba(255, 255, 255, 0.6);
-    margin-bottom: 3px;
-    font-weight: 500;
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.6);
+  margin-bottom: 3px;
+  font-weight: 500;
 }
 
 /* #4: Danger Button Variant */
 .modalButtonDanger {
-    background: linear-gradient(135deg, #ff4444, #cc2222) !important;
-    color: #fff !important;
+  background: linear-gradient(135deg, #ff4444, #cc2222) !important;
+  color: #fff !important;
 }
 
 .modalButtonDanger:hover {
-    background: linear-gradient(135deg, #ff6666, #dd3333) !important;
-    box-shadow: 0 12px 30px rgba(255, 0, 0, 0.3) !important;
+  background: linear-gradient(135deg, #ff6666, #dd3333) !important;
+  box-shadow: 0 12px 30px rgba(255, 0, 0, 0.3) !important;
 }
 
 /* #2: Pinned Club Badge */
 .pinnedBadge {
-    position: absolute;
-    top: -4px;
-    right: -4px;
-    width: 20px;
-    height: 20px;
-    border-radius: 50%;
-    background: linear-gradient(135deg, #ffd700, #ffaa00);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 10px;
-    z-index: 30;
-    box-shadow: 0 2px 8px rgba(255, 215, 0, 0.4);
+  position: absolute;
+  top: -4px;
+  right: -4px;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #ffd700, #ffaa00);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  z-index: 30;
+  box-shadow: 0 2px 8px rgba(255, 215, 0, 0.4);
 }
 
 /* Phase 8 #3+4: Live table green pulse indicator */
 .liveIndicator {
-    position: absolute;
-    bottom: 8px;
-    left: 8px;
-    width: 10px;
-    height: 10px;
-    border-radius: 50%;
-    background: #00ff88;
-    z-index: 30;
-    box-shadow: 0 0 6px rgba(0, 255, 136, 0.6);
-    animation: liveIndicatorPulse 1.8s ease-in-out infinite;
+  position: absolute;
+  bottom: 8px;
+  left: 8px;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: #00ff88;
+  z-index: 30;
+  box-shadow: 0 0 6px rgba(0, 255, 136, 0.6);
+  animation: liveIndicatorPulse 1.8s ease-in-out infinite;
 }
 
 @keyframes liveIndicatorPulse {
-    0%, 100% { transform: scale(1); opacity: 1; box-shadow: 0 0 6px rgba(0, 255, 136, 0.6); }
-    50% { transform: scale(1.3); opacity: 0.7; box-shadow: 0 0 14px rgba(0, 255, 136, 0.8); }
+  0%,
+  100% {
+    transform: scale(1);
+    opacity: 1;
+    box-shadow: 0 0 6px rgba(0, 255, 136, 0.6);
+  }
+  50% {
+    transform: scale(1.3);
+    opacity: 0.7;
+    box-shadow: 0 0 14px rgba(0, 255, 136, 0.8);
+  }
 }
 
 /* Phase 8 #8: Scroll indicator dots */
 .scrollIndicatorDots {
-    display: flex;
-    justify-content: center;
-    gap: 6px;
-    padding: 10px 0 6px;
+  display: flex;
+  justify-content: center;
+  gap: 6px;
+  padding: 10px 0 6px;
 }
 
 .scrollDot {
-    width: 6px;
-    height: 6px;
-    border-radius: 50%;
-    background: rgba(255, 255, 255, 0.15);
-    transition: background 0.3s ease, transform 0.3s ease;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.15);
+  transition:
+    background 0.3s ease,
+    transform 0.3s ease;
 }
 
 .scrollDotActive {
-    background: rgba(0, 212, 255, 0.7);
-    transform: scale(1.3);
+  background: rgba(0, 212, 255, 0.7);
+  transform: scale(1.3);
 }
 
 /* #5: Last active timestamp */
 .clubCardTimestamp {
-    font-size: 7px;
-    font-weight: 500;
-    color: rgba(0, 212, 255, 0.5);
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-    margin-top: 2px;
+  font-size: 7px;
+  font-weight: 500;
+  color: rgba(0, 212, 255, 0.5);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-top: 2px;
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════════
@@ -2163,39 +2548,42 @@
    ═══════════════════════════════════════════════════════════════════════════════ */
 
 .controlsRow {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    gap: 16px;
-    margin: 12px 0 24px;
-    z-index: 10;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 16px;
+  margin: 12px 0 24px;
+  z-index: 10;
 }
 
 .controlButton {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 6px;
-    padding: 8px 16px;
-    background: rgba(8, 20, 40, 0.6);
-    border: 1px solid rgba(0, 212, 255, 0.12);
-    border-radius: 10px;
-    backdrop-filter: blur(8px);
-    -webkit-backdrop-filter: blur(8px);
-    cursor: pointer;
-    font-size: 18px;
-    color: rgba(224, 232, 240, 0.8);
-    transition: background 0.2s ease, border-color 0.2s ease, transform 0.2s ease;
-    min-width: 44px;
-    min-height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 8px 16px;
+  background: rgba(8, 20, 40, 0.6);
+  border: 1px solid rgba(0, 212, 255, 0.12);
+  border-radius: 10px;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  cursor: pointer;
+  font-size: 18px;
+  color: rgba(224, 232, 240, 0.8);
+  transition:
+    background 0.2s ease,
+    border-color 0.2s ease,
+    transform 0.2s ease;
+  min-width: 44px;
+  min-height: 44px;
 }
 
 .controlButton:hover {
-    background: rgba(0, 212, 255, 0.08);
-    border-color: rgba(0, 212, 255, 0.3);
-    transform: translateY(-1px);
+  background: rgba(0, 212, 255, 0.08);
+  border-color: rgba(0, 212, 255, 0.3);
+  transform: translateY(-1px);
 }
 
 .controlButton:active {
-    transform: scale(0.96);
+  transform: scale(0.96);
 }

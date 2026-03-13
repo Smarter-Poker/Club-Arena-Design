@@ -1,0 +1,228 @@
+/**
+ * ═══════════════════════════════════════════════════════════════════════════════
+ *  FINANCIAL HEALTH PAGE — Admin Financial System Monitoring
+ * ═══════════════════════════════════════════════════════════════════════════════
+ *
+ * Shows:
+ * - Ledger reconciliation status
+ * - Credit suspension check results
+ * - Financial cron job health
+ * - Quick links to Financial Alerts + Disputes
+ */
+
+import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { FinancialCronService } from '../services/FinancialCronService';
+import { useAuthUser } from '../hooks/useAuthUser';
+import './FinancialHealthPage.css';
+
+interface CronStatus {
+  isRunning: boolean;
+  lastReconciliation: {
+    isBalanced: boolean;
+    difference: number;
+    checkedAt: string;
+  } | null;
+  lastSuspensionCheck: {
+    agentsChecked: number;
+    agentsSuspended: number;
+    agentsWarned: number;
+  } | null;
+  config: {
+    reconciliationIntervalMs: number;
+    suspensionCheckIntervalMs: number;
+    autoSuspendEnabled: boolean;
+  };
+}
+
+export default function FinancialHealthPage() {
+  const navigate = useNavigate();
+  const { user } = useAuthUser();
+  const [status, setStatus] = useState<CronStatus | null>(null);
+  const [refreshing, setRefreshing] = useState(false);
+  const [manualReconciling, setManualReconciling] = useState(false);
+
+  const loadStatus = () => {
+    const s = FinancialCronService.getStatus();
+    setStatus(s as CronStatus);
+  };
+
+  useEffect(() => {
+    loadStatus();
+    const interval = setInterval(loadStatus, 10000);
+    return () => clearInterval(interval);
+  }, []);
+
+  const handleManualReconciliation = async () => {
+    setManualReconciling(true);
+    try {
+      await FinancialCronService.runReconciliation();
+      loadStatus();
+    } catch (err) {
+      console.error('Manual reconciliation failed:', err);
+    }
+    setManualReconciling(false);
+  };
+
+  const handleManualSuspensionCheck = async () => {
+    setRefreshing(true);
+    try {
+      await FinancialCronService.runSuspensionCheck();
+      loadStatus();
+    } catch (err) {
+      console.error('Suspension check failed:', err);
+    }
+    setRefreshing(false);
+  };
+
+  const formatInterval = (ms: number): string => {
+    const hours = ms / (60 * 60 * 1000);
+    return hours >= 24 ? `${hours / 24}d` : `${hours}h`;
+  };
+
+  const formatTime = (iso: string): string => {
+    return new Date(iso).toLocaleString(undefined, {
+      month: 'short',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+    });
+  };
+
+  return (
+    <div className="financial-health-page">
+      <div className="fh-header">
+        <h2>🏥 Financial Health Dashboard</h2>
+        <button className="fh-refresh-btn" onClick={loadStatus} title="Refresh">
+          ↻
+        </button>
+      </div>
+
+      {/* System Status */}
+      <section className="fh-section">
+        <h3>System Status</h3>
+        <div className="fh-status-grid">
+          <div className={`fh-status-card ${status?.isRunning ? 'healthy' : 'error'}`}>
+            <span className="fh-status-indicator">{status?.isRunning ? '✅' : '❌'}</span>
+            <div>
+              <div className="fh-status-label">Financial Cron</div>
+              <div className="fh-status-value">{status?.isRunning ? 'Running' : 'Stopped'}</div>
+            </div>
+          </div>
+          <div className="fh-status-card info">
+            <span className="fh-status-indicator">⏱</span>
+            <div>
+              <div className="fh-status-label">Reconciliation Interval</div>
+              <div className="fh-status-value">
+                {status ? formatInterval(status.config.reconciliationIntervalMs) : '—'}
+              </div>
+            </div>
+          </div>
+          <div className="fh-status-card info">
+            <span className="fh-status-indicator">🔄</span>
+            <div>
+              <div className="fh-status-label">Suspension Check</div>
+              <div className="fh-status-value">
+                Every {status ? formatInterval(status.config.suspensionCheckIntervalMs) : '—'}
+              </div>
+            </div>
+          </div>
+          <div
+            className={`fh-status-card ${status?.config.autoSuspendEnabled ? 'warning' : 'info'}`}
+          >
+            <span className="fh-status-indicator">
+              {status?.config.autoSuspendEnabled ? '⚡' : '👁'}
+            </span>
+            <div>
+              <div className="fh-status-label">Auto-Suspend</div>
+              <div className="fh-status-value">
+                {status?.config.autoSuspendEnabled ? 'Enabled' : 'Log-only'}
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Ledger Reconciliation */}
+      <section className="fh-section">
+        <div className="fh-section-header">
+          <h3>📊 Ledger Reconciliation</h3>
+          <button
+            className="fh-action-btn"
+            onClick={handleManualReconciliation}
+            disabled={manualReconciling}
+          >
+            {manualReconciling ? 'Running...' : 'Run Now'}
+          </button>
+        </div>
+        {status?.lastReconciliation ? (
+          <div
+            className={`fh-result-card ${status.lastReconciliation.isBalanced ? 'balanced' : 'drift'}`}
+          >
+            <div className="fh-result-icon">
+              {status.lastReconciliation.isBalanced ? '✅' : '⚠️'}
+            </div>
+            <div className="fh-result-body">
+              <div className="fh-result-title">
+                {status.lastReconciliation.isBalanced ? 'Ledger Balanced' : 'Ledger Drift Detected'}
+              </div>
+              <div className="fh-result-detail">
+                Difference: {status.lastReconciliation.difference.toLocaleString()} chips
+              </div>
+              <div className="fh-result-time">
+                Last checked: {formatTime(status.lastReconciliation.checkedAt)}
+              </div>
+            </div>
+          </div>
+        ) : (
+          <div className="fh-empty">No reconciliation runs yet</div>
+        )}
+      </section>
+
+      {/* Credit Suspension */}
+      <section className="fh-section">
+        <div className="fh-section-header">
+          <h3>🔒 Credit Suspension Check</h3>
+          <button
+            className="fh-action-btn"
+            onClick={handleManualSuspensionCheck}
+            disabled={refreshing}
+          >
+            {refreshing ? 'Checking...' : 'Run Now'}
+          </button>
+        </div>
+        {status?.lastSuspensionCheck ? (
+          <div className="fh-suspension-stats">
+            <div className="fh-stat">
+              <span className="fh-stat-value">{status.lastSuspensionCheck.agentsChecked}</span>
+              <span className="fh-stat-label">Agents Checked</span>
+            </div>
+            <div className="fh-stat warning">
+              <span className="fh-stat-value">{status.lastSuspensionCheck.agentsWarned}</span>
+              <span className="fh-stat-label">Warned</span>
+            </div>
+            <div className="fh-stat danger">
+              <span className="fh-stat-value">{status.lastSuspensionCheck.agentsSuspended}</span>
+              <span className="fh-stat-label">Suspended</span>
+            </div>
+          </div>
+        ) : (
+          <div className="fh-empty">No suspension checks run yet</div>
+        )}
+      </section>
+
+      {/* Quick Actions */}
+      <section className="fh-section">
+        <h3>⚡ Quick Actions</h3>
+        <div className="fh-quick-actions">
+          <button className="fh-nav-btn" onClick={() => navigate('/financial-alerts')}>
+            🔔 Financial Alerts
+          </button>
+          <button className="fh-nav-btn" onClick={() => navigate('/disputes')}>
+            ⚖️ Dispute Management
+          </button>
+        </div>
+      </section>
+    </div>
+  );
+}

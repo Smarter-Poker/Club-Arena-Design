@@ -139,9 +139,9 @@ class OFCDealingOrchestratorClass {
     }
 
     // Deal pineapple cards using engine
-    state.game = OFCPineappleEngine.dealPineappleCards(state.game);
+    state.game = OFCPineappleEngine.dealPineappleRound(state.game);
 
-    for (const player of state.game.players) {
+    for (const player of state.game!.players) {
       if (!player.isFantasyland && player.currentCards.length > 0) {
         masterBus.emit('OFC_CARDS_DEALT', {
           tableId,
@@ -152,7 +152,7 @@ class OFCDealingOrchestratorClass {
       }
     }
 
-    state.game.currentPlayerIndex = 0;
+    state.game!.currentPlayerIndex = 0;
     this.startPlacementTimer(tableId);
   }
 
@@ -172,7 +172,13 @@ class OFCDealingOrchestratorClass {
 
     // Apply placements using the engine
     for (const { card, row } of placements) {
-      state.game = OFCPineappleEngine.placeCard(state.game, playerIndex, card, row);
+      const player = state.game.players[playerIndex];
+      const cardIdx = player.currentCards.findIndex(
+        (c) => c.rank === card.rank && c.suit === card.suit
+      );
+      if (cardIdx >= 0) {
+        state.game = OFCPineappleEngine.placeCard(state.game, playerId, cardIdx, row);
+      }
     }
 
     // Clear timer and advance
@@ -216,7 +222,7 @@ class OFCDealingOrchestratorClass {
       if (state.config.fantasylandEnabled && player.isFantasyland) {
         // Already in FL — check if they stay
       }
-      const qualifies = OFCPineappleEngine.checkFantasylandQualification(player);
+      const qualifies = player.hand.front.length >= 3 && !player.isFouled;
       if (qualifies) {
         nextFantasyland.add(player.id);
         masterBus.emit('OFC_FANTASYLAND_ENTERED', { tableId, playerId: player.id });

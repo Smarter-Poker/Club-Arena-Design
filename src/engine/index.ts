@@ -6,52 +6,90 @@
 
 // Core utilities
 export {
-    SUITS,
-    RANKS,
-    RANK_VALUES,
-    HAND_RANKINGS,
-    Deck,
-    cardToString,
-    cardsToString,
-    parseCard,
-    evaluateHand,
-    evaluateOmahaHand,
-    compareHands,
-    calculatePots,
-    calculateBettingState,
-    validateAction,
-    calculateRake,
-    determineWinners,
-    type EvaluatedHand,
-    type Pot,
-    type Winner,
-    type RakeConfig,
-    type BettingState,
+  SUITS,
+  RANKS,
+  RANK_VALUES,
+  HAND_RANKINGS,
+  Deck,
+  cardToString,
+  cardsToString,
+  parseCard,
+  evaluateHand,
+  evaluateOmahaHand,
+  compareHands,
+  calculatePots,
+  calculateBettingState,
+  validateAction,
+  calculateRake,
+  calculateTimedRake,
+  determineWinners,
+  type EvaluatedHand,
+  type Pot,
+  type Winner,
+  type RakeConfig,
+  type TimedRakeConfig,
+  type BettingState,
 } from './PokerEngine';
+
+// Crypto Random
+export { secureRandomInt, secureRandom, secureShuffle } from './CryptoRandom';
 
 // Hand Controller
 export {
-    HandController,
-    type HandConfig,
-    type GameState,
-    type ActionRecord,
-    type HandEvent,
-    type ShowdownResult,
+  HandController,
+  type HandConfig,
+  type GameState,
+  type ActionRecord,
+  type HandEvent,
+  type ShowdownResult,
 } from './HandController';
 
 // Horse Logic
-export { HorseLogic } from './HorseLogic';
+export { HorseLogic, type TablePosition } from './HorseLogic';
 
 // OFC Pineapple Engine
 export {
-    OFCPineappleEngine,
-    FRONT_ROYALTIES,
-    MIDDLE_ROYALTIES,
-    BACK_ROYALTIES,
-    type OFCCard,
-    type OFCHand,
-    type OFCPlayer,
-    type OFCGameState,
-    type OFCRow,
-    type OFCHandRank,
+  OFCPineappleEngine,
+  FRONT_ROYALTIES,
+  MIDDLE_ROYALTIES,
+  BACK_ROYALTIES,
+  type OFCCard,
+  type OFCHand,
+  type OFCPlayer,
+  type OFCGameState,
+  type OFCRow,
+  type OFCHandRank,
 } from './OFCPineappleEngine';
+
+// OFC Dealing Orchestrator
+export { ofcDealingOrchestrator } from './OFCDealingOrchestrator';
+
+// Disconnect Engine
+export {
+  disconnectEngine,
+  type DisconnectConfig,
+  type PlayerConnectionState,
+} from './DisconnectEngine';
+
+// Time Bank Engine
+export { timeBankEngine, type TimeBankConfig, type PlayerTimeBank } from './TimeBankEngine';
+
+// Insurance Engine
+export { insuranceEngine, type InsuranceConfig, type InsuranceOffer } from './InsuranceEngine';
+
+// Mixed Game Engine
+export { mixedGameEngine, MIXED_GAME_PRESETS, type MixedGameConfig } from './MixedGameEngine';
+
+// Chip Race Engine
+export { chipRaceEngine, type ChipRaceResult } from './ChipRaceEngine';
+
+// Pre-Action Engine
+export { preActionEngine, type PreActionType, type PreActionEntry } from './PreActionEngine';
+
+// Rakeback Engine
+export {
+  rakebackEngine,
+  DEFAULT_RAKEBACK_TIERS,
+  type RakebackConfig,
+  type RakebackTier,
+} from './RakebackEngine';

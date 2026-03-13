@@ -1651,6 +1651,7 @@ function HomePageInner() {
               <div className={styles.tilePedestal}></div>
               <div className={styles.tileImageWrapper}>
                 <img src={tile.img} alt={tile.alt} className={styles.tileImage} loading="lazy" />
+                <span className={styles.tileLabel}>{tile.alt}</span>
                 {tileBadges[tile.alt] && tileBadges[tile.alt] > 0 && (
                   <span className={styles.tileBadge}>{tileBadges[tile.alt]}</span>
                 )}
@@ -1861,6 +1862,7 @@ function HomePageInner() {
       {isLoading && !userClubs.length && (
         <div className={styles.loadingOverlay}>
           <div className={styles.spinner}></div>
+          <span className={styles.loadingText}>Loading Arena</span>
         </div>
       )}
     </div>

@@ -97,6 +97,8 @@ const ClubRulesPage = lazy(() => import('./pages/ClubRulesPage'));
 const NotificationCenter = lazy(() => import('./pages/NotificationCenter'));
 const BusDevToolsPage = lazy(() => import('./pages/BusDevToolsPage'));
 const FinancialAlertsPage = lazy(() => import('./pages/FinancialAlertsPage'));
+const DisputeManagementPage = lazy(() => import('./pages/DisputeManagementPage'));
+const FinancialHealthPage = lazy(() => import('./pages/FinancialHealthPage'));
 
 // Q3: Social, Messaging & Discovery Pages
 const PublicProfilePage = lazy(() => import('./pages/PublicProfilePage'));
@@ -1044,6 +1046,36 @@ export default function App() {
                     <AuthGuard>
                       <PageErrorBoundary pageName="Financial Alerts">
                         <FinancialAlertsPage />
+                      </PageErrorBoundary>
+                    </AuthGuard>
+                  }
+                />
+                <Route
+                  path="disputes"
+                  element={
+                    <AuthGuard>
+                      <PageErrorBoundary pageName="Disputes">
+                        <DisputeManagementPage />
+                      </PageErrorBoundary>
+                    </AuthGuard>
+                  }
+                />
+                <Route
+                  path="clubs/:clubId/disputes"
+                  element={
+                    <AuthGuard>
+                      <PageErrorBoundary pageName="Disputes">
+                        <DisputeManagementPage />
+                      </PageErrorBoundary>
+                    </AuthGuard>
+                  }
+                />
+                <Route
+                  path="financial-health"
+                  element={
+                    <AuthGuard>
+                      <PageErrorBoundary pageName="Financial Health">
+                        <FinancialHealthPage />
                       </PageErrorBoundary>
                     </AuthGuard>
                   }
