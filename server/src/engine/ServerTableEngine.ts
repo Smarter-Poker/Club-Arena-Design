@@ -731,15 +731,37 @@ export class ServerTableEngine {
     }
 
     // 5.5 Auto-Cashout successful horses (Hit-and-Run Bankroll Management)
-    if (!this.isTournamentTable()) {
+    // Always wait until right before they are the Big Blind to leave.
+    if (!this.isTournamentTable() && players.length >= 2) {
       const maxBuyIn = (this.tableInfo?.big_blind || 2) * 200;
-      // 2.5x the max buy in is a great cash out point for a horse
-      const cashOutTarget = maxBuyIn * 2.5;
-      const cashedOutHorses = players.filter((p) => p.is_horse && p.stack >= cashOutTarget);
+
+      // Calculate who will be the next Big Blind
+      // If 2 players: BB is the non-dealer. dealerSeatIndex currently points to the NEXT dealer.
+      // So next dealer is at this.dealerSeatIndex % players.length. BB is at (this.dealerSeatIndex + 1) % players.length.
+      // If >2 players: BB is at (this.dealerSeatIndex + 2) % players.length.
+      const bbOffset = players.length === 2 ? 1 : 2;
+      const nextBbSeatIndex = (this.dealerSeatIndex + bbOffset) % players.length;
+      const nextBbPlayer = players[nextBbSeatIndex];
+
+      const cashedOutHorses = players.filter((p) => {
+        if (!p.is_horse) return false;
+
+        // Target is dynamically between 2.5x and 3.5x max buy-in
+        // We use their user_id to deterministically seed their target, so they don't randomly flip-flop
+        const idInt = parseInt(p.user_id.replace(/-/g, '').substring(0, 8), 16) || 0;
+        const targetMultiplier = 2.5 + idInt / 0xffffffff;
+        const cashOutTarget = maxBuyIn * targetMultiplier;
+
+        // Only depart if they hit the target AND their NEXT hand is the Big Blind
+        const isNextBb = p.user_id === nextBbPlayer?.user_id;
+
+        return p.stack >= cashOutTarget && isNextBb;
+      });
+
       for (const horse of cashedOutHorses) {
         await markSeatAsLeft(this.tableId, horse.user_id);
         console.log(
-          `[ServerTableEngine:${this.tableId}] Bankroll Management: Horse ${horse.username} hit profit target (${horse.stack} chips) and cashed out.`
+          `[ServerTableEngine:${this.tableId}] Bankroll Management: Horse ${horse.username} hit profit target (${Math.floor(horse.stack)} chips) and cashed out before posting the Big Blind.`
         );
       }
     }

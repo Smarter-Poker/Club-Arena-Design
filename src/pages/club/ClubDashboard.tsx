@@ -26,6 +26,7 @@ import { useToast } from '../../components/common/Toast';
 import ClubMemberManagement from '../../components/admin/ClubMemberManagement';
 import { useVisibilityRefresh } from '../../hooks/useVisibilityRefresh';
 import { resolveClubIdFilter } from '../../utils/clubIdResolver';
+import { getClubLevel } from '../../utils/clubLevels';
 import styles from './ClubDashboard.module.css';
 
 interface ClubInfo {
@@ -35,6 +36,7 @@ interface ClubInfo {
   memberCount: number;
   tableCount: number;
   createdAt: string;
+  levelInfo?: any;
 }
 
 interface TopPlayer {
@@ -231,7 +233,9 @@ export default function ClubDashboard() {
       const { column: clubCol, value: clubVal } = resolveClubIdFilter(clubId);
       const { data: clubData } = await supabase
         .from('clubs')
-        .select('id, name, avatar_url, created_at')
+        .select(
+          'id, name, avatar_url, created_at, level, member_count, hierarchy_units_rounded_up, player_threshold_current, player_threshold_next, hierarchy_threshold_current, hierarchy_threshold_next'
+        )
         .eq(clubCol, clubVal)
         .maybeSingle();
 
@@ -271,6 +275,15 @@ export default function ClubDashboard() {
           memberCount: memberCount || 0,
           tableCount: tableCount || 0,
           createdAt: clubData.created_at,
+          levelInfo: getClubLevel({
+            level: clubData.level || 1,
+            playerCount: clubData.member_count || 0,
+            hierarchyUnits: clubData.hierarchy_units_rounded_up || 0,
+            playerThresholdCurrent: clubData.player_threshold_current || 0,
+            playerThresholdNext: clubData.player_threshold_next || 0,
+            hierarchyThresholdCurrent: clubData.hierarchy_threshold_current || 0,
+            hierarchyThresholdNext: clubData.hierarchy_threshold_next || 0,
+          }),
         });
       }
 
@@ -355,7 +368,24 @@ export default function ClubDashboard() {
             )}
           </div>
           <div className={styles.clubMeta}>
-            <h1>{club.name}</h1>
+            <h1 style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              {club.name}
+              {club.levelInfo && (
+                <span
+                  style={{
+                    fontSize: '0.8rem',
+                    padding: '4px 10px',
+                    borderRadius: '12px',
+                    background: club.levelInfo.gradient,
+                    color: '#fff',
+                    fontWeight: 700,
+                    textShadow: '0 1px 2px rgba(0,0,0,0.5)',
+                  }}
+                >
+                  Lv.{club.levelInfo.level}
+                </span>
+              )}
+            </h1>
             <p>
               {club.memberCount} members • {club.tableCount} tables
             </p>
