@@ -33,7 +33,7 @@ import { MetalFrame, MetalButton, MetalInput, MetalCard } from '../components/me
 import { useVIPStatus } from '../hooks/useVIP';
 import { useToast } from '../components/common/Toast';
 import { useVisibilityRefresh } from '../hooks/useVisibilityRefresh';
-import { resolveClubIdFilter } from '../utils/clubIdResolver';
+import { resolveClubIdFilter, resolveClubUUID } from '../utils/clubIdResolver';
 import './CashierPage.css';
 
 type CashierAction = 'send' | 'buyin' | 'cashout' | 'mint' | 'history';
@@ -242,10 +242,11 @@ export default function CashierPage() {
   const loadPendingCashouts = async () => {
     if (!clubId || !user?.id) return;
     try {
+      const resolvedId = await resolveClubUUID(clubId);
       const { data } = await supabase
         .from('cashout_requests')
         .select('id, amount, status, created_at')
-        .eq('club_id', clubId)
+        .eq('club_id', resolvedId)
         .eq('player_id', user.id)
         .in('status', ['pending', 'processing'])
         .order('created_at', { ascending: false });
@@ -260,11 +261,12 @@ export default function CashierPage() {
   const loadUserContext = async () => {
     if (!clubId || !user?.id) return;
     try {
+      const resolvedId = await resolveClubUUID(clubId);
       // Get user's role in this club
       const { data: memberData } = await supabase
         .from('club_members')
         .select('role')
-        .eq('club_id', clubId)
+        .eq('club_id', resolvedId)
         .eq('user_id', user.id)
         .maybeSingle();
       if (!isMounted.current) return;
@@ -285,7 +287,7 @@ export default function CashierPage() {
       const { data: unionClub } = await supabase
         .from('union_clubs')
         .select('union_id, unions!inner(owner_id)')
-        .eq('club_id', clubId)
+        .eq('club_id', resolvedId)
         .maybeSingle();
 
       if (!isMounted.current) return;
@@ -312,6 +314,7 @@ export default function CashierPage() {
     if (!user?.id || !clubId) return;
     setLoadingRecipients(true);
     try {
+      const resolvedId = await resolveClubUUID(clubId);
       let query = supabase
         .from('club_members')
         .select(
@@ -321,7 +324,7 @@ export default function CashierPage() {
                     users:user_id (id, username)
                 `
         )
-        .eq('club_id', clubId)
+        .eq('club_id', resolvedId)
         .neq('user_id', user.id)
         .limit(500);
 
@@ -932,12 +935,14 @@ export default function CashierPage() {
 
       {/* Financial Quick Links — visible to owners/admins/agents */}
       {canSend && clubId && (
-        <div style={{
-          display: 'flex',
-          gap: '8px',
-          flexWrap: 'wrap',
-          margin: '8px 0 12px',
-        }}>
+        <div
+          style={{
+            display: 'flex',
+            gap: '8px',
+            flexWrap: 'wrap',
+            margin: '8px 0 12px',
+          }}
+        >
           <a
             href={`/clubs/${clubId}/disputes`}
             style={{

@@ -12,6 +12,7 @@ import { useToast } from '../components/common/Toast';
 import { sanitizeInput } from '../utils/sanitizeInput';
 import ConfirmModal from '../components/common/ConfirmModal';
 import { useVisibilityRefresh } from '../hooks/useVisibilityRefresh';
+import { resolveClubUUID } from '../utils/clubIdResolver';
 import './ClubAnnouncementsPage.css';
 
 const announcementAnimationStyle = (index: number) => ({
@@ -97,6 +98,8 @@ export default function ClubAnnouncementsPage() {
     if (!clubId) return;
     if (!getIsMounted || getIsMounted()) setLoading(true);
     try {
+      const resolvedId = await resolveClubUUID(clubId);
+
       const { data, error } = await supabase
         .from('club_announcements')
         .select(
@@ -111,7 +114,7 @@ export default function ClubAnnouncementsPage() {
                     )
                 `
         )
-        .eq('club_id', clubId)
+        .eq('club_id', resolvedId)
         .order('is_pinned', { ascending: false })
         .order('created_at', { ascending: false })
         .limit(200);
@@ -134,7 +137,7 @@ export default function ClubAnnouncementsPage() {
         const { data: membership } = await supabase
           .from('club_members')
           .select('role')
-          .eq('club_id', clubId)
+          .eq('club_id', resolvedId)
           .eq('user_id', user.id)
           .maybeSingle();
 
@@ -153,8 +156,9 @@ export default function ClubAnnouncementsPage() {
 
     setPosting(true);
     try {
+      const resolvedId = await resolveClubUUID(clubId);
       const { error } = await supabase.from('club_announcements').insert({
-        club_id: clubId,
+        club_id: resolvedId,
         author_id: user.id,
         title: sanitizeInput(newTitle.trim()),
         content: sanitizeInput(newContent.trim()),

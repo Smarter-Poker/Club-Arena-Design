@@ -11,6 +11,7 @@ import { useToast } from '../components/common/Toast';
 import ClubBottomNav from '../components/club/ClubBottomNav';
 import './BadBeatJackpotPage.css';
 import { useVisibilityRefresh } from '../hooks/useVisibilityRefresh';
+import { resolveClubUUID } from '../utils/clubIdResolver';
 
 interface JackpotInfo {
   id: string;
@@ -114,10 +115,12 @@ export default function BadBeatJackpotPage() {
       if (!clubId) return;
       if (!getIsMounted || getIsMounted()) setLoading(true);
       try {
+        const resolvedId = await resolveClubUUID(clubId);
+
         const { data: jackpotData } = await supabase
           .from('bbj_pools')
           .select('*')
-          .eq('club_id', clubId)
+          .eq('club_id', resolvedId)
           .maybeSingle();
 
         if (getIsMounted && !getIsMounted()) return;
@@ -129,7 +132,7 @@ export default function BadBeatJackpotPage() {
         const { data: historyData } = await supabase
           .from('bbj_winners')
           .select('*')
-          .eq('club_id', clubId)
+          .eq('club_id', resolvedId)
           .order('awarded_at', { ascending: false })
           .limit(10);
 
@@ -142,7 +145,7 @@ export default function BadBeatJackpotPage() {
           const { data: contribData } = await supabase
             .from('bbj_contributions')
             .select('amount')
-            .eq('club_id', clubId)
+            .eq('club_id', resolvedId)
             .eq('player_id', user.id)
             .limit(10000);
 

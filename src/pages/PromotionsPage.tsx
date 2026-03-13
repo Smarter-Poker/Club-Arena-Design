@@ -15,6 +15,7 @@ import { promotionService } from '../services/PromotionService';
 import ClubBottomNav from '../components/club/ClubBottomNav';
 import './PromotionsPage.css';
 import { useVisibilityRefresh } from '../hooks/useVisibilityRefresh';
+import { resolveClubUUID } from '../utils/clubIdResolver';
 
 interface Promotion {
   id: string;
@@ -85,7 +86,8 @@ export default function PromotionsPage() {
       let query = supabase.from('promotions').select('*').order('start_date', { ascending: false });
 
       if (clubId) {
-        query = query.eq('club_id', clubId);
+        const resolvedId = await resolveClubUUID(clubId);
+        query = query.eq('club_id', resolvedId);
       }
 
       const { data, error } = await query.limit(20);

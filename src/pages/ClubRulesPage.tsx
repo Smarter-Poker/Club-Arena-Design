@@ -13,7 +13,7 @@ import { useAuthUser } from '../hooks/useAuthUser';
 import { useToast } from '../components/common/Toast';
 import ClubBottomNav from '../components/club/ClubBottomNav';
 import { sanitizeInput } from '../utils/sanitizeInput';
-import { resolveClubIdFilter } from '../utils/clubIdResolver';
+import { resolveClubIdFilter, resolveClubUUID } from '../utils/clubIdResolver';
 import './ClubRulesPage.css';
 
 const rulesLineAnimationStyle = (index: number) => ({
@@ -82,10 +82,11 @@ export default function ClubRulesPage() {
 
       // Check if admin via club_members (only if not already owner)
       if (!adminFromOwner) {
+        const resolvedId = await resolveClubUUID(clubId!);
         const { data: membership } = await supabase
           .from('club_members')
           .select('role')
-          .eq('club_id', clubId)
+          .eq('club_id', resolvedId)
           .eq('user_id', user?.id)
           .maybeSingle();
 

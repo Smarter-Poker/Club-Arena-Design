@@ -17,6 +17,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { masterBus } from '../core/MasterBus';
 import { useToast } from '../components/common/Toast';
+import { resolveClubUUID } from '../utils/clubIdResolver';
 import './TableConfigPage.css';
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -312,10 +313,11 @@ export default function TableConfigPage() {
     const fetchTemplates = async () => {
       if (!clubId) return;
       try {
+        const resolvedId = await resolveClubUUID(clubId);
         const { data, error } = await supabase
           .from('table_templates')
           .select('*')
-          .eq('club_id', clubId)
+          .eq('club_id', resolvedId)
           .eq('is_deleted', false)
           .order('created_at', { ascending: false });
 
@@ -349,15 +351,17 @@ export default function TableConfigPage() {
           filter: `club_id=eq.${clubId}`,
         },
         () => {
-          supabase
-            .from('table_templates')
-            .select('*')
-            .eq('club_id', clubId)
-            .eq('is_deleted', false)
-            .order('created_at', { ascending: false })
-            .then(({ data }) => {
-              if (isMounted && data) setTemplates(data);
-            });
+          resolveClubUUID(clubId!).then((resolvedId) => {
+            supabase
+              .from('table_templates')
+              .select('*')
+              .eq('club_id', resolvedId)
+              .eq('is_deleted', false)
+              .order('created_at', { ascending: false })
+              .then(({ data }) => {
+                if (isMounted && data) setTemplates(data);
+              });
+          });
         }
       )
       .subscribe();
