@@ -206,7 +206,7 @@ function PlayerActionModal({
 
       if (rpcError) {
         // RPC not available yet — fall back to direct table update
-        console.warn('promote_member RPC not available, using direct update:', rpcError.message);
+        // RPC not available yet — fall back to direct table update (expected during rollout)
 
         const { error: updateError } = await supabase
           .from('club_members')

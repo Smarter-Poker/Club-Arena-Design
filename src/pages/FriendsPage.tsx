@@ -216,7 +216,7 @@ export default function FriendsPage() {
             });
           }
         } catch (err) {
-          console.warn('[FriendsPage] Failed to fetch player status:', err);
+          // Non-critical: player status not available
         }
 
         setFriends(Array.from(uniqueMap.values()));

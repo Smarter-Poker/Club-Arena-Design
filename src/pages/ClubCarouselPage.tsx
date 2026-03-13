@@ -166,7 +166,7 @@ export default function ClubCarouselPage() {
 
         if (!isMounted.current) return;
         if (profileError) {
-          console.warn('[ClubCarousel] Profile query error:', profileError.message);
+          // Profile query returned non-critical error
         } else if (profileData) {
           setUserProfile({
             id: profileData.id,
@@ -179,7 +179,7 @@ export default function ClubCarouselPage() {
           setWallet((prev) => ({ ...prev, diamonds: profileData.diamonds || 0 }));
         }
       } catch (err) {
-        console.warn('[ClubCarousel] Error loading profile:', err);
+        // Non-critical profile load error
       }
 
       if (!isMounted.current) return;
@@ -206,7 +206,7 @@ export default function ClubCarouselPage() {
 
         if (!isMounted.current) return;
         if (memberError) {
-          console.warn('[ClubCarousel] Memberships query error:', memberError.message);
+          // Memberships query returned non-critical error
         } else if (memberData) {
           const userClubs: UserClub[] = memberData
             .filter((m: any) => m.clubs)
@@ -229,7 +229,7 @@ export default function ClubCarouselPage() {
           setWallet((prev) => ({ ...prev, gold: totalGold }));
         }
       } catch (err) {
-        console.warn('[ClubCarousel] Error loading memberships:', err);
+        // Non-critical memberships load error
       }
     } catch (error) {
       if (!isMounted.current) return;
