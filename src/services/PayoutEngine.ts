@@ -198,7 +198,7 @@ class PayoutEngineClass {
   }
 
   /**
-   * Calculate actual dollar amounts from percentages and prize pool
+   * Calculate actual chip amounts from percentages and prize pool
    */
   calculateAmounts(payouts: PayoutEntry[], prizePool: number): PayoutEntry[] {
     return payouts.map((p) => ({

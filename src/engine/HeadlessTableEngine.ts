@@ -491,6 +491,7 @@ export class HeadlessTableEngine {
     this.handCount++;
     const handNumber = this.handCount;
     const handStartTime = Date.now();
+    (this as any)._handStartTime = handStartTime;
     engineTelemetry.recordPlayerCount(this.tableId, players.length);
 
     // Reset per-hand rake tracking
@@ -1047,6 +1048,10 @@ export class HeadlessTableEngine {
         break;
 
       case 'HAND_COMPLETE': {
+        // Record hand timing for telemetry
+        const handDuration = Date.now() - (this as any)._handStartTime;
+        engineTelemetry.recordHandTiming(this.tableId, 0, 0, handDuration);
+
         // Emit HAND_COMPLETED for Daily Challenges if current user participated
         this.emitIfUserAtTable(players, () => {
           masterBus.emit('HAND_COMPLETED', {

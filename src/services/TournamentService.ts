@@ -1189,7 +1189,7 @@ class TournamentService {
     const tournament = await this.getTournament(tournamentId);
     if (!tournament) throw new Error('Tournament not found');
 
-    // Calculate prize — exact cent-precision arithmetic, no rounding
+    // Calculate prize — exact precision arithmetic, no rounding
     const payoutArr = (() => {
       const raw = tournament.payout_structure;
       if (!raw) return [];
@@ -1212,7 +1212,7 @@ class TournamentService {
     }
 
     const payoutEntry = payoutArr.find((p: any) => p.place === position);
-    // Exact cent-precision: trunc(pool * percentage) / 100
+    // Exact precision: trunc(pool * percentage) / 100
     // For position 1 with no payout structure, award full pool as fallback
     const prize = payoutEntry
       ? Math.trunc(tournament.prize_pool * payoutEntry.percentage) / 100
@@ -1339,7 +1339,7 @@ class TournamentService {
   calculatePayout(prizePool: number, position: number, structure: PayoutStructure[]): number {
     const entry = structure.find((p) => p.place === position);
     if (!entry) return 0;
-    // Exact cent-precision: multiply to cents, truncate, back to dollars
+    // Exact precision: multiply ×100, truncate, back to chips
     // Formula: trunc(pool * percentage / 100 * 100) / 100
     // Simplified: trunc(pool * percentage) / 100
     return Math.trunc(prizePool * entry.percentage) / 100;
@@ -2113,7 +2113,7 @@ class TournamentService {
 
     if (bountyConfig.bountyType === 'progressive') {
       // Progressive: 50% to collector, 50% added to collector's head
-      // Exact cent-precision split — remainder goes to collector
+      // Exact precision split — remainder goes to collector
       const collectorPortion = Math.trunc((bountyAmount * 100) / 2) / 100;
       const addedToHead = Math.trunc((bountyAmount - collectorPortion) * 100) / 100;
 

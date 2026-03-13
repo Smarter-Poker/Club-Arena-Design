@@ -78,7 +78,7 @@ interface RakeTier {
   sb: number;
   bb: number;
   rakePercent: number;
-  maxAmount: number; // Cap in dollars
+  maxAmount: number; // Cap in chips
   bbjRakeBB: number; // BBJ drop in BB units
   mainBBJ: number; // % of BBJ drop → Main pool
   backupBBJ: number; // % of BBJ drop → Backup pool
@@ -286,33 +286,33 @@ export const RakeService = {
       };
     }
 
-    // Integer arithmetic (cents) to avoid floating point — use trunc, never round
-    const potCents = Math.trunc(potSize * 100);
+    // Integer arithmetic (×100) to avoid floating point — use trunc, never round
+    const potScaled = Math.trunc(potSize * 100);
 
     // Raw rake = rakePercent of pot
-    const rawRakeCents = Math.trunc(potCents * tier.rakePercent);
+    const rawRakeScaled = Math.trunc(potScaled * tier.rakePercent);
 
-    // Cap from chart (in dollars → cents)
-    const rakeCapCents = Math.trunc(tier.maxAmount * 100);
-    const cappedRakeCents = Math.min(rawRakeCents, rakeCapCents);
+    // Cap from chart (scaled ×100)
+    const rakeCapScaled = Math.trunc(tier.maxAmount * 100);
+    const cappedRakeScaled = Math.min(rawRakeScaled, rakeCapScaled);
 
-    // BBJ drop = bbjRakeBB × BB (in BB units → dollars → cents)
-    const bbjDropDollars = tier.bbjRakeBB * bigBlind;
-    const bbjDropCents = Math.trunc(bbjDropDollars * 100);
+    // BBJ drop = bbjRakeBB × BB (in BB units → chips → scaled ×100)
+    const bbjDropChips = tier.bbjRakeBB * bigBlind;
+    const bbjDropScaled = Math.trunc(bbjDropChips * 100);
 
     // Total deduction from pot
-    const totalDeductionCents = cappedRakeCents + bbjDropCents;
+    const totalDeductionScaled = cappedRakeScaled + bbjDropScaled;
 
     return {
       potSize,
       bigBlind,
       rakePercent: tier.rakePercent,
-      rawRake: rawRakeCents / 100,
-      cappedRake: cappedRakeCents / 100,
+      rawRake: rawRakeScaled / 100,
+      cappedRake: cappedRakeScaled / 100,
       rakeCap: tier.maxAmount,
-      bbjDrop: bbjDropCents / 100,
-      totalDeduction: totalDeductionCents / 100,
-      netPot: potSize - totalDeductionCents / 100,
+      bbjDrop: bbjDropScaled / 100,
+      totalDeduction: totalDeductionScaled / 100,
+      netPot: potSize - totalDeductionScaled / 100,
     };
   },
 
@@ -545,20 +545,20 @@ export const RakeService = {
       return [];
     }
 
-    // Calculate equal split using integer arithmetic to avoid floating point loss
-    const totalRakeCents = Math.trunc(totalRake * 100);
-    const baseCreditCents = Math.trunc(totalRakeCents / activePlayers.length);
-    const remainderCents = totalRakeCents - baseCreditCents * activePlayers.length;
+    // Calculate equal split using integer arithmetic (×100) to avoid floating point loss
+    const totalRakeScaled = Math.trunc(totalRake * 100);
+    const baseCreditScaled = Math.trunc(totalRakeScaled / activePlayers.length);
+    const remainderScaled = totalRakeScaled - baseCreditScaled * activePlayers.length;
     const timestamp = new Date().toISOString();
 
-    // Build attribution records — distribute remainder 1 cent at a time
+    // Build attribution records — distribute remainder 1 unit at a time
     const attributions: RakeAttribution[] = activePlayers.map((p, i) => {
-      const extra = i < remainderCents ? 1 : 0;
+      const extra = i < remainderScaled ? 1 : 0;
       return {
         userId: p.userId,
         tableId,
         handId,
-        rakeCredit: (baseCreditCents + extra) / 100,
+        rakeCredit: (baseCreditScaled + extra) / 100,
         timestamp,
       };
     });
@@ -630,27 +630,27 @@ export const RakeService = {
 
     try {
       // Group players by agent for commission attribution
-      // Use integer-cents arithmetic to avoid floating-point loss
-      const byAgentCents = new Map<string, number>();
-      const totalRakeCents = Math.trunc(params.rakeAmount * 100);
-      const perPlayerCents = Math.trunc(totalRakeCents / params.players.length);
-      const remainderCents = totalRakeCents - perPlayerCents * params.players.length;
+      // Use integer (×100) arithmetic to avoid floating-point loss
+      const byAgentScaled = new Map<string, number>();
+      const totalRakeScaled = Math.trunc(params.rakeAmount * 100);
+      const perPlayerScaled = Math.trunc(totalRakeScaled / params.players.length);
+      const remainderScaled = totalRakeScaled - perPlayerScaled * params.players.length;
 
       let playerIdx = 0;
       for (const player of params.players) {
         if (player.agentId) {
-          // Distribute remainder 1 cent at a time to first N players
-          const extra = playerIdx < remainderCents ? 1 : 0;
-          const current = byAgentCents.get(player.agentId) || 0;
-          byAgentCents.set(player.agentId, current + perPlayerCents + extra);
+          // Distribute remainder 1 unit at a time to first N players
+          const extra = playerIdx < remainderScaled ? 1 : 0;
+          const current = byAgentScaled.get(player.agentId) || 0;
+          byAgentScaled.set(player.agentId, current + perPlayerScaled + extra);
         }
         playerIdx++;
       }
 
-      // Convert back to dollars
+      // Convert back to chips
       const byAgent = new Map<string, number>();
-      for (const [agentId, cents] of byAgentCents) {
-        byAgent.set(agentId, cents / 100);
+      for (const [agentId, scaled] of byAgentScaled) {
+        byAgent.set(agentId, scaled / 100);
       }
 
       // No agents at this table — nothing to credit
