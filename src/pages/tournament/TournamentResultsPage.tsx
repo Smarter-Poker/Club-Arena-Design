@@ -109,7 +109,8 @@ export default function TournamentResultsPage() {
         const { data: myEntries } = await supabase
           .from('tournament_players')
           .select('tournament_id')
-          .eq('user_id', user.id);
+          .eq('user_id', user.id)
+          .limit(5000);
 
         if (!isMounted.current) return;
         const myTournamentIds = new Set((myEntries || []).map((e) => e.tournament_id));
@@ -171,13 +172,18 @@ export default function TournamentResultsPage() {
       return;
     }
 
-    const { data } = await supabase
-      .from('tournament_players')
-      .select('user_id, username, position, prize, status, bounty_earned')
-      .eq('tournament_id', selectedTournament!.id)
-      .order('position', { ascending: true, nullsFirst: false });
+    try {
+      const { data } = await supabase
+        .from('tournament_players')
+        .select('user_id, username, position, prize, status, bounty_earned')
+        .eq('tournament_id', selectedTournament!.id)
+        .order('position', { ascending: true, nullsFirst: false })
+        .limit(1000);
 
-    if (isMounted.current) setResults((data || []) as TournamentResult[]);
+      if (isMounted.current) setResults((data || []) as TournamentResult[]);
+    } catch (err) {
+      console.error('[TournamentResults] loadResults error:', err);
+    }
   };
 
   // Load hand history for selected tournament
@@ -187,16 +193,20 @@ export default function TournamentResultsPage() {
       return;
     }
 
-    const { data } = await supabase
-      .from('hand_history')
-      .select(
-        'id, hand_number, small_blind, big_blind, pot_size, game_variant, community_cards, winners, players, created_at'
-      )
-      .eq('tournament_id', selectedTournament!.id)
-      .order('hand_number', { ascending: false })
-      .limit(100);
+    try {
+      const { data } = await supabase
+        .from('hand_history')
+        .select(
+          'id, hand_number, small_blind, big_blind, pot_size, game_variant, community_cards, winners, players, created_at'
+        )
+        .eq('tournament_id', selectedTournament!.id)
+        .order('hand_number', { ascending: false })
+        .limit(100);
 
-    if (isMounted.current) setHandHistory((data || []) as HandHistoryRecord[]);
+      if (isMounted.current) setHandHistory((data || []) as HandHistoryRecord[]);
+    } catch (err) {
+      console.error('[TournamentResults] loadHandHistory error:', err);
+    }
   };
 
   useEffect(() => {
