@@ -445,7 +445,6 @@ export default function ClubMembersPage() {
                 `
           )
           .eq('club_id', resolvedId)
-          .eq('profiles.is_horse', false)
           .not('status', 'in', '("banned","suspended")')
           .limit(5000);
 
