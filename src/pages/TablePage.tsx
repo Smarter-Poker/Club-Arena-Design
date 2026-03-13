@@ -3280,6 +3280,7 @@ export default function TablePage({
           if (tableId) submitAction(tableId, userId, 'fold').catch(() => {});
           break;
         case 'check':
+          if (!validateAndExecuteAction('check')) return;
           startTransition(() => {
             if (handControllerRef.current)
               handControllerRef.current.performAction(heroSeat, 'check');
@@ -3289,6 +3290,7 @@ export default function TablePage({
           if (tableId) submitAction(tableId, userId, 'check').catch(() => {});
           break;
         case 'call':
+          if (!validateAndExecuteAction('call')) return;
           startTransition(() => {
             if (handControllerRef.current)
               handControllerRef.current.performAction(heroSeat, 'call');
@@ -3301,6 +3303,7 @@ export default function TablePage({
           if (amount) {
             const clamped = Math.min(amount, heroStack);
             if (clamped <= 0) return;
+            if (!validateAndExecuteAction('raise', clamped)) return;
             startTransition(() => {
               if (handControllerRef.current) {
                 handControllerRef.current.performAction(heroSeat, 'raise', clamped);
@@ -3313,6 +3316,7 @@ export default function TablePage({
           break;
         case 'allin':
           if (heroStack <= 0) return;
+          if (!validateAndExecuteAction('allin')) return;
           startTransition(() => {
             if (handControllerRef.current)
               handControllerRef.current.performAction(heroSeat, 'all_in');
