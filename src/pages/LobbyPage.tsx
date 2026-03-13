@@ -98,12 +98,18 @@ export default function LobbyPage() {
       });
 
     // Check spin eligibility and fetch stats
-    bonusService.canSpinToday(user.id).then((eligible) => {
-      if (isMounted.current) setCanSpin(eligible);
-    });
-    bonusService.getWheelStats(user.id).then((stats) => {
-      if (isMounted.current) setWheelStats(stats);
-    });
+    bonusService
+      .canSpinToday(user.id)
+      .then((eligible) => {
+        if (isMounted.current) setCanSpin(eligible);
+      })
+      .catch(() => {});
+    bonusService
+      .getWheelStats(user.id)
+      .then((stats) => {
+        if (isMounted.current) setWheelStats(stats);
+      })
+      .catch(() => {});
 
     // Trigger push notification event if daily reset is available
     dailyChallengeService.emitDailyResetReminder();

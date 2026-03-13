@@ -85,7 +85,10 @@ export default function PlayerNotesPanel({
         loadAllNotes();
       }
       // Check VIP status for tag gating
-      vipService.checkVIPStatus(user.id).then((status) => setIsVIP(status.isVIP));
+      vipService
+        .checkVIPStatus(user.id)
+        .then((status) => setIsVIP(status.isVIP))
+        .catch(() => {});
     }
   }, [user?.id, targetUserId]);
 
