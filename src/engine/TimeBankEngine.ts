@@ -85,15 +85,19 @@ class TimeBankEngineClass {
   /**
    * Initialize time bank for a player at a table
    */
-  initializePlayer(tableId: string, playerId: string): void {
+  initializePlayer(
+    tableId: string,
+    playerId: string,
+    initialState?: { remainingSeconds?: number; usesRemaining?: number }
+  ): void {
     const config = this.tableConfigs.get(tableId) || this.DEFAULT_CONFIG;
     const key = `${tableId}:${playerId}`;
 
     this.playerBanks.set(key, {
       playerId,
       tableId,
-      remainingSeconds: config.totalBankSeconds,
-      usesRemaining: config.maxUses,
+      remainingSeconds: initialState?.remainingSeconds ?? config.totalBankSeconds,
+      usesRemaining: initialState?.usesRemaining ?? config.maxUses,
       isActive: false,
       currentUseSeconds: 0,
     });

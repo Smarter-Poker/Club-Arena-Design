@@ -106,11 +106,36 @@ export class HeadlessTableEngine {
   // Hand-for-hand mode (bubble) — when active, pause after each hand until released
   private handForHandMode = false;
   private handForHandResolve: (() => void) | null = null;
+  private timeBankUnsubs: (() => void)[] = [];
 
   constructor(tableId: string, supabaseClient: typeof supabase) {
     this.tableId = tableId;
     this.supabaseClient = supabaseClient;
     this.persistence = new HandPersistence(tableId);
+
+    // Persist Time Bank state changes to Supabase
+    const handleTimeBankChange = async (event: any) => {
+      const payload = event?.payload || event;
+      if (payload.tableId !== this.tableId) return;
+      try {
+        await this.supabaseClient
+          .from('table_seats')
+          .update({
+            time_bank_remaining: payload.remainingSeconds,
+            time_bank_uses_remaining: payload.usesRemaining,
+          })
+          .eq('table_id', this.tableId)
+          .eq('user_id', payload.playerId);
+      } catch (err) {
+        console.error(`[HeadlessTableEngine:${this.tableId}] DB sync failed for Time Bank:`, err);
+      }
+    };
+
+    this.timeBankUnsubs.push(
+      masterBus.subscribe('TIME_BANK_STOPPED', handleTimeBankChange),
+      masterBus.subscribe('TIME_BANK_DEPLETED', handleTimeBankChange),
+      masterBus.subscribe('TIME_BANK_REFILLED', handleTimeBankChange)
+    );
   }
 
   /**
@@ -190,6 +215,8 @@ export class HeadlessTableEngine {
     // Clean up event handlers
     this.unsubscribeHands.forEach((unsub) => unsub());
     this.unsubscribeHands = [];
+    this.timeBankUnsubs.forEach((unsub) => unsub());
+    this.timeBankUnsubs = [];
     this.horseAIHandlers.clear();
 
     // Clear brain session data for this table
@@ -326,7 +353,7 @@ export class HeadlessTableEngine {
   private async loadSeatedPlayers(): Promise<void> {
     const { data, error } = await this.supabaseClient
       .from('table_seats')
-      .select('user_id, stack, seat_number')
+      .select('user_id, stack, seat_number, time_bank_remaining, time_bank_uses_remaining')
       .eq('table_id', this.tableId)
       .is('left_at', null)
       .order('seat_number', { ascending: true });
@@ -386,6 +413,8 @@ export class HeadlessTableEngine {
           seat_number: seat.seat_number || 1, // Use actual DB seat number
           is_horse: profile.is_horse || false,
           horse_profile: profile.horse_profile || 'balanced',
+          time_bank_remaining: seat.time_bank_remaining,
+          time_bank_uses_remaining: seat.time_bank_uses_remaining,
         };
       });
 
@@ -561,7 +590,10 @@ export class HeadlessTableEngine {
 
     // Initialize time bank for each player
     for (const p of players) {
-      timeBankEngine.initializePlayer(this.tableId, p.user_id);
+      timeBankEngine.initializePlayer(this.tableId, p.user_id, {
+        remainingSeconds: (p as any).time_bank_remaining ?? undefined,
+        usesRemaining: (p as any).time_bank_uses_remaining ?? undefined,
+      });
     }
 
     // Configure insurance engine (cash games only)
