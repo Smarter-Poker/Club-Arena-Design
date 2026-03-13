@@ -509,11 +509,12 @@ export default function ClubMembersPage() {
   useEffect(() => {
     if (members.length === 0) return;
     setVisibleMembers(new Set());
-    members.forEach((member, index) => {
+    const timers = members.map((member, index) =>
       setTimeout(() => {
         setVisibleMembers((prev) => new Set(prev).add(member.id));
-      }, index * 60);
-    });
+      }, index * 60)
+    );
+    return () => timers.forEach(clearTimeout);
   }, [members]);
 
   // Real-time club members table updates

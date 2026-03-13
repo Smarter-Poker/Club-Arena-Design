@@ -360,7 +360,8 @@ export const ChipFlowService = {
       .from('wallet_transactions')
       .select('*')
       .eq('user_id', userId)
-      .order('created_at', { ascending: true });
+      .order('created_at', { ascending: true })
+      .limit(1000);
 
     if (error) throw error;
     return data || [];
