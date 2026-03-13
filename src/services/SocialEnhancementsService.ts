@@ -39,7 +39,14 @@ export interface SocialFeedItem {
   userId: string;
   username: string;
   avatarUrl?: string;
-  type: 'hand_result' | 'tournament_finish' | 'achievement' | 'level_up' | 'club_join' | 'kudos_received' | 'story';
+  type:
+    | 'hand_result'
+    | 'tournament_finish'
+    | 'achievement'
+    | 'level_up'
+    | 'club_join'
+    | 'kudos_received'
+    | 'story';
   title: string;
   description: string;
   metadata?: Record<string, unknown>;
@@ -64,13 +71,16 @@ export interface JoinRequest {
 }
 
 class SocialEnhancementsServiceClass {
-
   // ═══════════════════════════════════════════════════════════════════════════
   // KUDOS / PLAYER REPUTATION
   // ═══════════════════════════════════════════════════════════════════════════
 
   /** Send kudos to another player after a shared session */
-  async sendKudos(fromUserId: string, toUserId: string, type: KudosEntry['type']): Promise<boolean> {
+  async sendKudos(
+    fromUserId: string,
+    toUserId: string,
+    type: KudosEntry['type']
+  ): Promise<boolean> {
     const { error } = await supabase.from('player_kudos').insert({
       from_user_id: fromUserId,
       to_user_id: toUserId,
@@ -87,13 +97,17 @@ class SocialEnhancementsServiceClass {
 
   /** Get kudos count for a player */
   async getKudosCount(userId: string): Promise<Record<KudosEntry['type'], number>> {
-    const { data } = await supabase
-      .from('player_kudos')
-      .select('type')
-      .eq('to_user_id', userId);
+    const { data } = await supabase.from('player_kudos').select('type').eq('to_user_id', userId);
 
-    const counts: Record<string, number> = { good_opponent: 0, great_player: 0, fun_table: 0, fair_play: 0 };
-    (data || []).forEach((k: any) => { counts[k.type] = (counts[k.type] || 0) + 1; });
+    const counts: Record<string, number> = {
+      good_opponent: 0,
+      great_player: 0,
+      fun_table: 0,
+      fair_play: 0,
+    };
+    (data || []).forEach((k: any) => {
+      counts[k.type] = (counts[k.type] || 0) + 1;
+    });
     return counts as Record<KudosEntry['type'], number>;
   }
 
@@ -217,9 +231,9 @@ class SocialEnhancementsServiceClass {
       .or(`user_id.eq.${otherUserId},friend_id.eq.${otherUserId}`)
       .eq('status', 'accepted');
 
-    const myFriendIds = new Set((myFriends || []).map((f: any) =>
-      f.user_id === userId ? f.friend_id : f.user_id
-    ));
+    const myFriendIds = new Set(
+      (myFriends || []).map((f: any) => (f.user_id === userId ? f.friend_id : f.user_id))
+    );
     const mutualFriends = (theirFriends || []).filter((f: any) => {
       const theirFriendId = f.user_id === otherUserId ? f.friend_id : f.user_id;
       return myFriendIds.has(theirFriendId);
@@ -229,7 +243,9 @@ class SocialEnhancementsServiceClass {
     const { count: totalKudos } = await supabase
       .from('player_kudos')
       .select('id', { count: 'exact', head: true })
-      .or(`and(from_user_id.eq.${userId},to_user_id.eq.${otherUserId}),and(from_user_id.eq.${otherUserId},to_user_id.eq.${userId})`);
+      .or(
+        `and(from_user_id.eq.${userId},to_user_id.eq.${otherUserId}),and(from_user_id.eq.${otherUserId},to_user_id.eq.${userId})`
+      );
 
     // Calculate strength tier
     const score = sharedClubs * 3 + (sharedTables || 0) + mutualFriends * 2 + (totalKudos || 0) * 2;
@@ -238,7 +254,13 @@ class SocialEnhancementsServiceClass {
     else if (score >= 10) strength = 'strong';
     else if (score >= 4) strength = 'moderate';
 
-    return { sharedClubs, sharedTables: sharedTables || 0, mutualFriends, totalKudos: totalKudos || 0, strength };
+    return {
+      sharedClubs,
+      sharedTables: sharedTables || 0,
+      mutualFriends,
+      totalKudos: totalKudos || 0,
+      strength,
+    };
   }
 
   // ═══════════════════════════════════════════════════════════════════════════
@@ -343,7 +365,9 @@ class SocialEnhancementsServiceClass {
     const channel = masterBus.getOrCreateChannel(channelKey);
     const state = channel.presenceState();
     let count = 0;
-    Object.values(state).forEach((presences) => { count += (presences as any[]).length; });
+    Object.values(state).forEach((presences) => {
+      count += (presences as any[]).length;
+    });
     return count;
   }
 
@@ -359,7 +383,9 @@ class SocialEnhancementsServiceClass {
     channel.on('presence', { event: 'sync' }, () => {
       const state = channel.presenceState();
       let count = 0;
-      Object.values(state).forEach((presences) => { count += (presences as any[]).length; });
+      Object.values(state).forEach((presences) => {
+        count += (presences as any[]).length;
+      });
       callback(count);
     });
 
@@ -369,7 +395,9 @@ class SocialEnhancementsServiceClass {
       }
     });
 
-    return () => { masterBus.removeRegisteredChannel(channelKey); };
+    return () => {
+      masterBus.removeRegisteredChannel(channelKey);
+    };
   }
 
   // ═══════════════════════════════════════════════════════════════════════════
@@ -395,7 +423,10 @@ class SocialEnhancementsServiceClass {
   }
 
   /** Check if user has a pending request for a specific club */
-  async hasJoinRequest(userId: string, clubId: string): Promise<'pending' | 'approved' | 'rejected' | null> {
+  async hasJoinRequest(
+    userId: string,
+    clubId: string
+  ): Promise<'pending' | 'approved' | 'rejected' | null> {
     const { data } = await supabase
       .from('club_join_requests')
       .select('status')
@@ -433,7 +464,12 @@ class SocialEnhancementsServiceClass {
   // ═══════════════════════════════════════════════════════════════════════════
 
   /** Enhanced browser notification with avatar */
-  async sendRichNotification(title: string, body: string, senderUserId?: string, url?: string): Promise<void> {
+  async sendRichNotification(
+    title: string,
+    body: string,
+    senderUserId?: string,
+    url?: string
+  ): Promise<void> {
     if (!('Notification' in window) || Notification.permission !== 'granted') return;
 
     let icon = '/favicon.ico';
@@ -473,7 +509,9 @@ class SocialEnhancementsServiceClass {
     // Get all friends
     const { data: friendships } = await supabase
       .from('friendships')
-      .select('user_id, friend_id, profiles_user:user_id(username, avatar_url), profiles_friend:friend_id(username, avatar_url)')
+      .select(
+        'user_id, friend_id, profiles_user:user_id(username, avatar_url), profiles_friend:friend_id(username, avatar_url)'
+      )
       .or(`user_id.eq.${userId},friend_id.eq.${userId}`)
       .eq('status', 'accepted')
       .limit(50);
@@ -522,16 +560,26 @@ class SocialEnhancementsServiceClass {
   // RICH TEXT / MARKDOWN RENDERING UTILITY
   // ═══════════════════════════════════════════════════════════════════════════
 
-  /** Parse basic markdown-like syntax in messages */
+  /** Parse basic markdown-like syntax in messages (XSS-safe) */
   renderRichText(text: string): string {
-    let rendered = text;
+    // SECURITY: Escape HTML entities FIRST to prevent XSS
+    let rendered = text
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#039;');
+
     // Bold: **text**
     rendered = rendered.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
     // Italic: *text* or _text_
     rendered = rendered.replace(/(?<!\*)\*(?!\*)(.+?)(?<!\*)\*(?!\*)/g, '<em>$1</em>');
     rendered = rendered.replace(/_(.+?)_/g, '<em>$1</em>');
     // Code: `text`
-    rendered = rendered.replace(/`(.+?)`/g, '<code style="background:rgba(255,255,255,0.08);padding:1px 4px;border-radius:4px;font-family:monospace;font-size:0.85em">$1</code>');
+    rendered = rendered.replace(
+      /`(.+?)`/g,
+      '<code style="background:rgba(255,255,255,0.08);padding:1px 4px;border-radius:4px;font-family:monospace;font-size:0.85em">$1</code>'
+    );
     // Strikethrough: ~~text~~
     rendered = rendered.replace(/~~(.+?)~~/g, '<del>$1</del>');
     // Links: auto-detect URLs

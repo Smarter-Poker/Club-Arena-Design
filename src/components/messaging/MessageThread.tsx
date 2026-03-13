@@ -584,78 +584,82 @@ export default function MessageThread({ conversationId, onBack }: MessageThreadP
             <p>Start the conversation!</p>
           </div>
         ) : (
-          messages.map((message, idx) => {
-            // Q3 Phase 14: Unread separator line
-            const showUnreadSep =
-              idx > 0 &&
-              !message.isSeen &&
-              messages[idx - 1]?.isSeen &&
-              message.userId !== user?.id;
-            const unreadCount = messages
-              .slice(idx)
-              .filter((m) => !m.isSeen && m.userId !== user?.id).length;
+          (() => {
+            // Q3 Phase 17: Compute unread boundary ONCE (was O(n²) inside map)
+            const firstUnreadIdx = messages.findIndex(
+              (m, i) => i > 0 && !m.isSeen && messages[i - 1]?.isSeen && m.userId !== user?.id
+            );
+            const totalUnread =
+              firstUnreadIdx >= 0
+                ? messages.slice(firstUnreadIdx).filter((m) => !m.isSeen && m.userId !== user?.id)
+                    .length
+                : 0;
 
-            return (
-              <div key={message.id}>
-                {showUnreadSep && (
-                  <div
-                    className={styles.unreadSeparator || ''}
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '8px',
-                      padding: '8px 16px',
-                      margin: '4px 0',
-                      color: '#00d4ff',
-                      fontSize: '0.75rem',
-                      fontWeight: 600,
-                    }}
-                  >
-                    <div style={{ flex: 1, height: '1px', background: 'rgba(0,212,255,0.3)' }} />
-                    <span>
-                      {unreadCount} new message{unreadCount !== 1 ? 's' : ''}
-                    </span>
-                    <div style={{ flex: 1, height: '1px', background: 'rgba(0,212,255,0.3)' }} />
-                  </div>
-                )}
-                <div
-                  id={`msg-${message.id}`}
-                  style={{
-                    opacity: visibleMessages.has(idx) ? 1 : 0,
-                    transform: visibleMessages.has(idx) ? 'translateY(0)' : 'translateY(8px)',
-                    transition: 'all 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275)',
-                    background:
-                      highlightedMessageId === message.id ? 'rgba(0, 212, 255, 0.08)' : undefined,
-                    borderRadius: highlightedMessageId === message.id ? '12px' : undefined,
-                  }}
-                >
-                  <MessageBubble
-                    message={message}
-                    isCurrentUser={message.userId === user?.id}
-                    onReact={reactToMessage}
-                    onDelete={deleteMessage}
-                    onReply={handleReply}
-                    onForward={handleForward}
-                  />
-                  {/* Q3: Reply count indicator */}
-                  {message.threadReplyCount && message.threadReplyCount > 0 && (
+            return messages.map((message, idx) => {
+              const showUnreadSep = idx === firstUnreadIdx;
+
+              return (
+                <div key={message.id}>
+                  {showUnreadSep && (
                     <div
+                      className={styles.unreadSeparator || ''}
                       style={{
-                        fontSize: '0.7rem',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '8px',
+                        padding: '8px 16px',
+                        margin: '4px 0',
                         color: '#00d4ff',
-                        padding: '2px 48px',
-                        cursor: 'pointer',
+                        fontSize: '0.75rem',
                         fontWeight: 600,
                       }}
                     >
-                      💬 {message.threadReplyCount} repl
-                      {message.threadReplyCount !== 1 ? 'ies' : 'y'}
+                      <div style={{ flex: 1, height: '1px', background: 'rgba(0,212,255,0.3)' }} />
+                      <span>
+                        {totalUnread} new message{totalUnread !== 1 ? 's' : ''}
+                      </span>
+                      <div style={{ flex: 1, height: '1px', background: 'rgba(0,212,255,0.3)' }} />
                     </div>
                   )}
+                  <div
+                    id={`msg-${message.id}`}
+                    style={{
+                      opacity: visibleMessages.has(idx) ? 1 : 0,
+                      transform: visibleMessages.has(idx) ? 'translateY(0)' : 'translateY(8px)',
+                      transition: 'all 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275)',
+                      background:
+                        highlightedMessageId === message.id ? 'rgba(0, 212, 255, 0.08)' : undefined,
+                      borderRadius: highlightedMessageId === message.id ? '12px' : undefined,
+                    }}
+                  >
+                    <MessageBubble
+                      message={message}
+                      isCurrentUser={message.userId === user?.id}
+                      onReact={reactToMessage}
+                      onDelete={deleteMessage}
+                      onReply={handleReply}
+                      onForward={handleForward}
+                    />
+                    {/* Q3: Reply count indicator */}
+                    {message.threadReplyCount && message.threadReplyCount > 0 && (
+                      <div
+                        style={{
+                          fontSize: '0.7rem',
+                          color: '#00d4ff',
+                          padding: '2px 48px',
+                          cursor: 'pointer',
+                          fontWeight: 600,
+                        }}
+                      >
+                        💬 {message.threadReplyCount} repl
+                        {message.threadReplyCount !== 1 ? 'ies' : 'y'}
+                      </div>
+                    )}
+                  </div>
                 </div>
-              </div>
-            );
-          })
+              );
+            });
+          })()
         )}
 
         {/* Typing Indicator */}
