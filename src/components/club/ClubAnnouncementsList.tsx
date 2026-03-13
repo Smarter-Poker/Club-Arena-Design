@@ -10,141 +10,141 @@ import { useToast } from '../common/Toast';
 import './ClubAnnouncementsList.css';
 
 interface ClubAnnouncementsListProps {
-    clubId: string;
-    isAdmin?: boolean;
-    limit?: number;
+  clubId: string;
+  isAdmin?: boolean;
+  limit?: number;
 }
 
 interface Announcement {
-    id: string;
-    title: string;
-    content: string;
-    authorName: string;
-    priority: 'low' | 'normal' | 'high' | 'urgent';
-    isPinned: boolean;
-    createdAt: Date;
-    expiresAt?: Date;
+  id: string;
+  title: string;
+  content: string;
+  authorName: string;
+  priority: 'low' | 'normal' | 'high' | 'urgent';
+  isPinned: boolean;
+  createdAt: Date;
+  expiresAt?: Date;
 }
 
 const PRIORITY_COLORS: Record<string, string> = {
-    low: '#6b7280',
-    normal: '#3b82f6',
-    high: '#f59e0b',
-    urgent: '#ef4444'
+  low: '#6b7280',
+  normal: '#3b82f6',
+  high: '#f59e0b',
+  urgent: '#ef4444',
 };
 
 export function ClubAnnouncementsList({ clubId, isAdmin, limit = 10 }: ClubAnnouncementsListProps) {
-    const toast = useToast();
-    const [announcements, setAnnouncements] = useState<Announcement[]>([]);
-    const [loading, setLoading] = useState(true);
+  const toast = useToast();
+  const [announcements, setAnnouncements] = useState<Announcement[]>([]);
+  const [loading, setLoading] = useState(true);
 
-    useEffect(() => {
-        loadAnnouncements();
-    }, [clubId]);
+  useEffect(() => {
+    loadAnnouncements();
+  }, [clubId]);
 
-    const loadAnnouncements = async () => {
-        setLoading(true);
-        try {
-            const { data, error } = await supabase
-                .from('club_announcements')
-                .select('*, author:profiles!author_id(username)')
-                .eq('club_id', clubId)
-                .order('is_pinned', { ascending: false })
-                .order('created_at', { ascending: false })
-                .limit(limit);
+  const loadAnnouncements = async () => {
+    setLoading(true);
+    try {
+      const { data, error } = await supabase
+        .from('club_announcements')
+        .select('*, author:profiles!author_id(username)')
+        .eq('club_id', clubId)
+        .order('is_pinned', { ascending: false })
+        .order('created_at', { ascending: false })
+        .limit(limit);
 
-            if (!error && data) {
-                setAnnouncements(data.map(a => {
-                    const author = Array.isArray(a.author) ? a.author[0] : a.author;
-                    return {
-                        id: a.id,
-                        title: a.title,
-                        content: a.content,
-                        authorName: author?.username || 'Admin',
-                        priority: a.priority || 'normal',
-                        isPinned: a.is_pinned || false,
-                        createdAt: new Date(a.created_at),
-                        expiresAt: a.expires_at ? new Date(a.expires_at) : undefined
-                    };
-                }));
-            }
-        } catch (error) {
-            toast.error('Failed to load announcements');
-        }
-        setLoading(false);
-    };
-
-    const deleteAnnouncement = async (id: string) => {
-        if (!isAdmin) return;
-
-        try {
-            await supabase.from('club_announcements').delete().eq('id', id);
-            toast.success('Announcement deleted');
-            loadAnnouncements();
-        } catch {
-            toast.error('Failed to delete');
-        }
-    };
-
-    const formatDate = (date: Date) => {
-        const now = new Date();
-        const diff = now.getTime() - date.getTime();
-        const hours = Math.floor(diff / (1000 * 60 * 60));
-
-        if (hours < 1) return 'Just now';
-        if (hours < 24) return `${hours}h ago`;
-        if (hours < 48) return 'Yesterday';
-        return date.toLocaleDateString();
-    };
-
-    if (loading) {
-        return <div className="announcements-list loading">Loading...</div>;
+      if (!error && data) {
+        setAnnouncements(
+          data.map((a) => {
+            const author = Array.isArray(a.author) ? a.author[0] : a.author;
+            return {
+              id: a.id,
+              title: a.title,
+              content: a.content,
+              authorName: author?.username || 'Admin',
+              priority: a.priority || 'normal',
+              isPinned: a.is_pinned || false,
+              createdAt: new Date(a.created_at),
+              expiresAt: a.expires_at ? new Date(a.expires_at) : undefined,
+            };
+          })
+        );
+      }
+    } catch (error) {
+      toast.error('Failed to load announcements');
     }
+    setLoading(false);
+  };
 
-    return (
-        <div className="announcements-list">
-            <div className="announcements-list__header">
-                <h3> Announcements</h3>
+  const deleteAnnouncement = async (id: string) => {
+    if (!isAdmin) return;
+
+    try {
+      const { error } = await supabase.from('club_announcements').delete().eq('id', id);
+      if (error) throw error;
+      toast.success('Announcement deleted');
+      loadAnnouncements();
+    } catch {
+      toast.error('Failed to delete');
+    }
+  };
+
+  const formatDate = (date: Date) => {
+    const now = new Date();
+    const diff = now.getTime() - date.getTime();
+    const hours = Math.floor(diff / (1000 * 60 * 60));
+
+    if (hours < 1) return 'Just now';
+    if (hours < 24) return `${hours}h ago`;
+    if (hours < 48) return 'Yesterday';
+    return date.toLocaleDateString();
+  };
+
+  if (loading) {
+    return <div className="announcements-list loading">Loading...</div>;
+  }
+
+  return (
+    <div className="announcements-list">
+      <div className="announcements-list__header">
+        <h3> Announcements</h3>
+      </div>
+
+      {announcements.length === 0 ? (
+        <div className="empty-state">No announcements</div>
+      ) : (
+        <div className="announcements">
+          {announcements.map((ann, i) => (
+            <div
+              key={ann.id}
+              className={`announcement ${ann.isPinned ? 'pinned' : ''}`}
+              style={{
+                borderLeftColor: PRIORITY_COLORS[ann.priority],
+                opacity: i < 15 ? 1 : 0.8,
+                transform: 'translateY(0)',
+                transition: `all 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275) ${i * 60}ms`,
+              }}
+            >
+              <div className="announcement__header">
+                {ann.isPinned && <span className="pin"></span>}
+                <span className="title">{ann.title}</span>
+                {isAdmin && (
+                  <button className="delete-btn" onClick={() => deleteAnnouncement(ann.id)}>
+                    ×
+                  </button>
+                )}
+              </div>
+              <p className="content">{ann.content}</p>
+              <div className="meta">
+                <span className="author">By {ann.authorName}</span>
+                <span className="time">{formatDate(ann.createdAt)}</span>
+              </div>
             </div>
-
-            {announcements.length === 0 ? (
-                <div className="empty-state">No announcements</div>
-            ) : (
-                <div className="announcements">
-                    {announcements.map((ann, i) => (
-                        <div
-                            key={ann.id}
-                            className={`announcement ${ann.isPinned ? 'pinned' : ''}`}
-                            style={{
-                                borderLeftColor: PRIORITY_COLORS[ann.priority],
-                                opacity: i < 15 ? 1 : 0.8,
-                                transform: 'translateY(0)',
-                                transition: `all 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275) ${i * 60}ms`
-                            }}
-                        >
-                            <div className="announcement__header">
-                                {ann.isPinned && <span className="pin"></span>}
-                                <span className="title">{ann.title}</span>
-                                {isAdmin && (
-                                    <button
-                                        className="delete-btn"
-                                        onClick={() => deleteAnnouncement(ann.id)}
-                                    >
-                                        ×
-                                    </button>
-                                )}
-                            </div>
-                            <p className="content">{ann.content}</p>
-                            <div className="meta">
-                                <span className="author">By {ann.authorName}</span>
-                                <span className="time">{formatDate(ann.createdAt)}</span>
-                            </div>
-                        </div>
-                    ))}
-                </div>
-            )}
+          ))}
         </div>
-    );
+      )}
+    </div>
+  );
 }
 
 export default ClubAnnouncementsList;

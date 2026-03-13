@@ -149,7 +149,7 @@ export default function PlayerNotesPanel({
     if (!user?.id || !targetUserId || !currentNote.trim()) return;
     setSaving(true);
 
-    await supabase.from('player_notes').upsert(
+    const { error } = await supabase.from('player_notes').upsert(
       {
         user_id: user.id,
         target_user_id: targetUserId,
@@ -162,6 +162,10 @@ export default function PlayerNotesPanel({
     );
 
     setSaving(false);
+    if (error) {
+      toast.error('Failed to save note');
+      return;
+    }
     onClose?.();
   };
 
@@ -189,7 +193,11 @@ export default function PlayerNotesPanel({
   };
 
   const deleteNote = async (noteId: string) => {
-    await supabase.from('player_notes').delete().eq('id', noteId);
+    const { error } = await supabase.from('player_notes').delete().eq('id', noteId);
+    if (error) {
+      toast.error('Failed to delete note');
+      return;
+    }
     setNotes((prev) => prev.filter((n) => n.id !== noteId));
   };
 

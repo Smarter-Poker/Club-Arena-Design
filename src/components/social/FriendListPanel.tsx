@@ -179,20 +179,23 @@ export default function FriendListPanel({
       }
 
       // Create friendship request
-      await supabase.from('friendships').insert({
+      const { error: friendError } = await supabase.from('friendships').insert({
         user_id: user.id,
         friend_id: targetUser.id,
         status: 'pending',
       });
 
-      // Notify target user
-      await supabase.from('notifications').insert({
+      if (friendError) throw friendError;
+
+      // Notify target user (non-critical — don't throw)
+      const { error: notifyError } = await supabase.from('notifications').insert({
         user_id: targetUser.id,
         type: 'friend_request',
         title: 'Friend Request',
         message: `${user?.display_name || 'Someone'} wants to be your friend!`,
         data: { from_user_id: user.id },
       });
+      if (notifyError) console.warn('[Friends] notification insert failed:', notifyError.message);
 
       setAddFriendInput('');
       setShowAddFriend(false);
@@ -204,8 +207,11 @@ export default function FriendListPanel({
   };
 
   const handleRemoveFriend = async (friendshipId: string) => {
-    await supabase.from('friendships').delete().eq('id', friendshipId);
-
+    const { error } = await supabase.from('friendships').delete().eq('id', friendshipId);
+    if (error) {
+      console.error('Failed to remove friend:', error);
+      return;
+    }
     setFriends((prev) => prev.filter((f) => f.id !== friendshipId));
   };
 
