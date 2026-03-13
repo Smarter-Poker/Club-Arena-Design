@@ -53,6 +53,15 @@ BEGIN
     SET horse_status = 'seated', 
         updated_at = NOW()
     WHERE id = p_horse_id;
+    
+    -- 5. Hard-sync the tables current_players count to trigger Realtime UI updates
+    UPDATE tables
+    SET current_players = (
+        SELECT COUNT(*)
+        FROM table_seats
+        WHERE table_id = p_table_id AND status IN ('active', 'sitting_out') AND left_at IS NULL
+    )
+    WHERE id = p_table_id;
 
     RETURN TRUE;
 END;
