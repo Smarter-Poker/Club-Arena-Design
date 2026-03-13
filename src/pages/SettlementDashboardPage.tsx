@@ -218,6 +218,7 @@ export default function SettlementDashboardPage() {
     setRunningCanary(true);
     try {
       const result = await SettlementCronService.runCanaryCheck();
+      if (!isMounted.current) return;
       setCanaryResult(result);
       if (result.passed) {
         toast.success(
@@ -229,10 +230,11 @@ export default function SettlementDashboardPage() {
         );
       }
     } catch (err) {
+      if (!isMounted.current) return;
       toast.error('Canary check failed to execute');
       console.error('[Settlement] Canary check error:', err);
     }
-    setRunningCanary(false);
+    if (isMounted.current) setRunningCanary(false);
   };
 
   const handleTriggerSettlement = async () => {
@@ -243,15 +245,17 @@ export default function SettlementDashboardPage() {
     setRunningSettlement(true);
     try {
       const result = await SettlementService.executeMondayPayouts(currentPeriod.id);
+      if (!isMounted.current) return;
       toast.success(
         `Settlement processed: ${result.agentsPaid} agents paid, ${result.totalDisbursed.toLocaleString()} chips disbursed`
       );
       loadData();
     } catch (err) {
+      if (!isMounted.current) return;
       toast.error('Settlement execution failed');
       console.error('[Settlement] Execution error:', err);
     }
-    setRunningSettlement(false);
+    if (isMounted.current) setRunningSettlement(false);
   };
 
   // ─── Helpers ────────────────────────────────────────────────────────────────
