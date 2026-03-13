@@ -607,6 +607,8 @@ class HorseLifecycleManagerCore {
 
       if (seatError || !staleSeats || staleSeats.length === 0) return;
 
+      // Track affected table IDs for recount
+      const affectedTableIds = new Set<string>();
       let cleaned = 0;
       for (const seat of staleSeats) {
         try {
@@ -615,6 +617,7 @@ class HorseLifecycleManagerCore {
             .update({ left_at: new Date().toISOString(), status: 'left' })
             .eq('id', seat.id);
           cleaned++;
+          affectedTableIds.add(seat.table_id);
 
           // If user is a horse, reset to available
           const { data: profile } = await supabase
@@ -627,6 +630,26 @@ class HorseLifecycleManagerCore {
           }
         } catch {
           /* skip individual errors */
+        }
+      }
+
+      // Recount current_players for each affected table (prevents ghost player counts)
+      for (const tableId of affectedTableIds) {
+        try {
+          const { count, error: countErr } = await supabase
+            .from('table_seats')
+            .select('*', { count: 'exact', head: true })
+            .eq('table_id', tableId)
+            .is('left_at', null);
+
+          if (!countErr) {
+            await supabase
+              .from('tables')
+              .update({ current_players: count ?? 0 })
+              .eq('id', tableId);
+          }
+        } catch {
+          /* non-critical */
         }
       }
 
