@@ -1143,7 +1143,7 @@ describe('HandReplayEngine', () => {
 
     // Step through all
     while (handReplayEngine.stepForward()) {
-      /* exhaust steps */
+      void 0; /* exhaust steps */
     }
     expect(handReplayEngine.isComplete()).toBe(true);
   });
