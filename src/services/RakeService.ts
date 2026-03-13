@@ -390,18 +390,20 @@ export const RakeService = {
     // STEP 3.5: Record per-player contributions for rakeback engine
     if (calculation.cappedRake > 0 && attributions.length > 0 && clubId) {
       try {
-        const totalContributions = players
-          .filter((p) => !p.isSittingOut && p.hasCards)
-          .reduce((sum, p) => sum + (p.potContribution || 0), 0);
+        // Build contribution map from rake attributions (each attribution has userId + share)
         const contributions = new Map<string, number>();
-        for (const p of players.filter((pl) => !pl.isSittingOut && pl.hasCards)) {
-          contributions.set(p.userId, p.potContribution || 0);
+        let totalContributions = 0;
+        for (const attr of attributions) {
+          const existing = contributions.get(attr.userId) || 0;
+          contributions.set(attr.userId, existing + attr.rakeCredit);
+          totalContributions += attr.rakeCredit;
         }
+        // recordHandRake signature: (clubId, totalRake, contributions Map, totalPotContributions)
         rakebackEngine.recordHandRake(
           clubId,
           calculation.cappedRake,
-          totalContributions,
-          contributions
+          contributions,
+          totalContributions > 0 ? totalContributions : calculation.cappedRake
         );
       } catch (rbErr) {
         console.warn('[RakeService] RakebackEngine recording failed:', rbErr);

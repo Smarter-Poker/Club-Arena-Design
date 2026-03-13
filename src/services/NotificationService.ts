@@ -372,11 +372,16 @@ class NotificationServiceClass {
     const ungroupable: Notification[] = [];
 
     for (const notif of notifications) {
-      // Group by type + approximate time (within 30 minutes)
-      const timeBucket = Math.floor(new Date(notif.createdAt).getTime() / (30 * 60_000));
-      const groupKey = `${notif.type}:${timeBucket}`;
+      // Handle both camelCase (service) and snake_case (page) timestamp fields
+      const timestamp = (notif as any).createdAt || (notif as any).created_at;
+      const timeBucket = timestamp ? Math.floor(new Date(timestamp).getTime() / (30 * 60_000)) : 0;
 
-      if (['message', 'achievement', 'bonus'].includes(notif.type)) {
+      // Extract grouping key from title prefix (first 2-3 words) + type + time window
+      const titlePrefix = (notif.title || '').split(' ').slice(0, 3).join(' ').toLowerCase();
+      const groupKey = `${titlePrefix}:${notif.type}:${timeBucket}`;
+
+      // Only group notifications with matching title patterns
+      if (titlePrefix.length > 0) {
         if (!groups.has(groupKey)) groups.set(groupKey, []);
         groups.get(groupKey)!.push(notif);
       } else {
@@ -392,7 +397,7 @@ class NotificationServiceClass {
         const newest = group[0]; // Already sorted newest-first
         result.push({
           ...newest,
-          title: `${group.length} ${newest.type} notifications`,
+          title: `${group.length} ${newest.title.split(' ').slice(0, 2).join(' ')}…`,
           message: group
             .map((n) => n.message)
             .slice(0, 3)
@@ -406,7 +411,12 @@ class NotificationServiceClass {
     }
 
     result.push(...ungroupable);
-    result.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+    // Sort using whichever timestamp field exists
+    result.sort((a, b) => {
+      const aTime = new Date((a as any).createdAt || (a as any).created_at || 0).getTime();
+      const bTime = new Date((b as any).createdAt || (b as any).created_at || 0).getTime();
+      return bTime - aTime;
+    });
     return result;
   }
 
