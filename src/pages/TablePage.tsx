@@ -1745,7 +1745,9 @@ export default function TablePage({
         // If page reloads while players are seated, we must restore their state
         const { data: existingSeats } = await supabase
           .from('table_seats')
-          .select('seat_number, user_id, stack, status, horse_id, is_sitting_out')
+          .select(
+            'seat_number, user_id, stack, status, horse_id, is_sitting_out, time_bank_remaining, time_bank_uses_remaining'
+          )
           .eq('table_id', table.id)
           .is('left_at', null);
 
@@ -1798,6 +1800,24 @@ export default function TablePage({
               heroSeat: heroSeat.seat_number,
             }));
           }
+        }
+
+        // ─── Initialize Time Bank Engine for the human player ───
+        const isTournamentTable = table.game_type === 'tournament' || !!table.tournament_id;
+        timeBankEngine.configure(table.id, {
+          totalBankSeconds: isTournamentTable ? 15 : 30,
+          maxUses: isTournamentTable ? 2 : 4,
+          secondsPerUse: 15,
+          refillPerOrbit: !isTournamentTable,
+          refillSeconds: 15,
+          autoActivate: true,
+        });
+        if (userId && userId !== 'guest') {
+          const heroSeatData = existingSeats?.find((s) => s.user_id === userId);
+          timeBankEngine.initializePlayer(table.id, userId, {
+            remainingSeconds: (heroSeatData as any)?.time_bank_remaining ?? undefined,
+            usesRemaining: (heroSeatData as any)?.time_bank_uses_remaining ?? undefined,
+          });
         }
       }
     }

@@ -563,15 +563,16 @@ export class HorseFleetManager {
           }
 
           if (seated > 0) {
-            // Update table player count and status
-            const newCount = currentCount + seated;
-            await supabase
-              .from('tables')
-              .update({
-                current_players: newCount,
-                status: newCount >= 2 ? 'running' : 'waiting',
-              })
-              .eq('id', table.id);
+            // NOTE: We do NOT update current_players here.
+            // atomic_seat_horse already recalculates current_players authoritatively from table_seats.
+            // Manually overwriting would cause race conditions with stale local counters.
+            if (currentCount + seated >= 2) {
+              await supabase
+                .from('tables')
+                .update({ status: 'running' })
+                .eq('id', table.id)
+                .neq('status', 'running');
+            }
           }
         } catch (err: any) {
           console.error(`[HorseFleet] Error seeding table "${table.name}":`, err.message);
