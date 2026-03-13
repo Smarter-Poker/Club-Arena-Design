@@ -1091,120 +1091,281 @@ export default function CashierPage() {
       {(action === 'buyin' || action === 'cashout' || action === 'mint') && (
         <MetalFrame
           title={
-            action === 'buyin' ? 'TABLE BUY-IN' : action === 'cashout' ? 'CASH OUT' : 'MINT CHIPS'
+            action === 'cashout' && cashoutConfirm.show
+              ? 'HIGH-VALUE ESCROW VERIFICATION'
+              : action === 'buyin'
+                ? 'TABLE BUY-IN'
+                : action === 'cashout'
+                  ? 'CASH OUT'
+                  : 'MINT CHIPS'
           }
           variant="form"
           size="md"
         >
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-            {/* U-02 FIX: Show pending cashouts when on cashout tab */}
-            {action === 'cashout' && pendingCashouts.length > 0 && (
+          {action === 'cashout' && cashoutConfirm.show ? (
+            <div className="high-value-escrow-flow" style={{ padding: '10px 0' }}>
+              <div style={{ textAlign: 'center', marginBottom: '24px' }}>
+                <div
+                  style={{
+                    fontSize: '3.5rem',
+                    marginBottom: '16px',
+                    filter: 'drop-shadow(0 0 20px rgba(16, 185, 129, 0.4))',
+                  }}
+                >
+                  🛡️
+                </div>
+                <h3
+                  style={{
+                    color: '#fff',
+                    fontSize: '1.25rem',
+                    marginBottom: '12px',
+                    fontWeight: 800,
+                    textTransform: 'uppercase',
+                    letterSpacing: '1px',
+                  }}
+                >
+                  Security Verification Required
+                </h3>
+                <p
+                  style={{
+                    color: 'rgba(255,255,255,0.6)',
+                    fontSize: '0.9rem',
+                    lineHeight: 1.5,
+                    maxWidth: '85%',
+                    margin: '0 auto',
+                  }}
+                >
+                  You are requesting a high-value cashout of{' '}
+                  <strong style={{ color: '#10b981', fontSize: '1rem' }}>
+                    {cashoutConfirm.value.toLocaleString()} chips
+                  </strong>
+                  .<br />
+                  This amount triggers our mandatory escrow protocols to ensure player security.
+                </p>
+              </div>
+
               <div
                 style={{
-                  padding: '12px',
-                  background: 'rgba(255, 149, 0, 0.1)',
-                  border: '1px solid rgba(255, 149, 0, 0.3)',
-                  borderRadius: '8px',
+                  background: 'rgba(0,0,0,0.3)',
+                  padding: '20px',
+                  borderRadius: '16px',
+                  marginBottom: '32px',
+                  border: '1px solid rgba(255,255,255,0.08)',
                 }}
               >
                 <div
                   style={{
-                    fontSize: '0.75rem',
-                    fontWeight: 700,
-                    color: '#ff9500',
-                    textTransform: 'uppercase',
-                    marginBottom: '8px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '16px',
+                    marginBottom: '20px',
                   }}
                 >
-                  ⏳ Pending Cashouts
-                </div>
-                {pendingCashouts.map((pc) => (
                   <div
-                    key={pc.id}
                     style={{
+                      width: '28px',
+                      height: '28px',
+                      borderRadius: '50%',
+                      background: '#10b98120',
+                      color: '#10b981',
                       display: 'flex',
-                      justifyContent: 'space-between',
-                      padding: '4px 0',
-                      fontSize: '0.85rem',
-                      color: '#ccc',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      fontSize: '14px',
+                      flexShrink: 0,
                     }}
                   >
-                    <span>{pc.amount.toLocaleString()} chips</span>
-                    <span style={{ color: '#ff9500', fontSize: '0.75rem' }}>
-                      {pc.status === 'pending' ? 'Awaiting Agent' : 'Processing'}
-                    </span>
+                    ✓
                   </div>
+                  <span style={{ fontSize: '0.9rem', color: '#fff', fontWeight: 500 }}>
+                    Anti-Money Laundering (AML) Check Passed
+                  </span>
+                </div>
+                <div
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '16px',
+                    marginBottom: '20px',
+                  }}
+                >
+                  <div
+                    style={{
+                      width: '28px',
+                      height: '28px',
+                      borderRadius: '50%',
+                      background: '#10b98120',
+                      color: '#10b981',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      fontSize: '14px',
+                      flexShrink: 0,
+                    }}
+                  >
+                    ✓
+                  </div>
+                  <span style={{ fontSize: '0.9rem', color: '#fff', fontWeight: 500 }}>
+                    Identity Verification Confirmed
+                  </span>
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+                  <div
+                    style={{
+                      width: '28px',
+                      height: '28px',
+                      borderRadius: '50%',
+                      background: 'rgba(255,149,0,0.2)',
+                      color: '#ff9500',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      fontSize: '14px',
+                      animation: 'pulse 2s infinite',
+                      flexShrink: 0,
+                    }}
+                  >
+                    ⏳
+                  </div>
+                  <span style={{ fontSize: '0.9rem', color: '#fff', fontWeight: 500 }}>
+                    Escrow Holding (Pending Agent Review)
+                  </span>
+                </div>
+              </div>
+
+              <div style={{ display: 'flex', gap: '16px' }}>
+                <MetalButton
+                  variant="ghost"
+                  fullWidth
+                  onClick={() => setCashoutConfirm({ show: false, value: 0 })}
+                  disabled={isProcessing}
+                >
+                  CANCEL
+                </MetalButton>
+                <MetalButton
+                  variant="primary"
+                  fullWidth
+                  onClick={() => processHighValueCashout(cashoutConfirm.value)}
+                  disabled={isProcessing}
+                  loading={isProcessing}
+                >
+                  CONFIRM SECURE CASHOUT
+                </MetalButton>
+              </div>
+            </div>
+          ) : (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+              {/* U-02 FIX: Show pending cashouts when on cashout tab */}
+              {action === 'cashout' && pendingCashouts.length > 0 && (
+                <div
+                  style={{
+                    padding: '12px',
+                    background: 'rgba(255, 149, 0, 0.1)',
+                    border: '1px solid rgba(255, 149, 0, 0.3)',
+                    borderRadius: '8px',
+                  }}
+                >
+                  <div
+                    style={{
+                      fontSize: '0.75rem',
+                      fontWeight: 700,
+                      color: '#ff9500',
+                      textTransform: 'uppercase',
+                      marginBottom: '8px',
+                    }}
+                  >
+                    ⏳ Pending Cashouts
+                  </div>
+                  {pendingCashouts.map((pc) => (
+                    <div
+                      key={pc.id}
+                      style={{
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        padding: '4px 0',
+                        fontSize: '0.85rem',
+                        color: '#ccc',
+                      }}
+                    >
+                      <span>{pc.amount.toLocaleString()} chips</span>
+                      <span style={{ color: '#ff9500', fontSize: '0.75rem' }}>
+                        {pc.status === 'pending' ? 'Awaiting Agent' : 'Processing'}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {/* Cashout context info */}
+              {action === 'cashout' && !tableId && (
+                <div className="cashier-message info">
+                  Your chips will be held in escrow until your assigned agent approves the cashout.
+                </div>
+              )}
+
+              <MetalInput
+                label={action === 'mint' ? 'CHIPS TO MINT:' : 'AMOUNT:'}
+                type="number"
+                placeholder="0"
+                value={amount}
+                onChange={(e) => setAmount(e.target.value)}
+              />
+
+              {action === 'mint' && amount && (
+                <div className="cashier-message info">
+                  {Math.ceil(parseFloat(amount || '0') * DIAMOND_RATE).toLocaleString()} diamonds
+                  required
+                </div>
+              )}
+
+              {/* Presets */}
+              <div className="preset-buttons-grid">
+                {preset.map((val) => (
+                  <MetalButton
+                    key={val}
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setAmount(val.toString())}
+                  >
+                    {val.toLocaleString()}
+                  </MetalButton>
                 ))}
+                {action === 'cashout' && (
+                  <MetalButton
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setAmount(String(balances.PLAYER.available))}
+                  >
+                    Max
+                  </MetalButton>
+                )}
               </div>
-            )}
 
-            {/* Cashout context info */}
-            {action === 'cashout' && !tableId && (
-              <div className="cashier-message info">
-                Your chips will be held in escrow until your assigned agent approves the cashout.
-              </div>
-            )}
+              {message && <div className={`cashier-message ${message.type}`}>{message.text}</div>}
 
-            <MetalInput
-              label={action === 'mint' ? 'CHIPS TO MINT:' : 'AMOUNT:'}
-              type="number"
-              placeholder="0"
-              value={amount}
-              onChange={(e) => setAmount(e.target.value)}
-            />
-
-            {action === 'mint' && amount && (
-              <div className="cashier-message info">
-                {Math.ceil(parseFloat(amount || '0') * DIAMOND_RATE).toLocaleString()} diamonds
-                required
-              </div>
-            )}
-
-            {/* Presets */}
-            <div className="preset-buttons-grid">
-              {preset.map((val) => (
+              <div className="cashier-confirm-button">
                 <MetalButton
-                  key={val}
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => setAmount(val.toString())}
+                  variant="primary"
+                  fullWidth
+                  onClick={handleAction}
+                  disabled={isProcessing || cooldown > 0 || !amount}
+                  loading={isProcessing}
                 >
-                  {val.toLocaleString()}
+                  {action === 'buyin'
+                    ? 'CONFIRM BUY-IN'
+                    : action === 'cashout'
+                      ? tableId
+                        ? 'CONFIRM CASH-OUT'
+                        : 'REQUEST CASHOUT'
+                      : 'CONFIRM MINT'}
                 </MetalButton>
-              ))}
-              {action === 'cashout' && (
-                <MetalButton
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => setAmount(String(balances.PLAYER.available))}
-                >
-                  Max
-                </MetalButton>
+              </div>
+
+              {tableId && (
+                <p className="table-context-info">Returning to table after transaction</p>
               )}
             </div>
-
-            {message && <div className={`cashier-message ${message.type}`}>{message.text}</div>}
-
-            <div className="cashier-confirm-button">
-              <MetalButton
-                variant="primary"
-                fullWidth
-                onClick={handleAction}
-                disabled={isProcessing || cooldown > 0 || !amount}
-                loading={isProcessing}
-              >
-                {action === 'buyin'
-                  ? 'CONFIRM BUY-IN'
-                  : action === 'cashout'
-                    ? tableId
-                      ? 'CONFIRM CASH-OUT'
-                      : 'REQUEST CASHOUT'
-                    : 'CONFIRM MINT'}
-              </MetalButton>
-            </div>
-
-            {tableId && <p className="table-context-info">Returning to table after transaction</p>}
-          </div>
+          )}
         </MetalFrame>
       )}
 
@@ -1318,17 +1479,6 @@ export default function CashierPage() {
           userRole={userRole as 'owner' | 'admin' | 'agent' | 'member'}
         />
       )}
-
-      {/* Confirm Modal for High-Value Cashouts */}
-      <ConfirmModal
-        isOpen={cashoutConfirm.show}
-        title="Confirm High-Value Cashout"
-        message={`Confirm cashout of ${cashoutConfirm.value.toLocaleString()} chips? Your chips will be held in escrow until your agent approves.`}
-        variant="default"
-        confirmText="Confirm Cashout"
-        onConfirm={() => processHighValueCashout(cashoutConfirm.value)}
-        onCancel={() => setCashoutConfirm({ show: false, value: 0 })}
-      />
     </div>
   );
 }
