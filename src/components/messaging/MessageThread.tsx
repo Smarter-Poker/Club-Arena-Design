@@ -173,16 +173,17 @@ export default function MessageThread({ conversationId, onBack }: MessageThreadP
 
           if (unseenIds.length > 0) {
             // Fire-and-forget update
-            supabase
-              .from('messages')
-              .update({ is_seen: true })
-              .in('id', unseenIds)
-              .then(() => {
+            (async () => {
+              try {
+                await supabase.from('messages').update({ is_seen: true }).in('id', unseenIds);
                 // Update local state to avoid re-triggering
                 setMessages((current) =>
                   current.map((m) => (unseenIds.includes(m.id) ? { ...m, isSeen: true } : m))
                 );
-              });
+              } catch (err) {
+                console.warn('[MessageThread] mark-as-seen failed:', err);
+              }
+            })();
           }
         }
       } catch (error) {
@@ -274,11 +275,16 @@ export default function MessageThread({ conversationId, onBack }: MessageThreadP
   // Set typing status
   const setTyping = async (isTyping: boolean) => {
     if (!user?.id || !conversationId) return;
-    await supabase
-      .from('conversation_participants')
-      .update({ is_typing: isTyping })
-      .eq('conversation_id', conversationId)
-      .eq('user_id', user.id);
+    try {
+      await supabase
+        .from('conversation_participants')
+        .update({ is_typing: isTyping })
+        .eq('conversation_id', conversationId)
+        .eq('user_id', user.id);
+    } catch (err) {
+      // Non-critical: typing indicator failure should not surface to user
+      console.debug('[MessageThread] setTyping failed:', err);
+    }
   };
 
   // Handle reply to message

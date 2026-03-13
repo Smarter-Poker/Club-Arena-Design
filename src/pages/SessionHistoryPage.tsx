@@ -1,0 +1,245 @@
+/**
+ * ═══════════════════════════════════════════════════════════════════════════════
+ *  SESSION HISTORY PAGE — Past session analytics with P&L charts
+ * ═══════════════════════════════════════════════════════════════════════════════
+ *
+ * Displays all past sessions from `session_history` Supabase table.
+ * Shows P&L trends, session duration, hands played, VPIP/PFR stats.
+ */
+
+import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { supabase } from '../lib/supabase';
+import { useAuthUser } from '../hooks/useAuthUser';
+import './SessionHistoryPage.css';
+
+interface SessionRecord {
+  id: string;
+  table_id: string;
+  user_id: string;
+  session_start: string;
+  session_end: string;
+  initial_stack: number;
+  final_stack: number;
+  buy_in_total: number;
+  hands_played: number;
+  hands_won: number;
+  vpip_percent: number;
+  pfr_percent: number;
+  profit_loss: number;
+  big_blind: number;
+  bb_won: number;
+  rebuys: number;
+  biggest_pot: number;
+  trajectory: [number, number][];
+}
+
+export default function SessionHistoryPage() {
+  const navigate = useNavigate();
+  const { user } = useAuthUser();
+  const [sessions, setSessions] = useState<SessionRecord[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [timeFilter, setTimeFilter] = useState<'7d' | '30d' | 'all'>('30d');
+
+  useEffect(() => {
+    if (!user?.id) return;
+    loadSessions();
+  }, [user?.id, timeFilter]);
+
+  const loadSessions = async () => {
+    if (!user?.id) return;
+    setLoading(true);
+    try {
+      let query = supabase
+        .from('session_history')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('session_end', { ascending: false })
+        .limit(100);
+
+      if (timeFilter === '7d') {
+        const cutoff = new Date(Date.now() - 7 * 86400000).toISOString();
+        query = query.gte('session_end', cutoff);
+      } else if (timeFilter === '30d') {
+        const cutoff = new Date(Date.now() - 30 * 86400000).toISOString();
+        query = query.gte('session_end', cutoff);
+      }
+
+      const { data, error } = await query;
+      if (error) throw error;
+      setSessions(data || []);
+    } catch (err) {
+      console.error('[SessionHistory] Load failed:', err);
+    }
+    setLoading(false);
+  };
+
+  // Aggregate stats
+  const totalPL = sessions.reduce((sum, s) => sum + (s.profit_loss || 0), 0);
+  const totalHands = sessions.reduce((sum, s) => sum + (s.hands_played || 0), 0);
+  const totalSessions = sessions.length;
+  const avgVPIP =
+    totalSessions > 0
+      ? sessions.reduce((sum, s) => sum + (s.vpip_percent || 0), 0) / totalSessions
+      : 0;
+  const avgPFR =
+    totalSessions > 0
+      ? sessions.reduce((sum, s) => sum + (s.pfr_percent || 0), 0) / totalSessions
+      : 0;
+  const winRate =
+    totalSessions > 0
+      ? (sessions.filter((s) => (s.profit_loss || 0) > 0).length / totalSessions) * 100
+      : 0;
+
+  const formatDuration = (start: string, end: string): string => {
+    const ms = new Date(end).getTime() - new Date(start).getTime();
+    const mins = Math.floor(ms / 60000);
+    if (mins < 60) return `${mins}m`;
+    const hrs = Math.floor(mins / 60);
+    return `${hrs}h ${mins % 60}m`;
+  };
+
+  const formatDate = (date: string): string => {
+    return new Date(date).toLocaleDateString(undefined, {
+      month: 'short',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+    });
+  };
+
+  // Mini sparkline SVG for each session row
+  const renderMiniSparkline = (trajectory: [number, number][] | undefined, profitLoss: number) => {
+    if (!trajectory || trajectory.length < 2) return null;
+    const values = trajectory.map((t) => t[1]);
+    const baseline = values[0];
+    const plValues = values.map((v) => v - baseline);
+    const min = Math.min(...plValues);
+    const max = Math.max(...plValues);
+    const range = max - min || 1;
+    const W = 80;
+    const H = 24;
+    const points = plValues.map((v, i) => {
+      const x = (i / (plValues.length - 1)) * W;
+      const y = H - ((v - min) / range) * H;
+      return `${x.toFixed(1)},${y.toFixed(1)}`;
+    });
+    const color = profitLoss >= 0 ? '#22c55e' : '#ef4444';
+    return (
+      <svg width={W} height={H} viewBox={`0 0 ${W} ${H}`} style={{ flexShrink: 0 }}>
+        <polyline
+          points={points.join(' ')}
+          fill="none"
+          stroke={color}
+          strokeWidth="1.5"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
+      </svg>
+    );
+  };
+
+  return (
+    <div className="session-history-page">
+      {/* Header */}
+      <div className="sh-header">
+        <button className="sh-back" onClick={() => navigate(-1)}>
+          ← Back
+        </button>
+        <h1 className="sh-title">Session History</h1>
+      </div>
+
+      {/* Aggregate Stats */}
+      <div className="sh-aggregate">
+        <div className={`sh-stat-card ${totalPL >= 0 ? 'positive' : 'negative'}`}>
+          <span className="sh-stat-value">
+            {totalPL >= 0 ? '+' : ''}
+            {totalPL.toLocaleString()}
+          </span>
+          <span className="sh-stat-label">Total P&L</span>
+        </div>
+        <div className="sh-stat-card">
+          <span className="sh-stat-value">{totalSessions}</span>
+          <span className="sh-stat-label">Sessions</span>
+        </div>
+        <div className="sh-stat-card">
+          <span className="sh-stat-value">{totalHands.toLocaleString()}</span>
+          <span className="sh-stat-label">Hands</span>
+        </div>
+        <div className="sh-stat-card">
+          <span className="sh-stat-value">{winRate.toFixed(0)}%</span>
+          <span className="sh-stat-label">Win Rate</span>
+        </div>
+      </div>
+
+      {/* VPIP / PFR Summary */}
+      <div className="sh-stats-row">
+        <div className="sh-mini-stat">
+          <span className="sh-mini-label">Avg VPIP</span>
+          <span className="sh-mini-value">{avgVPIP.toFixed(1)}%</span>
+        </div>
+        <div className="sh-mini-stat">
+          <span className="sh-mini-label">Avg PFR</span>
+          <span className="sh-mini-value">{avgPFR.toFixed(1)}%</span>
+        </div>
+      </div>
+
+      {/* Time Filter */}
+      <div className="sh-filter-bar">
+        {(['7d', '30d', 'all'] as const).map((f) => (
+          <button
+            key={f}
+            className={`sh-filter-chip ${timeFilter === f ? 'active' : ''}`}
+            onClick={() => setTimeFilter(f)}
+          >
+            {f === '7d' ? '7 Days' : f === '30d' ? '30 Days' : 'All Time'}
+          </button>
+        ))}
+      </div>
+
+      {/* Sessions List */}
+      <div className="sh-sessions-list">
+        {loading ? (
+          <div className="sh-loading">
+            {Array.from({ length: 5 }).map((_, i) => (
+              <div key={i} className="sh-skeleton-row" />
+            ))}
+          </div>
+        ) : sessions.length === 0 ? (
+          <div className="sh-empty">
+            <span className="sh-empty-icon">📊</span>
+            <p>No sessions found. Play some hands to see your history!</p>
+          </div>
+        ) : (
+          sessions.map((session) => (
+            <div key={session.id} className="sh-session-row">
+              <div className="sh-session-info">
+                <div className="sh-session-date">
+                  {formatDate(session.session_end || session.session_start)}
+                </div>
+                <div className="sh-session-meta">
+                  <span>{session.hands_played} hands</span>
+                  <span>•</span>
+                  <span>{formatDuration(session.session_start, session.session_end)}</span>
+                  <span>•</span>
+                  <span>
+                    {session.big_blind ? `${session.big_blind / 2}/${session.big_blind}` : '—'}
+                  </span>
+                </div>
+              </div>
+              <div className="sh-session-chart">
+                {renderMiniSparkline(session.trajectory, session.profit_loss)}
+              </div>
+              <div
+                className={`sh-session-pl ${(session.profit_loss || 0) >= 0 ? 'positive' : 'negative'}`}
+              >
+                {(session.profit_loss || 0) >= 0 ? '+' : ''}
+                {(session.profit_loss || 0).toLocaleString()}
+              </div>
+            </div>
+          ))
+        )}
+      </div>
+    </div>
+  );
+}

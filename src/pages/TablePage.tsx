@@ -1586,7 +1586,8 @@ export default function TablePage({
               .from('tournament_players')
               .select('user_id, current_bounty')
               .eq('tournament_id', table.tournament_id)
-              .gt('current_bounty', 0);
+              .gt('current_bounty', 0)
+              .limit(500);
 
             const bMap: Record<string, number> = {};
             if (bountyData) {
@@ -1896,7 +1897,9 @@ export default function TablePage({
         }
       }
     }
-    loadTableInfo();
+    loadTableInfo().catch((err) => {
+      console.error('[TablePage] loadTableInfo failed:', err);
+    });
   }, [tableId, userId]);
 
   // Join/leave multiplayer room
@@ -3902,6 +3905,9 @@ export default function TablePage({
                     />
                   </TableErrorBoundary>
                 )}
+
+                {/* Enhancement #3: Win Streak Badge */}
+                {winStreak >= 2 && <StreakBadge streak={winStreak} />}
 
                 {/* Connection Quality HUD */}
                 {tableId && userId !== 'guest' && (
