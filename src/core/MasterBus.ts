@@ -195,6 +195,8 @@ export type BusEventType =
   | 'CONVERSATION_PINNED'
   | 'CONVERSATION_UNPINNED'
   | 'UNREAD_DM_COUNT_CHANGED'
+  | 'MESSAGE_DELETED'
+  | 'CONVERSATION_UPDATED'
   // Phase Q1: Disconnect & Time Bank engine events
   | 'PLAYER_SAT_OUT'
   | 'PLAYER_SAT_BACK'
@@ -296,6 +298,8 @@ export interface BusPayloadMap {
   // Social & Messaging
   MESSAGE_SENT: { message: Record<string, unknown>; conversationId: string };
   MESSAGE_RECEIVED: { message: Record<string, unknown> };
+  MESSAGE_DELETED: { messageId: string };
+  CONVERSATION_UPDATED: { conversationId: string };
   PROFILE_UPDATED: { userId: string; updates: Record<string, unknown> };
   NOTIFICATION_RECEIVED: { notification: Record<string, unknown> };
   NOTIFICATION_COUNT_CHANGED: Record<string, unknown>;

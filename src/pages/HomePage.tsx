@@ -1457,6 +1457,8 @@ function HomePageInner() {
       <div className={styles.circuitOverlay}></div>
       {/* Enhancement #1: Neuron lights — traveling cyan pulses */}
       <div className={styles.neuronLights}></div>
+      {/* P4-1: Floating dust particles */}
+      <div className={styles.dustParticles}></div>
 
       {/* GLOBAL HEADER - Hub-style, hide when embedded in iframe */}
       {!isInIframe && <GlobalHeader />}
@@ -1628,8 +1630,14 @@ function HomePageInner() {
         {/* ═══════════════════════════════════════════════════════════════════════
                     DAILY CHALLENGES — Extracted Component (#16)
                 ═══════════════════════════════════════════════════════════════════════ */}
-        <PresenceHub />
+        {/* P4-2: Presence section with glass container */}
+        <div className={styles.presenceSection}>
+          <PresenceHub />
+        </div>
+        {/* P4-4: Section separator */}
+        <div className={styles.sectionSeparator}></div>
         <DailyChallenges />
+        <div className={styles.sectionSeparator}></div>
 
         {/* ═══════════════════════════════════════════════════════════════════════
                     BOTTOM ROW — from lobbyTiles.config.ts (#18)
