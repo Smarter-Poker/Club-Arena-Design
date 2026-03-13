@@ -23,6 +23,7 @@ import { bonusService } from '../services/BonusService';
 import { useToast } from '../components/common/Toast';
 import OnlineFriendsPill from '../components/social/OnlineFriendsPill';
 import PromotionCarousel from '../components/promotions/PromotionCarousel';
+import NotificationBell from '../components/common/NotificationBell';
 type GameFilter = 'all' | 'nlh' | 'plo' | 'ofc' | 'tournaments' | 'favorites';
 
 export default function LobbyPage() {
@@ -272,10 +273,13 @@ export default function LobbyPage() {
       {/* Hero Section */}
       <section className={styles.hero}>
         <div className={styles.heroContent}>
-          <h1 className={styles.heroTitle}>
-            <span className={styles.heroIcon}>♠</span>
-            Club Engine
-          </h1>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <h1 className={styles.heroTitle}>
+              <span className={styles.heroIcon}>♠</span>
+              Club Engine
+            </h1>
+            <NotificationBell />
+          </div>
           <p className={styles.heroSubtitle}>Private poker clubs, better than ever.</p>
           <div className={styles.liveStats}>
             <span>{onlinePlayers} online</span>

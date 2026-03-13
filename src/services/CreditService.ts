@@ -320,7 +320,8 @@ export const CreditService = {
       .from('credit_invoices')
       .select('*, agents:agent_id(profiles!agents_profiles_fkey(display_name))')
       .eq('agent_id', agentId)
-      .order('created_at', { ascending: false });
+      .order('created_at', { ascending: false })
+      .limit(200);
 
     if (error) throw error;
     return (data || []).map((inv) => this.mapInvoice(inv, inv.agents?.profiles?.display_name));
@@ -367,7 +368,7 @@ export const CreditService = {
             p_description: `Credit invoice payment: ${invoiceId}`,
             p_table_id: null,
             p_hand_id: null,
-            p_related_entity_id: null
+            p_related_entity_id: null,
           }),
         3
       );
@@ -419,7 +420,7 @@ export const CreditService = {
                   p_description: `Refund: Credit invoice update failed for ${invoiceId}`,
                   p_table_id: null,
                   p_hand_id: null,
-                  p_related_entity_id: null
+                  p_related_entity_id: null,
                 }),
               3
             );
