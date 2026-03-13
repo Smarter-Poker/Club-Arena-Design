@@ -48,7 +48,9 @@ export default function SessionHistoryPage() {
   const isMounted = useRef(true);
 
   useEffect(() => {
-    return () => { isMounted.current = false; };
+    return () => {
+      isMounted.current = false;
+    };
   }, []);
 
   useEffect(() => {
@@ -65,7 +67,10 @@ export default function SessionHistoryPage() {
       loadSessions();
     });
     const unsub2 = masterBus.subscribeDebounced('BALANCE_UPDATED', () => loadSessions(), 2000);
-    return () => { unsub(); unsub2(); };
+    return () => {
+      unsub();
+      unsub2();
+    };
   }, [user?.id, timeFilter]);
 
   const loadSessions = async () => {

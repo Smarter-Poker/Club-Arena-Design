@@ -417,7 +417,9 @@ class MessagingServiceClass {
       });
 
       if (error) {
-        console.error('[Messaging] get_message_reactions RPC not available - returning empty array');
+        console.error(
+          '[Messaging] get_message_reactions RPC not available - returning empty array'
+        );
         return [];
       }
 

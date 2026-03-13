@@ -212,7 +212,6 @@ export class TournamentEngine {
       return;
     }
 
-
     try {
       // Step 1: Load tournament info
       await this.loadTournament();
@@ -768,7 +767,6 @@ export class TournamentEngine {
       .update({ status: 'playing', chips: this.tournamentInfo!.starting_chips })
       .eq('tournament_id', this.tournamentId)
       .eq('status', 'registered');
-
   }
 
   // ═══════════════════════════════════════════════════════════════════════════
@@ -1731,7 +1729,6 @@ export class TournamentEngine {
     if (!this.running || this.finishing) return;
     this.finishing = true;
     this.running = false;
-
 
     // Stop all table engines
     for (const table of this.tables) {

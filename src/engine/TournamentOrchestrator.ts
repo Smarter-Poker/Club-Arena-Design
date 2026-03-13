@@ -1,4 +1,5 @@
 import { supabase } from '../lib/supabase';
+import type { RealtimeChannel } from '@supabase/supabase-js';
 import { TournamentEngine } from './TournamentEngine';
 import { tableBalancer, type BalancerTable } from './TableBalancer';
 
@@ -11,10 +12,10 @@ import { tableBalancer, type BalancerTable } from './TableBalancer';
 export class TournamentOrchestrator {
   private activeEngines: Map<string, TournamentEngine> = new Map();
   private isRunning: boolean = false;
-  private pollInterval: any = null;
+  private pollInterval: ReturnType<typeof setInterval> | null = null;
   // Enhancement #3: Dedup notification emissions
   private notifiedTournaments: Set<string> = new Set();
-  private realtimeChannel: any = null;
+  private realtimeChannel: RealtimeChannel | null = null;
 
   // Singleton instance
   private static instance: TournamentOrchestrator;
@@ -48,6 +49,7 @@ export class TournamentOrchestrator {
             schema: 'public',
             table: 'tournaments',
           },
+
           (payload: any) => {
             const { eventType, new: newRow } = payload;
             if (eventType === 'INSERT' || eventType === 'UPDATE') {

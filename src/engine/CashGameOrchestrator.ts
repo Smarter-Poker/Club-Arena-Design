@@ -1,4 +1,5 @@
 import { supabase } from '../lib/supabase';
+import type { RealtimeChannel } from '@supabase/supabase-js';
 import { HeadlessTableEngine } from './HeadlessTableEngine';
 import { HydraService } from '../services/HydraService';
 
@@ -11,9 +12,9 @@ import { HydraService } from '../services/HydraService';
 export class CashGameOrchestrator {
   private activeEngines: Map<string, HeadlessTableEngine> = new Map();
   private isRunning: boolean = false;
-  private pollInterval: any = null;
-  private hydraInterval: any = null;
-  private realtimeChannel: any = null;
+  private pollInterval: ReturnType<typeof setInterval> | null = null;
+  private hydraInterval: ReturnType<typeof setInterval> | null = null;
+  private realtimeChannel: RealtimeChannel | null = null;
 
   // Singleton instance
   private static instance: CashGameOrchestrator;
@@ -48,6 +49,7 @@ export class CashGameOrchestrator {
             table: 'tables',
             filter: 'tournament_id=is.null',
           },
+
           (payload: any) => {
             // React to table changes in real-time
             const { eventType, new: newRow, old: oldRow } = payload;
@@ -91,7 +93,10 @@ export class CashGameOrchestrator {
         )
         .subscribe();
     } catch (err: unknown) {
-      console.error('[CashGameOrchestrator] Realtime subscription failed, relying on polling:', err);
+      console.error(
+        '[CashGameOrchestrator] Realtime subscription failed, relying on polling:',
+        err
+      );
     }
 
     // 3. Keep 60s polling as fallback (resilience against Realtime drops)
