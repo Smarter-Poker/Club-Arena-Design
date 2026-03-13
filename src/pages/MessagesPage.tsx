@@ -13,98 +13,90 @@ import ClubBottomNav from '../components/club/ClubBottomNav';
 import './MessagesPage.css';
 
 const conversationAnimationStyle = (index: number) => ({
-    opacity: 0,
-    transform: 'translateY(6px)',
-    animation: `fadeInUp 0.4s ease-out ${index * 50}ms forwards`,
+  opacity: 0,
+  transform: 'translateY(6px)',
+  animation: `fadeInUp 0.4s ease-out ${index * 50}ms forwards`,
 });
 
 export default function MessagesPage() {
-    const navigate = useNavigate();
-    const [searchParams] = useSearchParams();
-    const { clubId: routeClubId, conversationId } = useParams<{ clubId?: string; conversationId?: string }>();
-    const clubId = routeClubId || searchParams.get('club') || undefined;
-    const [selectedConversation, setSelectedConversation] = useState<string | null>(conversationId || null);
-    const [userRole, setUserRole] = useState<'owner' | 'admin' | 'agent' | 'member'>('member');
-    const isMobile = typeof window !== 'undefined' && window.innerWidth < 768;
+  const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const { clubId: routeClubId, conversationId } = useParams<{
+    clubId?: string;
+    conversationId?: string;
+  }>();
+  const clubId = routeClubId || searchParams.get('club') || undefined;
+  const [selectedConversation, setSelectedConversation] = useState<string | null>(
+    conversationId || null
+  );
+  const [userRole, setUserRole] = useState<'owner' | 'admin' | 'agent' | 'member'>('member');
+  const isMobile = typeof window !== 'undefined' && window.innerWidth < 768;
 
-    // Note: clubId is optional now - ConversationList shows both personal and club widget
+  // Note: clubId is optional now - ConversationList shows both personal and club widget
 
-    const handleSelectConversation = (id: string) => {
-        setSelectedConversation(id);
-        if (isMobile) {
-            navigate(`/messages/${id}`);
-        }
-    };
-
-    const handleBack = () => {
-        setSelectedConversation(null);
-        if (isMobile) {
-            navigate('/messages');
-        }
-    };
-
-    // Mobile: Show either list or thread
+  const handleSelectConversation = (id: string) => {
+    setSelectedConversation(id);
     if (isMobile) {
-        if (selectedConversation || conversationId) {
-            return (
-                <div className="messages-page full-height">
-                    <MessageThread
-                        conversationId={selectedConversation || conversationId!}
-                        onBack={handleBack}
-                    />
-                </div>
-            );
-        }
-        return (
-            <div className="messages-page">
-                <div className="messages-content">
-                    <ConversationList
-                        clubId={clubId}
-                        onSelectConversation={handleSelectConversation}
-                        selectedId={selectedConversation || undefined}
-                    />
-                </div>
-                {clubId && (
-                    <ClubBottomNav
-                        clubId={clubId}
-                        userRole={userRole}
-                    />
-                )}
-            </div>
-        );
+      navigate(`/messages/${id}`);
     }
+  };
 
-    // Desktop: Split view
-    return (
-        <div className="messages-page">
-            <div className="messages-split-view">
-                <aside className="messages-sidebar">
-                    <ConversationList
-                        clubId={clubId}
-                        onSelectConversation={handleSelectConversation}
-                        selectedId={selectedConversation || undefined}
-                    />
-                </aside>
-                <main className="messages-main">
-                    {selectedConversation ? (
-                        <MessageThread
-                            conversationId={selectedConversation}
-                            onBack={handleBack}
-                        />
-                    ) : (
-                        <div className="messages-empty">
-                            <span className="empty-icon">◈</span>
-                            <p>Select a conversation to start chatting</p>
-                        </div>
-                    )}
-                </main>
-            </div>
-            {clubId && (
-                <ClubBottomNav
-                    clubId={clubId}
-                    userRole={userRole}
-                />
-            )}
+  const handleBack = () => {
+    setSelectedConversation(null);
+    if (isMobile) {
+      navigate('/messages');
+    }
+  };
+
+  // Mobile: Show either list or thread
+  if (isMobile) {
+    if (selectedConversation || conversationId) {
+      return (
+        <div className="messages-page full-height">
+          <MessageThread
+            conversationId={selectedConversation || conversationId!}
+            onBack={handleBack}
+          />
         </div>
+      );
+    }
+    return (
+      <div className="messages-page">
+        <div className="messages-content">
+          <ConversationList
+            clubId={clubId}
+            onSelectConversation={handleSelectConversation}
+            selectedId={selectedConversation || undefined}
+          />
+        </div>
+        {clubId && <ClubBottomNav clubId={clubId} userRole={userRole} />}
+      </div>
     );
+  }
+
+  // Desktop: Split view
+  return (
+    <div className="messages-page">
+      <div className="messages-split-view">
+        <aside className="messages-sidebar">
+          <ConversationList
+            clubId={clubId}
+            onSelectConversation={handleSelectConversation}
+            selectedId={selectedConversation || undefined}
+          />
+        </aside>
+        <main className="messages-main">
+          {selectedConversation ? (
+            <MessageThread conversationId={selectedConversation} onBack={handleBack} />
+          ) : (
+            <div className="messages-empty">
+              <span className="empty-icon">◈</span>
+              <p>Select a conversation to start chatting</p>
+            </div>
+          )}
+        </main>
+      </div>
+      {clubId && <ClubBottomNav clubId={clubId} userRole={userRole} />}
+    </div>
+  );
 }

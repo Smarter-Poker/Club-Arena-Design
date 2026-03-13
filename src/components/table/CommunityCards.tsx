@@ -68,7 +68,14 @@ interface CardFaceProps {
   deckStyle?: '4color' | '2color';
 }
 
-function CardFace({ card, index, isHighlighted, isDealing, stage, deckStyle = '4color' }: CardFaceProps) {
+function CardFace({
+  card,
+  index,
+  isHighlighted,
+  isDealing,
+  stage,
+  deckStyle = '4color',
+}: CardFaceProps) {
   // Apply turn/river emphasis animations to the newly dealt card
   const isTurnCard = stage === 'turn' && index === 3;
   const isRiverCard = (stage === 'river' || stage === 'showdown') && index === 4;

@@ -79,10 +79,10 @@ interface VIPBenefitsGridProps {
 
 export const VIPBenefitsGrid: React.FC<VIPBenefitsGridProps> = ({ currentPoints }) => {
   const currentTier = getTierByPoints(currentPoints);
-  const currentTierIndex = VIP_TIERS.findIndex(t => t.id === currentTier.id);
+  const currentTierIndex = VIP_TIERS.findIndex((t) => t.id === currentTier.id);
 
   const getBenefitStatus = (benefit: Benefit) => {
-    const benefitTierIndex = VIP_TIERS.findIndex(t => t.id === benefit.unlockedAtTier);
+    const benefitTierIndex = VIP_TIERS.findIndex((t) => t.id === benefit.unlockedAtTier);
     return benefitTierIndex <= currentTierIndex;
   };
 
@@ -96,21 +96,25 @@ export const VIPBenefitsGrid: React.FC<VIPBenefitsGridProps> = ({ currentPoints 
       <div className="benefits-container">
         {BENEFITS.map((benefit, idx) => {
           const isUnlocked = getBenefitStatus(benefit);
-          const unlockedTier = VIP_TIERS.find(t => t.id === benefit.unlockedAtTier);
+          const unlockedTier = VIP_TIERS.find((t) => t.id === benefit.unlockedAtTier);
 
           return (
             <div
               key={benefit.id}
               className={`benefit-card ${isUnlocked ? 'unlocked' : 'locked'}`}
-              style={{
-                '--tier-color': isUnlocked ? unlockedTier?.color : 'rgba(255, 255, 255, 0.1)',
-                '--accent-color': isUnlocked ? unlockedTier?.accentColor : 'rgba(0, 0, 0, 0.1)',
-                '--delay': `${idx * 0.05}s`,
-              } as React.CSSProperties}
+              style={
+                {
+                  '--tier-color': isUnlocked ? unlockedTier?.color : 'rgba(255, 255, 255, 0.1)',
+                  '--accent-color': isUnlocked ? unlockedTier?.accentColor : 'rgba(0, 0, 0, 0.1)',
+                  '--delay': `${idx * 0.05}s`,
+                } as React.CSSProperties
+              }
             >
-              {!isUnlocked && <div className="lock-overlay">
-                <span className="lock-icon">🔒</span>
-              </div>}
+              {!isUnlocked && (
+                <div className="lock-overlay">
+                  <span className="lock-icon">🔒</span>
+                </div>
+              )}
 
               <div className="benefit-top">
                 <span className="benefit-icon">{benefit.icon}</span>
@@ -124,7 +128,10 @@ export const VIPBenefitsGrid: React.FC<VIPBenefitsGridProps> = ({ currentPoints 
               </div>
 
               {isUnlocked && (
-                <div className="benefit-glow" style={{ boxShadow: `inset 0 0 12px ${unlockedTier?.color}` }} />
+                <div
+                  className="benefit-glow"
+                  style={{ boxShadow: `inset 0 0 12px ${unlockedTier?.color}` }}
+                />
               )}
             </div>
           );

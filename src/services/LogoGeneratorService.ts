@@ -4,7 +4,7 @@
  * ═══════════════════════════════════════════════════════════════════════════════
  * Generates custom club logos using xAI's Grok image generation API.
  * Outputs square images sized for the ClubCardGenerator (340x340 logo area).
- * 
+ *
  * Migrated from OpenAI DALL-E to Grok grok-2-image-1212 (Jan 2026)
  * Deploy trigger: 1769680400
  */
@@ -18,103 +18,108 @@ const LOGO_SIZE = '1024x1024'; // Grok supports 1024x1024
 const TARGET_LOGO_SIZE = 340; // Final size for ClubCardGenerator
 
 export interface LogoGenerationOptions {
-    clubName: string;
-    style?: 'modern' | 'classic' | 'aggressive' | 'elegant' | 'playful';
-    theme?: string; // e.g., "shark", "dragon", "phoenix", "poker chips"
-    colorScheme?: string; // e.g., "blue and gold", "red and black"
+  clubName: string;
+  style?: 'modern' | 'classic' | 'aggressive' | 'elegant' | 'playful';
+  theme?: string; // e.g., "shark", "dragon", "phoenix", "poker chips"
+  colorScheme?: string; // e.g., "blue and gold", "red and black"
 }
 
 export interface LogoGenerationResult {
-    success: boolean;
-    logoUrl?: string; // Data URL of the generated logo
-    error?: string;
+  success: boolean;
+  logoUrl?: string; // Data URL of the generated logo
+  error?: string;
 }
 
 /**
  * Generate a club logo using xAI's Grok image generation API
  */
-export async function generateClubLogo(options: LogoGenerationOptions): Promise<LogoGenerationResult> {
-    const { clubName, style = 'modern', theme, colorScheme } = options;
+export async function generateClubLogo(
+  options: LogoGenerationOptions
+): Promise<LogoGenerationResult> {
+  const { clubName, style = 'modern', theme, colorScheme } = options;
 
-    // Check for API key
-    if (!XAI_API_KEY) {
-        console.error('[LogoGenerator] XAI_API_KEY not configured');
-        return {
-            success: false,
-            error: 'AI image generation not configured. Please contact support.',
-        };
+  // Check for API key
+  if (!XAI_API_KEY) {
+    console.error('[LogoGenerator] XAI_API_KEY not configured');
+    return {
+      success: false,
+      error: 'AI image generation not configured. Please contact support.',
+    };
+  }
+
+  // Build a detailed prompt for poker club logo generation
+  const prompt = buildLogoPrompt(clubName, style, theme, colorScheme);
+
+  try {
+    const response = await fetch(XAI_API_URL, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${XAI_API_KEY}`,
+      },
+      body: JSON.stringify({
+        model: 'grok-2-image-1212', // Grok 2 image generation model
+        prompt: prompt,
+        n: 1,
+        // Note: Grok doesn't support 'size' parameter, uses default output size
+        response_format: 'b64_json', // Get base64 directly
+      }),
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      console.error('[LogoGenerator] Grok API error:', errorData);
+      return {
+        success: false,
+        error: errorData.error?.message || `API error: ${response.status}`,
+      };
     }
 
-    // Build a detailed prompt for poker club logo generation
-    const prompt = buildLogoPrompt(clubName, style, theme, colorScheme);
+    const data = await response.json();
+    const base64Image = data.data?.[0]?.b64_json;
 
-    try {
-
-        const response = await fetch(XAI_API_URL, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${XAI_API_KEY}`,
-            },
-            body: JSON.stringify({
-                model: 'grok-2-image-1212', // Grok 2 image generation model
-                prompt: prompt,
-                n: 1,
-                // Note: Grok doesn't support 'size' parameter, uses default output size
-                response_format: 'b64_json', // Get base64 directly
-            }),
-        });
-
-        if (!response.ok) {
-            const errorData = await response.json().catch(() => ({}));
-            console.error('[LogoGenerator] Grok API error:', errorData);
-            return {
-                success: false,
-                error: errorData.error?.message || `API error: ${response.status}`,
-            };
-        }
-
-        const data = await response.json();
-        const base64Image = data.data?.[0]?.b64_json;
-
-        if (!base64Image) {
-            return {
-                success: false,
-                error: 'No image data received from API',
-            };
-        }
-
-        // Convert to data URL and resize to target dimensions
-        const fullSizeDataUrl = `data:image/png;base64,${base64Image}`;
-        const resizedDataUrl = await resizeImage(fullSizeDataUrl, TARGET_LOGO_SIZE, TARGET_LOGO_SIZE);
-
-
-        return {
-            success: true,
-            logoUrl: resizedDataUrl,
-        };
-    } catch (error) {
-        console.error('[LogoGenerator] Logo generation failed:', error);
-        return {
-            success: false,
-            error: error instanceof Error ? error.message : 'Unknown error occurred',
-        };
+    if (!base64Image) {
+      return {
+        success: false,
+        error: 'No image data received from API',
+      };
     }
+
+    // Convert to data URL and resize to target dimensions
+    const fullSizeDataUrl = `data:image/png;base64,${base64Image}`;
+    const resizedDataUrl = await resizeImage(fullSizeDataUrl, TARGET_LOGO_SIZE, TARGET_LOGO_SIZE);
+
+    return {
+      success: true,
+      logoUrl: resizedDataUrl,
+    };
+  } catch (error) {
+    console.error('[LogoGenerator] Logo generation failed:', error);
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Unknown error occurred',
+    };
+  }
 }
 
 /**
  * Build a prompt for generating a poker club logo
  * Uses the user's EXACT description with minimal enhancement
  */
-function buildLogoPrompt(clubName: string, style: string, theme?: string, colorScheme?: string): string {
-    // Use the user's exact text as the primary prompt
-    const userPrompt = theme || 'poker club logo';
+function buildLogoPrompt(
+  clubName: string,
+  style: string,
+  theme?: string,
+  colorScheme?: string
+): string {
+  // Use the user's exact text as the primary prompt
+  const userPrompt = theme || 'poker club logo';
 
-    // Add minimal poker club context and quality requirements
-    let prompt = `${userPrompt}. `;
+  // Add minimal poker club context and quality requirements
+  let prompt = `${userPrompt}. `;
 
-    // Add quality and style requirements WITHOUT forcing a specific subject
-    prompt += `
+  // Add quality and style requirements WITHOUT forcing a specific subject
+  prompt += `
         High quality, professional design.
         Suitable for a poker club brand.
         Clean, modern aesthetic.
@@ -122,54 +127,88 @@ function buildLogoPrompt(clubName: string, style: string, theme?: string, colorS
         Premium, polished look.
     `;
 
-    // Add color scheme if specified
-    if (colorScheme) {
-        prompt += `\nColor scheme: ${colorScheme}`;
-    }
+  // Add color scheme if specified
+  if (colorScheme) {
+    prompt += `\nColor scheme: ${colorScheme}`;
+  }
 
-    return prompt.trim();
+  return prompt.trim();
 }
 
 /**
  * Resize an image to target dimensions using canvas
  */
-async function resizeImage(dataUrl: string, targetWidth: number, targetHeight: number): Promise<string> {
-    return new Promise((resolve, reject) => {
-        const img = new Image();
-        img.onload = () => {
-            const canvas = document.createElement('canvas');
-            canvas.width = targetWidth;
-            canvas.height = targetHeight;
-            const ctx = canvas.getContext('2d')!;
+async function resizeImage(
+  dataUrl: string,
+  targetWidth: number,
+  targetHeight: number
+): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.onload = () => {
+      const canvas = document.createElement('canvas');
+      canvas.width = targetWidth;
+      canvas.height = targetHeight;
+      const ctx = canvas.getContext('2d')!;
 
-            // Use high-quality image scaling
-            ctx.imageSmoothingEnabled = true;
-            ctx.imageSmoothingQuality = 'high';
+      // Use high-quality image scaling
+      ctx.imageSmoothingEnabled = true;
+      ctx.imageSmoothingQuality = 'high';
 
-            // Draw the image scaled to target size
-            ctx.drawImage(img, 0, 0, targetWidth, targetHeight);
+      // Draw the image scaled to target size
+      ctx.drawImage(img, 0, 0, targetWidth, targetHeight);
 
-            resolve(canvas.toDataURL('image/png'));
-        };
-        img.onerror = () => reject(new Error('Failed to load image for resizing'));
-        img.src = dataUrl;
-    });
+      resolve(canvas.toDataURL('image/png'));
+    };
+    img.onerror = () => reject(new Error('Failed to load image for resizing'));
+    img.src = dataUrl;
+  });
 }
 
 /**
  * Logo style presets for quick selection
  */
 export const LOGO_STYLE_PRESETS = [
-    { id: 'shark-modern', name: 'Shark', theme: 'shark', style: 'aggressive' as const, icon: '🦈' },
-    { id: 'dragon-classic', name: 'Dragon', theme: 'dragon', style: 'classic' as const, icon: '🐉' },
-    { id: 'eagle-elegant', name: 'Eagle', theme: 'eagle', style: 'elegant' as const, icon: '🦅' },
-    { id: 'lion-aggressive', name: 'Lion', theme: 'lion', style: 'aggressive' as const, icon: '🦁' },
-    { id: 'phoenix-modern', name: 'Phoenix', theme: 'phoenix', style: 'modern' as const, icon: '🔥' },
-    { id: 'wolf-classic', name: 'Wolf', theme: 'wolf', style: 'classic' as const, icon: '🐺' },
-    { id: 'cards-elegant', name: 'Cards', theme: 'playing cards and poker chips', style: 'elegant' as const, icon: '🂡' },
-    { id: 'crown-elegant', name: 'Crown', theme: 'royal crown with poker elements', style: 'elegant' as const, icon: '👑' },
-    { id: 'diamond-modern', name: 'Diamond', theme: 'diamond gemstone', style: 'modern' as const, icon: '💎' },
-    { id: 'skull-aggressive', name: 'Skull', theme: 'skull with poker elements', style: 'aggressive' as const, icon: '💀' },
-    { id: 'tiger-playful', name: 'Tiger', theme: 'tiger', style: 'playful' as const, icon: '🐯' },
-    { id: 'spade-classic', name: 'Spade', theme: 'spade suit symbol', style: 'classic' as const, icon: '♠️' },
+  { id: 'shark-modern', name: 'Shark', theme: 'shark', style: 'aggressive' as const, icon: '🦈' },
+  { id: 'dragon-classic', name: 'Dragon', theme: 'dragon', style: 'classic' as const, icon: '🐉' },
+  { id: 'eagle-elegant', name: 'Eagle', theme: 'eagle', style: 'elegant' as const, icon: '🦅' },
+  { id: 'lion-aggressive', name: 'Lion', theme: 'lion', style: 'aggressive' as const, icon: '🦁' },
+  { id: 'phoenix-modern', name: 'Phoenix', theme: 'phoenix', style: 'modern' as const, icon: '🔥' },
+  { id: 'wolf-classic', name: 'Wolf', theme: 'wolf', style: 'classic' as const, icon: '🐺' },
+  {
+    id: 'cards-elegant',
+    name: 'Cards',
+    theme: 'playing cards and poker chips',
+    style: 'elegant' as const,
+    icon: '🂡',
+  },
+  {
+    id: 'crown-elegant',
+    name: 'Crown',
+    theme: 'royal crown with poker elements',
+    style: 'elegant' as const,
+    icon: '👑',
+  },
+  {
+    id: 'diamond-modern',
+    name: 'Diamond',
+    theme: 'diamond gemstone',
+    style: 'modern' as const,
+    icon: '💎',
+  },
+  {
+    id: 'skull-aggressive',
+    name: 'Skull',
+    theme: 'skull with poker elements',
+    style: 'aggressive' as const,
+    icon: '💀',
+  },
+  { id: 'tiger-playful', name: 'Tiger', theme: 'tiger', style: 'playful' as const, icon: '🐯' },
+  {
+    id: 'spade-classic',
+    name: 'Spade',
+    theme: 'spade suit symbol',
+    style: 'classic' as const,
+    icon: '♠️',
+  },
 ];

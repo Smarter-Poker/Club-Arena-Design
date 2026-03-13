@@ -413,7 +413,7 @@ class AutoRebuyServiceCore {
             p_description: 'Auto-rebuy: wallet topup ' + topupAmount + ' credits',
             p_table_id: null,
             p_hand_id: null,
-            p_related_entity_id: null
+            p_related_entity_id: null,
           }),
         3
       );
@@ -445,7 +445,11 @@ class AutoRebuyServiceCore {
       masterBus.emit('BALANCE_UPDATED', { source: 'auto_rebuy_topup', userId: horseId });
 
       console.debug(
-        '[AutoRebuy] Topped up horse ' + horseId + ' wallet with ' + topupAmount + ' credits (atomically logged)'
+        '[AutoRebuy] Topped up horse ' +
+          horseId +
+          ' wallet with ' +
+          topupAmount +
+          ' credits (atomically logged)'
       );
       return true;
     } catch (err) {

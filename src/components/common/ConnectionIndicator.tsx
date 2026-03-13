@@ -58,9 +58,7 @@ export default function ConnectionIndicator() {
       aria-label={labels[connState]}
     >
       <span className="conn-indicator__dot" />
-      {connState === 'disconnected' && (
-        <span className="conn-indicator__label">Offline</span>
-      )}
+      {connState === 'disconnected' && <span className="conn-indicator__label">Offline</span>}
     </div>
   );
 }

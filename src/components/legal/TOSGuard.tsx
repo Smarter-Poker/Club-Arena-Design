@@ -10,10 +10,10 @@ import { useUserStore } from '../../stores/useUserStore';
 import TOSAcceptanceModal from './TOSAcceptanceModal';
 
 interface TOSGuardProps {
-    children: ReactNode;
+  children: ReactNode;
 }
 
 export default function TOSGuard({ children }: TOSGuardProps) {
-    // TEMPORARILY DISABLED - just return children
-    return <>{children}</>;
+  // TEMPORARILY DISABLED - just return children
+  return <>{children}</>;
 }

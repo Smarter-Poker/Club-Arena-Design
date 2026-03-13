@@ -8,31 +8,31 @@
  * Export settlement report as PDF
  */
 export async function exportSettlementPDF(data: {
-    periodNumber: number;
-    year: number;
-    startDate: string;
-    endDate: string;
-    totalRake: number;
-    totalBBJ: number;
-    clubWires: Array<{
-        clubName: string;
-        netPlayerPL: number;
-        grossRake: number;
-        unionTax: number;
-        agentCommissions: number;
-        finalWire: number;
-        direction: string;
-    }>;
-    agentPayouts: Array<{
-        agentName: string;
-        rakeGenerated: number;
-        commissionRate: number;
-        grossCommission: number;
-        netPayout: number;
-    }>;
+  periodNumber: number;
+  year: number;
+  startDate: string;
+  endDate: string;
+  totalRake: number;
+  totalBBJ: number;
+  clubWires: Array<{
+    clubName: string;
+    netPlayerPL: number;
+    grossRake: number;
+    unionTax: number;
+    agentCommissions: number;
+    finalWire: number;
+    direction: string;
+  }>;
+  agentPayouts: Array<{
+    agentName: string;
+    rakeGenerated: number;
+    commissionRate: number;
+    grossCommission: number;
+    netPayout: number;
+  }>;
 }): Promise<Blob> {
-    // Generate HTML content for PDF
-    const html = `
+  // Generate HTML content for PDF
+  const html = `
 <!DOCTYPE html>
 <html>
 <head>
@@ -84,7 +84,9 @@ export async function exportSettlementPDF(data: {
             </tr>
         </thead>
         <tbody>
-            ${data.clubWires.map(club => `
+            ${data.clubWires
+              .map(
+                (club) => `
                 <tr>
                     <td>${club.clubName}</td>
                     <td class="${club.netPlayerPL >= 0 ? 'positive' : 'negative'}">${club.netPlayerPL.toLocaleString()}</td>
@@ -94,7 +96,9 @@ export async function exportSettlementPDF(data: {
                     <td><strong>${Math.abs(club.finalWire).toLocaleString()}</strong></td>
                     <td>${club.direction === 'PAY_TO_UNION' ? '→ Pay to Union' : '← Collect from Union'}</td>
                 </tr>
-            `).join('')}
+            `
+              )
+              .join('')}
         </tbody>
     </table>
 
@@ -110,7 +114,9 @@ export async function exportSettlementPDF(data: {
             </tr>
         </thead>
         <tbody>
-            ${data.agentPayouts.map(agent => `
+            ${data.agentPayouts
+              .map(
+                (agent) => `
                 <tr>
                     <td>${agent.agentName}</td>
                     <td>${agent.rakeGenerated.toLocaleString()}</td>
@@ -118,7 +124,9 @@ export async function exportSettlementPDF(data: {
                     <td>${agent.grossCommission.toLocaleString()}</td>
                     <td><strong class="positive">${agent.netPayout.toLocaleString()}</strong></td>
                 </tr>
-            `).join('')}
+            `
+              )
+              .join('')}
         </tbody>
     </table>
 
@@ -129,25 +137,25 @@ export async function exportSettlementPDF(data: {
 </html>
     `;
 
-    // Use browser print API to generate PDF
-    const blob = await htmlToPdfBlob(html);
-    return blob;
+  // Use browser print API to generate PDF
+  const blob = await htmlToPdfBlob(html);
+  return blob;
 }
 
 /**
  * Export hand history to PDF
  */
 export async function exportHandHistoryPDF(data: {
-    handId: string;
-    tableName: string;
-    stakes: string;
-    date: string;
-    players: Array<{ name: string; stack: number; position: string }>;
-    actions: Array<{ player: string; action: string; amount?: number; street: string }>;
-    result: { winners: string[]; pot: number };
-    communityCards: string[];
+  handId: string;
+  tableName: string;
+  stakes: string;
+  date: string;
+  players: Array<{ name: string; stack: number; position: string }>;
+  actions: Array<{ player: string; action: string; amount?: number; street: string }>;
+  result: { winners: string[]; pot: number };
+  communityCards: string[];
 }): Promise<Blob> {
-    const html = `
+  const html = `
 <!DOCTYPE html>
 <html>
 <head>
@@ -176,7 +184,7 @@ export async function exportHandHistoryPDF(data: {
 
     <div class="section">
         <strong>Players:</strong>
-        ${data.players.map(p => `<div>${p.position}: ${p.name} (${p.stack})</div>`).join('')}
+        ${data.players.map((p) => `<div>${p.position}: ${p.name} (${p.stack})</div>`).join('')}
     </div>
 
     <div class="section">
@@ -186,13 +194,17 @@ export async function exportHandHistoryPDF(data: {
 
     <div class="section">
         <strong>Actions:</strong>
-        ${data.actions.map(a => `
+        ${data.actions
+          .map(
+            (a) => `
             <div class="action">
                 <span class="action-player">${a.player}</span>: 
                 <span class="action-${a.action.toLowerCase()}">${a.action}${a.amount ? ` ${a.amount}` : ''}</span>
                 (${a.street})
             </div>
-        `).join('')}
+        `
+          )
+          .join('')}
     </div>
 
     <div class="section">
@@ -203,103 +215,103 @@ export async function exportHandHistoryPDF(data: {
 </html>
     `;
 
-    return htmlToPdfBlob(html);
+  return htmlToPdfBlob(html);
 }
 
 /**
  * Convert HTML string to PDF blob using print API
  */
 async function htmlToPdfBlob(html: string): Promise<Blob> {
-    return new Promise((resolve, reject) => {
-        // Create a hidden iframe
-        const iframe = document.createElement('iframe');
-        iframe.style.position = 'fixed';
-        iframe.style.right = '0';
-        iframe.style.bottom = '0';
-        iframe.style.width = '0';
-        iframe.style.height = '0';
-        iframe.style.border = '0';
-        document.body.appendChild(iframe);
+  return new Promise((resolve, reject) => {
+    // Create a hidden iframe
+    const iframe = document.createElement('iframe');
+    iframe.style.position = 'fixed';
+    iframe.style.right = '0';
+    iframe.style.bottom = '0';
+    iframe.style.width = '0';
+    iframe.style.height = '0';
+    iframe.style.border = '0';
+    document.body.appendChild(iframe);
 
-        const doc = iframe.contentDocument || iframe.contentWindow?.document;
-        if (!doc) {
-            document.body.removeChild(iframe);
-            reject(new Error('Could not access iframe document'));
-            return;
-        }
+    const doc = iframe.contentDocument || iframe.contentWindow?.document;
+    if (!doc) {
+      document.body.removeChild(iframe);
+      reject(new Error('Could not access iframe document'));
+      return;
+    }
 
-        doc.open();
-        doc.write(html);
-        doc.close();
+    doc.open();
+    doc.write(html);
+    doc.close();
 
-        // Wait for content to render
-        setTimeout(() => {
-            try {
-                iframe.contentWindow?.print();
-                // Note: In a real app, you'd use a library like jsPDF or html2pdf
-                // For now, we trigger the browser print dialog
-                document.body.removeChild(iframe);
+    // Wait for content to render
+    setTimeout(() => {
+      try {
+        iframe.contentWindow?.print();
+        // Note: In a real app, you'd use a library like jsPDF or html2pdf
+        // For now, we trigger the browser print dialog
+        document.body.removeChild(iframe);
 
-                // Return a placeholder blob (actual PDF generation would use jsPDF)
-                const blob = new Blob([html], { type: 'text/html' });
-                resolve(blob);
-            } catch (error) {
-                document.body.removeChild(iframe);
-                reject(error);
-            }
-        }, 500);
-    });
+        // Return a placeholder blob (actual PDF generation would use jsPDF)
+        const blob = new Blob([html], { type: 'text/html' });
+        resolve(blob);
+      } catch (error) {
+        document.body.removeChild(iframe);
+        reject(error);
+      }
+    }, 500);
+  });
 }
 
 /**
  * Download a blob as a file
  */
 export function downloadBlob(blob: Blob, filename: string) {
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = filename;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
 }
 
 /**
  * Export data to CSV
  */
 export function exportToCSV<T extends object>(
-    data: T[],
-    filename: string,
-    columns?: Array<{ key: keyof T; label: string }>
+  data: T[],
+  filename: string,
+  columns?: Array<{ key: keyof T; label: string }>
 ) {
-    if (data.length === 0) return;
+  if (data.length === 0) return;
 
-    const cols = columns || Object.keys(data[0]).map(key => ({ key: key as keyof T, label: key }));
+  const cols = columns || Object.keys(data[0]).map((key) => ({ key: key as keyof T, label: key }));
 
-    // Header row
-    const header = cols.map(c => c.label).join(',');
+  // Header row
+  const header = cols.map((c) => c.label).join(',');
 
-    // Data rows
-    const rows = data.map(row =>
-        cols.map(c => {
-            const val = row[c.key];
-            // Escape commas and quotes
-            const str = String(val ?? '');
-            return str.includes(',') || str.includes('"')
-                ? `"${str.replace(/"/g, '""')}"`
-                : str;
-        }).join(',')
-    );
+  // Data rows
+  const rows = data.map((row) =>
+    cols
+      .map((c) => {
+        const val = row[c.key];
+        // Escape commas and quotes
+        const str = String(val ?? '');
+        return str.includes(',') || str.includes('"') ? `"${str.replace(/"/g, '""')}"` : str;
+      })
+      .join(',')
+  );
 
-    const csv = [header, ...rows].join('\n');
-    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-    downloadBlob(blob, filename);
+  const csv = [header, ...rows].join('\n');
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+  downloadBlob(blob, filename);
 }
 
 export default {
-    exportSettlementPDF,
-    exportHandHistoryPDF,
-    exportToCSV,
-    downloadBlob,
+  exportSettlementPDF,
+  exportHandHistoryPDF,
+  exportToCSV,
+  downloadBlob,
 };

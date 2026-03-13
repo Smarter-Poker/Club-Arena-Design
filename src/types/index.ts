@@ -3,7 +3,7 @@
  *  TYPES — Index Exports
  * ═══════════════════════════════════════════════════════════════════════════════
  * Central export point for all TypeScript types and interfaces
- * 
+ *
  * Note: database.types is authoritative. club.types provides extended interfaces.
  */
 

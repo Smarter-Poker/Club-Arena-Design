@@ -42,7 +42,9 @@ export default function CreditAdminPanel() {
     try {
       const { data } = await supabase
         .from('agents')
-        .select('id, agent_wallet_balance, credit_limit, status, profiles!agents_id_fkey(display_name, username)')
+        .select(
+          'id, agent_wallet_balance, credit_limit, status, profiles!agents_id_fkey(display_name, username)'
+        )
         .order('credit_limit', { ascending: false })
         .limit(100);
 
@@ -75,14 +77,20 @@ export default function CreditAdminPanel() {
         .order('created_at', { ascending: false })
         .limit(20);
       setAuditLog(auditData || []);
-    } catch { /* table may not exist */ }
+    } catch {
+      /* table may not exist */
+    }
   }, []);
 
-  useEffect(() => { loadAgents(); }, [loadAgents]);
+  useEffect(() => {
+    loadAgents();
+  }, [loadAgents]);
 
   useEffect(() => {
     const unsub = masterBus.subscribeDebounced('BALANCE_UPDATED', () => loadAgents(), 1000);
-    return () => { unsub(); };
+    return () => {
+      unsub();
+    };
   }, []);
 
   const handleSaveLimit = async (agentId: string) => {
@@ -114,7 +122,9 @@ export default function CreditAdminPanel() {
           rate_type: 'credit_limit',
           created_at: new Date().toISOString(),
         });
-      } catch { /* non-blocking */ }
+      } catch {
+        /* non-blocking */
+      }
 
       toast.success(`Credit limit updated to ${limit.toLocaleString()}`);
       setEditingAgent(null);
@@ -134,7 +144,20 @@ export default function CreditAdminPanel() {
     <div style={{ padding: '16px', maxWidth: '800px', margin: '0 auto', paddingBottom: '100px' }}>
       {/* Header */}
       <div style={{ marginBottom: '24px' }}>
-        <button onClick={() => navigate(-1)} style={{ background: 'none', border: 'none', color: '#3b82f6', cursor: 'pointer', fontSize: '0.85rem', padding: 0, marginBottom: '6px' }}>← Back</button>
+        <button
+          onClick={() => navigate(-1)}
+          style={{
+            background: 'none',
+            border: 'none',
+            color: '#3b82f6',
+            cursor: 'pointer',
+            fontSize: '0.85rem',
+            padding: 0,
+            marginBottom: '6px',
+          }}
+        >
+          ← Back
+        </button>
         <h1 style={{ margin: 0, fontSize: '1.5rem', fontWeight: 700 }}>💳 Credit Admin Panel</h1>
         <p style={{ margin: '4px 0 0', fontSize: '0.8rem', color: 'rgba(255,255,255,0.5)' }}>
           Manage agent credit limits and monitor exposure
@@ -142,52 +165,242 @@ export default function CreditAdminPanel() {
       </div>
 
       {/* Summary Cards */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '10px', marginBottom: '20px' }}>
-        <div style={{ padding: '14px', background: 'rgba(59,130,246,0.08)', borderRadius: '12px', border: '1px solid rgba(59,130,246,0.2)' }}>
-          <div style={{ fontSize: '0.65rem', color: 'rgba(255,255,255,0.4)', textTransform: 'uppercase', fontWeight: 600 }}>Total Exposure</div>
-          <div style={{ fontSize: '1.3rem', fontWeight: 800, color: '#3b82f6', fontFamily: 'monospace' }}>{totalCreditExposure.toLocaleString()}</div>
+      <div
+        style={{
+          display: 'grid',
+          gridTemplateColumns: 'repeat(3, 1fr)',
+          gap: '10px',
+          marginBottom: '20px',
+        }}
+      >
+        <div
+          style={{
+            padding: '14px',
+            background: 'rgba(59,130,246,0.08)',
+            borderRadius: '12px',
+            border: '1px solid rgba(59,130,246,0.2)',
+          }}
+        >
+          <div
+            style={{
+              fontSize: '0.65rem',
+              color: 'rgba(255,255,255,0.4)',
+              textTransform: 'uppercase',
+              fontWeight: 600,
+            }}
+          >
+            Total Exposure
+          </div>
+          <div
+            style={{
+              fontSize: '1.3rem',
+              fontWeight: 800,
+              color: '#3b82f6',
+              fontFamily: 'monospace',
+            }}
+          >
+            {totalCreditExposure.toLocaleString()}
+          </div>
         </div>
-        <div style={{ padding: '14px', background: 'rgba(239,68,68,0.08)', borderRadius: '12px', border: '1px solid rgba(239,68,68,0.2)' }}>
-          <div style={{ fontSize: '0.65rem', color: 'rgba(255,255,255,0.4)', textTransform: 'uppercase', fontWeight: 600 }}>Outstanding Debt</div>
-          <div style={{ fontSize: '1.3rem', fontWeight: 800, color: '#ef4444', fontFamily: 'monospace' }}>{totalDebt.toLocaleString()}</div>
+        <div
+          style={{
+            padding: '14px',
+            background: 'rgba(239,68,68,0.08)',
+            borderRadius: '12px',
+            border: '1px solid rgba(239,68,68,0.2)',
+          }}
+        >
+          <div
+            style={{
+              fontSize: '0.65rem',
+              color: 'rgba(255,255,255,0.4)',
+              textTransform: 'uppercase',
+              fontWeight: 600,
+            }}
+          >
+            Outstanding Debt
+          </div>
+          <div
+            style={{
+              fontSize: '1.3rem',
+              fontWeight: 800,
+              color: '#ef4444',
+              fontFamily: 'monospace',
+            }}
+          >
+            {totalDebt.toLocaleString()}
+          </div>
         </div>
-        <div style={{ padding: '14px', background: 'rgba(16,185,129,0.08)', borderRadius: '12px', border: '1px solid rgba(16,185,129,0.2)' }}>
-          <div style={{ fontSize: '0.65rem', color: 'rgba(255,255,255,0.4)', textTransform: 'uppercase', fontWeight: 600 }}>Active Agents</div>
-          <div style={{ fontSize: '1.3rem', fontWeight: 800, color: '#10b981', fontFamily: 'monospace' }}>{agents.length}</div>
+        <div
+          style={{
+            padding: '14px',
+            background: 'rgba(16,185,129,0.08)',
+            borderRadius: '12px',
+            border: '1px solid rgba(16,185,129,0.2)',
+          }}
+        >
+          <div
+            style={{
+              fontSize: '0.65rem',
+              color: 'rgba(255,255,255,0.4)',
+              textTransform: 'uppercase',
+              fontWeight: 600,
+            }}
+          >
+            Active Agents
+          </div>
+          <div
+            style={{
+              fontSize: '1.3rem',
+              fontWeight: 800,
+              color: '#10b981',
+              fontFamily: 'monospace',
+            }}
+          >
+            {agents.length}
+          </div>
         </div>
       </div>
 
       {/* Agent List */}
-      <div style={{ fontSize: '0.75rem', fontWeight: 600, color: 'rgba(255,255,255,0.4)', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '8px' }}>Agents</div>
+      <div
+        style={{
+          fontSize: '0.75rem',
+          fontWeight: 600,
+          color: 'rgba(255,255,255,0.4)',
+          textTransform: 'uppercase',
+          letterSpacing: '0.5px',
+          marginBottom: '8px',
+        }}
+      >
+        Agents
+      </div>
       {loading && agents.length === 0 ? (
-        <div style={{ textAlign: 'center', padding: '40px', color: 'rgba(255,255,255,0.3)' }}>Loading agents...</div>
+        <div style={{ textAlign: 'center', padding: '40px', color: 'rgba(255,255,255,0.3)' }}>
+          Loading agents...
+        </div>
       ) : agents.length === 0 ? (
-        <div style={{ textAlign: 'center', padding: '40px', color: 'rgba(255,255,255,0.3)' }}>No agents found</div>
+        <div style={{ textAlign: 'center', padding: '40px', color: 'rgba(255,255,255,0.3)' }}>
+          No agents found
+        </div>
       ) : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
           {agents.map((agent, idx) => (
-            <div key={agent.id} style={{ padding: '12px 14px', background: 'rgba(255,255,255,0.03)', borderRadius: '10px', border: '1px solid rgba(255,255,255,0.06)', opacity: visibleRows.has(idx) ? 1 : 0, transform: visibleRows.has(idx) ? 'translateX(0)' : 'translateX(-10px)', transition: 'all 0.3s ease' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <div
+              key={agent.id}
+              style={{
+                padding: '12px 14px',
+                background: 'rgba(255,255,255,0.03)',
+                borderRadius: '10px',
+                border: '1px solid rgba(255,255,255,0.06)',
+                opacity: visibleRows.has(idx) ? 1 : 0,
+                transform: visibleRows.has(idx) ? 'translateX(0)' : 'translateX(-10px)',
+                transition: 'all 0.3s ease',
+              }}
+            >
+              <div
+                style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}
+              >
                 <div>
                   <div style={{ fontSize: '0.85rem', fontWeight: 700 }}>{agent.displayName}</div>
-                  <div style={{ fontSize: '0.7rem', color: 'rgba(255,255,255,0.4)', marginTop: '2px' }}>
-                    Balance: <span style={{ color: '#10b981' }}>{agent.currentBalance.toLocaleString()}</span>
-                    {agent.debtOwed > 0 && <> · Debt: <span style={{ color: '#ef4444' }}>{agent.debtOwed.toLocaleString()}</span></>}
+                  <div
+                    style={{ fontSize: '0.7rem', color: 'rgba(255,255,255,0.4)', marginTop: '2px' }}
+                  >
+                    Balance:{' '}
+                    <span style={{ color: '#10b981' }}>
+                      {agent.currentBalance.toLocaleString()}
+                    </span>
+                    {agent.debtOwed > 0 && (
+                      <>
+                        {' '}
+                        · Debt:{' '}
+                        <span style={{ color: '#ef4444' }}>{agent.debtOwed.toLocaleString()}</span>
+                      </>
+                    )}
                   </div>
                 </div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                   {editingAgent === agent.id ? (
                     <>
-                      <input type="number" value={newLimit} onChange={(e) => setNewLimit(e.target.value)} placeholder={agent.creditLimit.toString()} style={{ width: '100px', padding: '6px', background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '6px', color: '#fff', fontSize: '0.8rem' }} />
-                      <button onClick={() => handleSaveLimit(agent.id)} disabled={saving} style={{ padding: '6px 10px', background: 'rgba(16,185,129,0.15)', border: '1px solid rgba(16,185,129,0.3)', borderRadius: '6px', color: '#10b981', fontWeight: 700, fontSize: '0.7rem', cursor: 'pointer' }}>
+                      <input
+                        type="number"
+                        value={newLimit}
+                        onChange={(e) => setNewLimit(e.target.value)}
+                        placeholder={agent.creditLimit.toString()}
+                        style={{
+                          width: '100px',
+                          padding: '6px',
+                          background: 'rgba(0,0,0,0.3)',
+                          border: '1px solid rgba(255,255,255,0.15)',
+                          borderRadius: '6px',
+                          color: '#fff',
+                          fontSize: '0.8rem',
+                        }}
+                      />
+                      <button
+                        onClick={() => handleSaveLimit(agent.id)}
+                        disabled={saving}
+                        style={{
+                          padding: '6px 10px',
+                          background: 'rgba(16,185,129,0.15)',
+                          border: '1px solid rgba(16,185,129,0.3)',
+                          borderRadius: '6px',
+                          color: '#10b981',
+                          fontWeight: 700,
+                          fontSize: '0.7rem',
+                          cursor: 'pointer',
+                        }}
+                      >
                         {saving ? '...' : '✓'}
                       </button>
-                      <button onClick={() => { setEditingAgent(null); setNewLimit(''); }} style={{ padding: '6px 10px', background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.3)', borderRadius: '6px', color: '#ef4444', fontWeight: 700, fontSize: '0.7rem', cursor: 'pointer' }}>✕</button>
+                      <button
+                        onClick={() => {
+                          setEditingAgent(null);
+                          setNewLimit('');
+                        }}
+                        style={{
+                          padding: '6px 10px',
+                          background: 'rgba(239,68,68,0.1)',
+                          border: '1px solid rgba(239,68,68,0.3)',
+                          borderRadius: '6px',
+                          color: '#ef4444',
+                          fontWeight: 700,
+                          fontSize: '0.7rem',
+                          cursor: 'pointer',
+                        }}
+                      >
+                        ✕
+                      </button>
                     </>
                   ) : (
                     <>
-                      <span style={{ fontSize: '0.85rem', fontWeight: 700, color: '#f59e0b', fontFamily: 'monospace' }}>{agent.creditLimit.toLocaleString()}</span>
-                      <button onClick={() => { setEditingAgent(agent.id); setNewLimit(agent.creditLimit.toString()); }} style={{ padding: '4px 10px', background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '6px', color: 'rgba(255,255,255,0.6)', fontSize: '0.7rem', cursor: 'pointer' }}>Edit</button>
+                      <span
+                        style={{
+                          fontSize: '0.85rem',
+                          fontWeight: 700,
+                          color: '#f59e0b',
+                          fontFamily: 'monospace',
+                        }}
+                      >
+                        {agent.creditLimit.toLocaleString()}
+                      </span>
+                      <button
+                        onClick={() => {
+                          setEditingAgent(agent.id);
+                          setNewLimit(agent.creditLimit.toString());
+                        }}
+                        style={{
+                          padding: '4px 10px',
+                          background: 'rgba(255,255,255,0.06)',
+                          border: '1px solid rgba(255,255,255,0.1)',
+                          borderRadius: '6px',
+                          color: 'rgba(255,255,255,0.6)',
+                          fontSize: '0.7rem',
+                          cursor: 'pointer',
+                        }}
+                      >
+                        Edit
+                      </button>
                     </>
                   )}
                 </div>
@@ -200,10 +413,34 @@ export default function CreditAdminPanel() {
       {/* Audit Log */}
       {auditLog.length > 0 && (
         <div style={{ marginTop: '24px' }}>
-          <div style={{ fontSize: '0.75rem', fontWeight: 600, color: 'rgba(255,255,255,0.4)', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '8px' }}>Recent Changes</div>
+          <div
+            style={{
+              fontSize: '0.75rem',
+              fontWeight: 600,
+              color: 'rgba(255,255,255,0.4)',
+              textTransform: 'uppercase',
+              letterSpacing: '0.5px',
+              marginBottom: '8px',
+            }}
+          >
+            Recent Changes
+          </div>
           {auditLog.slice(0, 5).map((log, i) => (
-            <div key={i} style={{ padding: '8px 10px', background: 'rgba(255,255,255,0.02)', borderRadius: '6px', marginBottom: '4px', display: 'flex', justifyContent: 'space-between', fontSize: '0.75rem' }}>
-              <span style={{ color: 'rgba(255,255,255,0.5)' }}>{new Date(log.created_at).toLocaleDateString()}</span>
+            <div
+              key={i}
+              style={{
+                padding: '8px 10px',
+                background: 'rgba(255,255,255,0.02)',
+                borderRadius: '6px',
+                marginBottom: '4px',
+                display: 'flex',
+                justifyContent: 'space-between',
+                fontSize: '0.75rem',
+              }}
+            >
+              <span style={{ color: 'rgba(255,255,255,0.5)' }}>
+                {new Date(log.created_at).toLocaleDateString()}
+              </span>
               <span>
                 <span style={{ color: '#ef4444' }}>{log.old_rate?.toLocaleString()}</span>
                 <span style={{ color: 'rgba(255,255,255,0.3)' }}> → </span>

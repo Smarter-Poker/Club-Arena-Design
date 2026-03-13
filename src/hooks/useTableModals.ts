@@ -14,30 +14,30 @@ import { useState, useCallback } from 'react';
  */
 
 export type ModalName =
-    | 'buyIn'
-    | 'cashier'
-    | 'settings'
-    | 'tableMenu'
-    | 'handReplay'
-    | 'rules'
-    | 'playerNotes'
-    | 'waitList'
-    | 'sitOut'
-    | 'tipDealer'
-    | 'insurance'
-    | 'leaderboard'
-    | 'shareHand'
-    | 'throwableSelector'
-    | 'handHistory'
-    | 'rebuy'
-    | 'addOn'
-    | 'gtoAdvisor';
+  | 'buyIn'
+  | 'cashier'
+  | 'settings'
+  | 'tableMenu'
+  | 'handReplay'
+  | 'rules'
+  | 'playerNotes'
+  | 'waitList'
+  | 'sitOut'
+  | 'tipDealer'
+  | 'insurance'
+  | 'leaderboard'
+  | 'shareHand'
+  | 'throwableSelector'
+  | 'handHistory'
+  | 'rebuy'
+  | 'addOn'
+  | 'gtoAdvisor';
 
 export interface UseTableModalsReturn {
-    activeModal: ModalName | null;
-    openModal: (name: ModalName) => void;
-    closeModal: () => void;
-    isOpen: (name: ModalName) => boolean;
+  activeModal: ModalName | null;
+  openModal: (name: ModalName) => void;
+  closeModal: () => void;
+  isOpen: (name: ModalName) => boolean;
 }
 
 /**
@@ -45,19 +45,22 @@ export interface UseTableModalsReturn {
  * Only one modal can be open at a time (mutually exclusive pattern)
  */
 export function useTableModals(): UseTableModalsReturn {
-    const [activeModal, setActiveModal] = useState<ModalName | null>(null);
+  const [activeModal, setActiveModal] = useState<ModalName | null>(null);
 
-    const openModal = useCallback((name: ModalName) => {
-        setActiveModal(name);
-    }, []);
+  const openModal = useCallback((name: ModalName) => {
+    setActiveModal(name);
+  }, []);
 
-    const closeModal = useCallback(() => {
-        setActiveModal(null);
-    }, []);
+  const closeModal = useCallback(() => {
+    setActiveModal(null);
+  }, []);
 
-    const isOpen = useCallback((name: ModalName): boolean => {
-        return activeModal === name;
-    }, [activeModal]);
+  const isOpen = useCallback(
+    (name: ModalName): boolean => {
+      return activeModal === name;
+    },
+    [activeModal]
+  );
 
-    return { activeModal, openModal, closeModal, isOpen };
+  return { activeModal, openModal, closeModal, isOpen };
 }

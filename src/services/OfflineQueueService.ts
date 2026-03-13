@@ -215,7 +215,7 @@ export const OfflineQueueService = {
               p_description: 'Offline queue replay: Add chips',
               p_table_id: null,
               p_hand_id: null,
-              p_related_entity_id: clubId
+              p_related_entity_id: clubId,
             }),
           3
         );
@@ -236,7 +236,7 @@ export const OfflineQueueService = {
               p_description: 'Offline queue replay: Withdraw chips',
               p_table_id: null,
               p_hand_id: null,
-              p_related_entity_id: clubId
+              p_related_entity_id: clubId,
             }),
           3
         );

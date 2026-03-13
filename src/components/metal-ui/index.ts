@@ -17,4 +17,3 @@ export { default as MetalBadge } from './MetalBadge';
 export type { MetalFrameVariant, MetalFrameSize } from './MetalFrame';
 export type { MetalButtonVariant, MetalButtonSize } from './MetalButton';
 export type { MetalBadgeVariant, MetalBadgeSize } from './MetalBadge';
-

@@ -14,49 +14,56 @@ import { useUserStore } from '../stores/useUserStore';
 import { supabase } from '../lib/supabase';
 
 export function useAuthUser() {
-    const { user, isAuthenticated } = useUserStore();
-    const [isHydrating, setIsHydrating] = useState(false);
+  const { user, isAuthenticated } = useUserStore();
+  const [isHydrating, setIsHydrating] = useState(false);
 
-    useEffect(() => {
-        // If user is already loaded, nothing to do
-        if (user) return;
+  useEffect(() => {
+    // If user is already loaded, nothing to do
+    if (user) return;
 
-        let cancelled = false;
+    let cancelled = false;
 
-        async function rehydrate() {
-            setIsHydrating(true);
-            try {
-                const { data: { session } } = await supabase.auth.getSession();
-                if (cancelled) return;
+    async function rehydrate() {
+      setIsHydrating(true);
+      try {
+        const {
+          data: { session },
+        } = await supabase.auth.getSession();
+        if (cancelled) return;
 
-                if (session) {
-                    const userId = session.user.id;
-                    const email = session.user.email;
-                    const metadata = session.user.user_metadata;
+        if (session) {
+          const userId = session.user.id;
+          const email = session.user.email;
+          const metadata = session.user.user_metadata;
 
-                    // Set basic info immediately
-                    useUserStore.getState().setUser({
-                        id: userId,
-                        username: email?.split('@')[0] || 'Player',
-                        display_name: metadata?.display_name || metadata?.full_name || null,
-                        avatar_url: metadata?.avatar_url || null,
-                    });
+          // Set basic info immediately
+          useUserStore.getState().setUser({
+            id: userId,
+            username: email?.split('@')[0] || 'Player',
+            display_name: metadata?.display_name || metadata?.full_name || null,
+            avatar_url: metadata?.avatar_url || null,
+          });
 
-                    // Try loading full profile (non-blocking)
-                    useUserStore.getState().loadProfile(userId).catch(() => {});
-                }
-            } catch (err) {
-                // Silent — IdentityDNA listener will handle it eventually
-                console.warn('[useAuthUser] Re-hydration failed:', err);
-            } finally {
-                if (!cancelled) setIsHydrating(false);
-            }
+          // Try loading full profile (non-blocking)
+          useUserStore
+            .getState()
+            .loadProfile(userId)
+            .catch(() => {});
         }
+      } catch (err) {
+        // Silent — IdentityDNA listener will handle it eventually
+        console.warn('[useAuthUser] Re-hydration failed:', err);
+      } finally {
+        if (!cancelled) setIsHydrating(false);
+      }
+    }
 
-        rehydrate();
+    rehydrate();
 
-        return () => { cancelled = true; };
-    }, [user]);
+    return () => {
+      cancelled = true;
+    };
+  }, [user]);
 
-    return { user, isAuthenticated: isAuthenticated || !!user, isHydrating };
+  return { user, isAuthenticated: isAuthenticated || !!user, isHydrating };
 }

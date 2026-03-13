@@ -25,11 +25,16 @@ export default function PositionAnalysis({
 
   const getTierLabel = (tier: string) => {
     switch (tier) {
-      case 'utg': return 'Early Position';
-      case 'mid': return 'Middle Position';
-      case 'late': return 'Late Position';
-      case 'blind': return 'Blind Position';
-      default: return 'Position';
+      case 'utg':
+        return 'Early Position';
+      case 'mid':
+        return 'Middle Position';
+      case 'late':
+        return 'Late Position';
+      case 'blind':
+        return 'Blind Position';
+      default:
+        return 'Position';
     }
   };
 
@@ -63,7 +68,7 @@ export default function PositionAnalysis({
       <div className="seat-map">
         <h4 className="seat-map-title">Table Position</h4>
         <div className="seat-diagram">
-          {seatPositions.map(seat => (
+          {seatPositions.map((seat) => (
             <div
               key={seat.index}
               className={`seat-indicator ${seat.isCurrentSeat ? 'active' : ''} ${
@@ -76,8 +81,8 @@ export default function PositionAnalysis({
                 seat.isCurrentSeat
                   ? `You (${position})`
                   : seat.isDealer
-                  ? 'Dealer Button'
-                  : `Seat ${seat.index + 1}`
+                    ? 'Dealer Button'
+                    : `Seat ${seat.index + 1}`
               }
             >
               {seat.isDealer && <span className="dealer-mark">D</span>}
@@ -104,20 +109,30 @@ export default function PositionAnalysis({
 
 function getHandRangePercent(tier: string): string {
   switch (tier) {
-    case 'utg': return '15-20';
-    case 'mid': return '25-35';
-    case 'late': return '50-70';
-    case 'blind': return '40-60';
-    default: return '30';
+    case 'utg':
+      return '15-20';
+    case 'mid':
+      return '25-35';
+    case 'late':
+      return '50-70';
+    case 'blind':
+      return '40-60';
+    default:
+      return '30';
   }
 }
 
 function getAggressionLevel(tier: string): string {
   switch (tier) {
-    case 'utg': return 'Conservative';
-    case 'mid': return 'Moderate';
-    case 'late': return 'Aggressive';
-    case 'blind': return 'Reactive';
-    default: return 'Balanced';
+    case 'utg':
+      return 'Conservative';
+    case 'mid':
+      return 'Moderate';
+    case 'late':
+      return 'Aggressive';
+    case 'blind':
+      return 'Reactive';
+    default:
+      return 'Balanced';
   }
 }

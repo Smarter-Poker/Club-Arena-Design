@@ -3,7 +3,7 @@
  * ♠ CLUB ARENA — User Store (Zustand)
  * ═══════════════════════════════════════════════════════════════════════════════
  * Global state for current user and authentication
- * 
+ *
  * NO DEMO DATA - All user data comes from real Supabase auth/database
  */
 
@@ -16,50 +16,48 @@ import { supabase } from '../lib/supabase';
 // ═══════════════════════════════════════════════════════════════════════════════
 
 export interface PlayerStats {
-    total_hands: number;
-    vpip: number;
-    pfr: number;
-    aggression_factor: number;
-    bb_per_100: number;
-    biggest_pot: number;
-    total_profit: number;
-    games_played: number;
+  total_hands: number;
+  vpip: number;
+  pfr: number;
+  aggression_factor: number;
+  bb_per_100: number;
+  biggest_pot: number;
+  total_profit: number;
+  games_played: number;
 }
 
 export interface UserProfile {
-    id: string;
-    username: string;
-    display_name: string | null;
-    avatar_url: string | null;
-    vip_level: 'bronze' | 'silver' | 'gold' | 'platinum' | 'diamond';
-    stats?: PlayerStats;
-    created_at: string;
+  id: string;
+  username: string;
+  display_name: string | null;
+  avatar_url: string | null;
+  vip_level: 'bronze' | 'silver' | 'gold' | 'platinum' | 'diamond';
+  stats?: PlayerStats;
+  created_at: string;
 }
 
 interface UserState {
-    // Current user
-    user: UserProfile | null;
-    isAuthenticated: boolean;
-    isLoading: boolean;
+  // Current user
+  user: UserProfile | null;
+  isAuthenticated: boolean;
+  isLoading: boolean;
 
-    // Session
-    currentClubId: string | null;
+  // Session
+  currentClubId: string | null;
 
-    // Auth actions
-    login: (user: UserProfile) => void;
-    logout: () => void;
-    setUser: (user: Partial<UserProfile> & { id: string }) => void;
-    updateProfile: (updates: Partial<UserProfile>) => void;
-    loadProfile: (userId: string) => Promise<UserProfile | null>;
+  // Auth actions
+  login: (user: UserProfile) => void;
+  logout: () => void;
+  setUser: (user: Partial<UserProfile> & { id: string }) => void;
+  updateProfile: (updates: Partial<UserProfile>) => void;
+  loadProfile: (userId: string) => Promise<UserProfile | null>;
 
-    // Club context
-    setCurrentClub: (clubId: string | null) => void;
+  // Club context
+  setCurrentClub: (clubId: string | null) => void;
 
-    // Chips (aggregate across clubs)
-    totalChips: number;
-    updateTotalChips: (chips: number) => void;
-
-
+  // Chips (aggregate across clubs)
+  totalChips: number;
+  updateTotalChips: (chips: number) => void;
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -67,14 +65,14 @@ interface UserState {
 // ═══════════════════════════════════════════════════════════════════════════════
 
 const DEFAULT_STATS: PlayerStats = {
-    total_hands: 0,
-    vpip: 0,
-    pfr: 0,
-    aggression_factor: 0,
-    bb_per_100: 0,
-    biggest_pot: 0,
-    total_profit: 0,
-    games_played: 0,
+  total_hands: 0,
+  vpip: 0,
+  pfr: 0,
+  aggression_factor: 0,
+  bb_per_100: 0,
+  biggest_pot: 0,
+  total_profit: 0,
+  games_played: 0,
 };
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -82,121 +80,118 @@ const DEFAULT_STATS: PlayerStats = {
 // ═══════════════════════════════════════════════════════════════════════════════
 
 export const useUserStore = create<UserState>()(
-    persist(
-        (set, get) => ({
-            user: null,
-            isAuthenticated: false,
+  persist(
+    (set, get) => ({
+      user: null,
+      isAuthenticated: false,
+      isLoading: false,
+      currentClubId: null,
+      totalChips: 0,
+
+      login: (user: UserProfile) => {
+        set({
+          user,
+          isAuthenticated: true,
+          isLoading: false,
+        });
+      },
+
+      logout: () => {
+        // Sign out from Supabase auth (clears session token)
+        supabase.auth.signOut().catch((err) => {
+          console.error('[UserStore] signOut error:', err);
+        });
+        set({
+          user: null,
+          isAuthenticated: false,
+          currentClubId: null,
+          totalChips: 0,
+        });
+      },
+
+      updateProfile: (updates: Partial<UserProfile>) => {
+        set((state) => ({
+          user: state.user ? { ...state.user, ...updates } : null,
+        }));
+      },
+
+      setUser: (userData: Partial<UserProfile> & { id: string }) => {
+        const user: UserProfile = {
+          id: userData.id,
+          username: userData.username || 'Player',
+          display_name: userData.display_name || userData.username || 'Player',
+          avatar_url: userData.avatar_url || null,
+          vip_level: userData.vip_level || 'bronze',
+          stats: userData.stats || DEFAULT_STATS,
+          created_at: userData.created_at || new Date().toISOString(),
+        };
+        set({
+          user,
+          isAuthenticated: true,
+          totalChips: (userData as any).chip_balance || 0,
+        });
+      },
+
+      /**
+       * Load user profile from Supabase profiles table
+       */
+      loadProfile: async (userId: string): Promise<UserProfile | null> => {
+        set({ isLoading: true });
+
+        try {
+          const { data, error } = await supabase
+            .from('profiles')
+            .select('*')
+            .eq('id', userId)
+            .maybeSingle();
+
+          if (error) {
+            // PGRST116 = no rows returned (profile doesn't exist yet)
+            if (error.code !== 'PGRST116') {
+              console.error('[Store] [USER STORE] Load profile error:', error.message);
+            }
+            set({ isLoading: false });
+            return null;
+          }
+
+          const profile: UserProfile = {
+            id: data.id,
+            username: data.username || 'Player',
+            display_name: data.display_name,
+            avatar_url: data.avatar_url,
+            vip_level: data.vip_level || 'bronze',
+            stats: data.stats || DEFAULT_STATS,
+            created_at: data.created_at,
+          };
+
+          set({
+            user: profile,
+            isAuthenticated: true,
             isLoading: false,
-            currentClubId: null,
-            totalChips: 0,
+          });
 
-
-            login: (user: UserProfile) => {
-                set({
-                    user,
-                    isAuthenticated: true,
-                    isLoading: false,
-                });
-            },
-
-            logout: () => {
-                // Sign out from Supabase auth (clears session token)
-                supabase.auth.signOut().catch((err) => {
-                    console.error('[UserStore] signOut error:', err);
-                });
-                set({
-                    user: null,
-                    isAuthenticated: false,
-                    currentClubId: null,
-                    totalChips: 0,
-                });
-            },
-
-            updateProfile: (updates: Partial<UserProfile>) => {
-                set((state) => ({
-                    user: state.user ? { ...state.user, ...updates } : null,
-                }));
-            },
-
-            setUser: (userData: Partial<UserProfile> & { id: string }) => {
-                const user: UserProfile = {
-                    id: userData.id,
-                    username: userData.username || 'Player',
-                    display_name: userData.display_name || userData.username || 'Player',
-                    avatar_url: userData.avatar_url || null,
-                    vip_level: userData.vip_level || 'bronze',
-                    stats: userData.stats || DEFAULT_STATS,
-                    created_at: userData.created_at || new Date().toISOString(),
-                };
-                set({
-                    user,
-                    isAuthenticated: true,
-                    totalChips: (userData as any).chip_balance || 0,
-                });
-            },
-
-            /**
-             * Load user profile from Supabase profiles table
-             */
-            loadProfile: async (userId: string): Promise<UserProfile | null> => {
-                set({ isLoading: true });
-
-                try {
-                    const { data, error } = await supabase
-                        .from('profiles')
-                        .select('*')
-                        .eq('id', userId)
-                        .maybeSingle();
-
-                    if (error) {
-                        // PGRST116 = no rows returned (profile doesn't exist yet)
-                        if (error.code !== 'PGRST116') {
-                            console.error('[Store] [USER STORE] Load profile error:', error.message);
-                        }
-                        set({ isLoading: false });
-                        return null;
-                    }
-
-                    const profile: UserProfile = {
-                        id: data.id,
-                        username: data.username || 'Player',
-                        display_name: data.display_name,
-                        avatar_url: data.avatar_url,
-                        vip_level: data.vip_level || 'bronze',
-                        stats: data.stats || DEFAULT_STATS,
-                        created_at: data.created_at,
-                    };
-
-                    set({
-                        user: profile,
-                        isAuthenticated: true,
-                        isLoading: false,
-                    });
-
-                    return profile;
-                } catch (e) {
-                    console.error('[Store] [USER STORE] Unexpected error:', e);
-                    set({ isLoading: false });
-                    return null;
-                }
-            },
-
-            setCurrentClub: (clubId: string | null) => {
-                set({ currentClubId: clubId });
-            },
-
-            updateTotalChips: (chips: number) => {
-                set({ totalChips: chips });
-            },
-
-
-        }),
-        {
-            name: 'club-arena-user',
-            partialize: (state) => ({
-                // Only persist essential session info
-                currentClubId: state.currentClubId,
-            }),
+          return profile;
+        } catch (e) {
+          console.error('[Store] [USER STORE] Unexpected error:', e);
+          set({ isLoading: false });
+          return null;
         }
-    )
+      },
+
+      setCurrentClub: (clubId: string | null) => {
+        set({ currentClubId: clubId });
+      },
+
+      updateTotalChips: (chips: number) => {
+        set({ totalChips: chips });
+      },
+    }),
+    {
+      name: 'club-arena-user',
+      partialize: (state) => ({
+        // Only persist essential session info
+        currentClubId: state.currentClubId,
+      }),
+    }
+  )
 );

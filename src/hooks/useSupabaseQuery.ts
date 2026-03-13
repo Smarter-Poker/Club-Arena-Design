@@ -14,10 +14,10 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 
 interface UseSupabaseQueryResult<T> {
-    data: T | null;
-    loading: boolean;
-    error: string | null;
-    refetch: () => void;
+  data: T | null;
+  loading: boolean;
+  error: string | null;
+  refetch: () => void;
 }
 
 /**
@@ -28,57 +28,59 @@ interface UseSupabaseQueryResult<T> {
  * @param options - Optional configuration
  */
 export function useSupabaseQuery<T>(
-    queryFn: () => Promise<{ data: T | null; error: { message: string } | null }>,
-    deps: unknown[] = [],
-    options?: { enabled?: boolean }
+  queryFn: () => Promise<{ data: T | null; error: { message: string } | null }>,
+  deps: unknown[] = [],
+  options?: { enabled?: boolean }
 ): UseSupabaseQueryResult<T> {
-    const [data, setData] = useState<T | null>(null);
-    const [loading, setLoading] = useState(true);
-    const [error, setError] = useState<string | null>(null);
-    const mountedRef = useRef(true);
+  const [data, setData] = useState<T | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const mountedRef = useRef(true);
 
-    const execute = useCallback(async () => {
-        if (options?.enabled === false) {
-            setLoading(false);
-            return;
-        }
+  const execute = useCallback(async () => {
+    if (options?.enabled === false) {
+      setLoading(false);
+      return;
+    }
 
-        setLoading(true);
-        setError(null);
+    setLoading(true);
+    setError(null);
 
-        try {
-            const result = await queryFn();
-            if (!mountedRef.current) return;
+    try {
+      const result = await queryFn();
+      if (!mountedRef.current) return;
 
-            if (result.error) {
-                setError(result.error.message);
-                setData(null);
-            } else {
-                setData(result.data);
-            }
-        } catch (err) {
-            if (!mountedRef.current) return;
-            setError(err instanceof Error ? err.message : 'Unknown error');
-            setData(null);
-        } finally {
-            if (mountedRef.current) {
-                setLoading(false);
-            }
-        }
+      if (result.error) {
+        setError(result.error.message);
+        setData(null);
+      } else {
+        setData(result.data);
+      }
+    } catch (err) {
+      if (!mountedRef.current) return;
+      setError(err instanceof Error ? err.message : 'Unknown error');
+      setData(null);
+    } finally {
+      if (mountedRef.current) {
+        setLoading(false);
+      }
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, deps);
+  }, deps);
 
-    useEffect(() => {
-        mountedRef.current = true;
-        execute();
-        return () => { mountedRef.current = false; };
-    }, [execute]);
+  useEffect(() => {
+    mountedRef.current = true;
+    execute();
+    return () => {
+      mountedRef.current = false;
+    };
+  }, [execute]);
 
-    const refetch = useCallback(() => {
-        execute();
-    }, [execute]);
+  const refetch = useCallback(() => {
+    execute();
+  }, [execute]);
 
-    return { data, loading, error, refetch };
+  return { data, loading, error, refetch };
 }
 
 export default useSupabaseQuery;

@@ -18,17 +18,17 @@ import './CardImage.css';
 export type DeckStyle = '4color' | '2color';
 
 export interface Card {
-    rank: '2' | '3' | '4' | '5' | '6' | '7' | '8' | '9' | 'T' | 'J' | 'Q' | 'K' | 'A';
-    suit: 'h' | 'd' | 'c' | 's';
+  rank: '2' | '3' | '4' | '5' | '6' | '7' | '8' | '9' | 'T' | 'J' | 'Q' | 'K' | 'A';
+  suit: 'h' | 'd' | 'c' | 's';
 }
 
 export interface CardImageProps {
-    card: Card;
-    deckStyle?: DeckStyle;
-    size?: 'xs' | 'sm' | 'md' | 'lg' | 'xl';
-    isHighlighted?: boolean;
-    isFolded?: boolean;
-    className?: string;
+  card: Card;
+  deckStyle?: DeckStyle;
+  size?: 'xs' | 'sm' | 'md' | 'lg' | 'xl';
+  isHighlighted?: boolean;
+  isFolded?: boolean;
+  className?: string;
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -36,25 +36,35 @@ export interface CardImageProps {
 // ═══════════════════════════════════════════════════════════════════════════════
 
 const SUIT_MAP: Record<string, string> = {
-    h: 'hearts',
-    d: 'diamonds',
-    c: 'clubs',
-    s: 'spades',
+  h: 'hearts',
+  d: 'diamonds',
+  c: 'clubs',
+  s: 'spades',
 };
 
 const RANK_MAP: Record<string, string> = {
-    '2': '2', '3': '3', '4': '4', '5': '5', '6': '6',
-    '7': '7', '8': '8', '9': '9', 'T': '10',
-    'J': 'j', 'Q': 'q', 'K': 'k', 'A': 'a',
+  '2': '2',
+  '3': '3',
+  '4': '4',
+  '5': '5',
+  '6': '6',
+  '7': '7',
+  '8': '8',
+  '9': '9',
+  T: '10',
+  J: 'j',
+  Q: 'q',
+  K: 'k',
+  A: 'a',
 };
 
 /**
  * Get the path to the card image
  */
 export function getCardImagePath(card: Card, deckStyle: DeckStyle = '4color'): string {
-    const suitName = SUIT_MAP[card.suit];
-    const rankName = RANK_MAP[card.rank];
-    return `/cards/${deckStyle}/${suitName}_${rankName}.png`;
+  const suitName = SUIT_MAP[card.suit];
+  const rankName = RANK_MAP[card.rank];
+  return `/cards/${deckStyle}/${suitName}_${rankName}.png`;
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -62,11 +72,11 @@ export function getCardImagePath(card: Card, deckStyle: DeckStyle = '4color'): s
 // ═══════════════════════════════════════════════════════════════════════════════
 
 const SIZE_CLASSES: Record<string, string> = {
-    xs: 'card-image--xs',   // 24x36
-    sm: 'card-image--sm',   // 36x54
-    md: 'card-image--md',   // 48x72
-    lg: 'card-image--lg',   // 64x96
-    xl: 'card-image--xl',   // 80x120
+  xs: 'card-image--xs', // 24x36
+  sm: 'card-image--sm', // 36x54
+  md: 'card-image--md', // 48x72
+  lg: 'card-image--lg', // 64x96
+  xl: 'card-image--xl', // 80x120
 };
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -74,34 +84,36 @@ const SIZE_CLASSES: Record<string, string> = {
 // ═══════════════════════════════════════════════════════════════════════════════
 
 export function CardImage({
-    card,
-    deckStyle = '4color',
-    size = 'md',
-    isHighlighted = false,
-    isFolded = false,
-    className = '',
+  card,
+  deckStyle = '4color',
+  size = 'md',
+  isHighlighted = false,
+  isFolded = false,
+  className = '',
 }: CardImageProps) {
-    const imagePath = getCardImagePath(card, deckStyle);
-    const sizeClass = SIZE_CLASSES[size];
+  const imagePath = getCardImagePath(card, deckStyle);
+  const sizeClass = SIZE_CLASSES[size];
 
-    const classes = [
-        'card-image',
-        sizeClass,
-        isHighlighted ? 'card-image--highlighted' : '',
-        isFolded ? 'card-image--folded' : '',
-        className,
-    ].filter(Boolean).join(' ');
+  const classes = [
+    'card-image',
+    sizeClass,
+    isHighlighted ? 'card-image--highlighted' : '',
+    isFolded ? 'card-image--folded' : '',
+    className,
+  ]
+    .filter(Boolean)
+    .join(' ');
 
-    return (
-        <div className={classes}>
-            <img
-                src={imagePath}
-                alt={`${card.rank} of ${SUIT_MAP[card.suit]}`}
-                className="card-image__img"
-                draggable={false}
-            />
-        </div>
-    );
+  return (
+    <div className={classes}>
+      <img
+        src={imagePath}
+        alt={`${card.rank} of ${SUIT_MAP[card.suit]}`}
+        className="card-image__img"
+        draggable={false}
+      />
+    </div>
+  );
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -109,24 +121,22 @@ export function CardImage({
 // ═══════════════════════════════════════════════════════════════════════════════
 
 export interface CardBackProps {
-    style?: string;
-    size?: 'xs' | 'sm' | 'md' | 'lg' | 'xl';
-    className?: string;
+  style?: string;
+  size?: 'xs' | 'sm' | 'md' | 'lg' | 'xl';
+  className?: string;
 }
 
-export function CardBack({
-    style = 'classic_red',
-    size = 'md',
-    className = '',
-}: CardBackProps) {
-    const sizeClass = SIZE_CLASSES[size];
-    const classes = ['card-image', 'card-image--back', sizeClass, className].filter(Boolean).join(' ');
+export function CardBack({ style = 'classic_red', size = 'md', className = '' }: CardBackProps) {
+  const sizeClass = SIZE_CLASSES[size];
+  const classes = ['card-image', 'card-image--back', sizeClass, className]
+    .filter(Boolean)
+    .join(' ');
 
-    return (
-        <div className={classes}>
-            <div className={`card-back card-back--${style}`} />
-        </div>
-    );
+  return (
+    <div className={classes}>
+      <div className={`card-back card-back--${style}`} />
+    </div>
+  );
 }
 
 export default CardImage;

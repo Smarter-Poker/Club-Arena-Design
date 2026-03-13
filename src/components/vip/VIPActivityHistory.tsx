@@ -51,15 +51,15 @@ export const VIPActivityHistory: React.FC<VIPActivityHistoryProps> = ({ activiti
 
   const filteredActivities = useMemo(() => {
     if (activeFilter === 'all') return activities;
-    if (activeFilter === 'earned') return activities.filter(a => a.action === 'earned');
-    return activities.filter(a => a.action === 'spent' || a.action === 'redeemed');
+    if (activeFilter === 'earned') return activities.filter((a) => a.action === 'earned');
+    return activities.filter((a) => a.action === 'spent' || a.action === 'redeemed');
   }, [activities, activeFilter]);
 
   // Calculate monthly summaries
   const monthlySummaries = useMemo(() => {
     const summaries: Record<string, { earned: number; spent: number; count: number }> = {};
 
-    activities.forEach(activity => {
+    activities.forEach((activity) => {
       const monthKey = new Date(activity.date).toLocaleDateString('en-US', {
         year: 'numeric',
         month: 'short',
@@ -81,11 +81,11 @@ export const VIPActivityHistory: React.FC<VIPActivityHistoryProps> = ({ activiti
   }, [activities]);
 
   const totalEarned = activities
-    .filter(a => a.action === 'earned')
+    .filter((a) => a.action === 'earned')
     .reduce((sum, a) => sum + a.points, 0);
 
   const totalSpent = activities
-    .filter(a => a.action === 'spent' || a.action === 'redeemed')
+    .filter((a) => a.action === 'spent' || a.action === 'redeemed')
     .reduce((sum, a) => sum + a.points, 0);
 
   return (
@@ -114,7 +114,7 @@ export const VIPActivityHistory: React.FC<VIPActivityHistoryProps> = ({ activiti
 
       {/* Filter Tabs */}
       <div className="activity-filters">
-        {(['all', 'earned', 'spent'] as ActivityFilter[]).map(filter => (
+        {(['all', 'earned', 'spent'] as ActivityFilter[]).map((filter) => (
           <button
             key={filter}
             className={`filter-tab ${activeFilter === filter ? 'active' : ''}`}
@@ -127,8 +127,8 @@ export const VIPActivityHistory: React.FC<VIPActivityHistoryProps> = ({ activiti
               {activeFilter === 'all'
                 ? activities.length
                 : filter === 'earned'
-                  ? activities.filter(a => a.action === 'earned').length
-                  : activities.filter(a => a.action !== 'earned').length}
+                  ? activities.filter((a) => a.action === 'earned').length
+                  : activities.filter((a) => a.action !== 'earned').length}
             </span>
           </button>
         ))}
@@ -168,7 +168,8 @@ export const VIPActivityHistory: React.FC<VIPActivityHistoryProps> = ({ activiti
                     className={`points-value ${activity.action}`}
                     style={{ color: getActivityColor(activity.action) }}
                   >
-                    {activity.action === 'earned' ? '+' : '−'}{activity.points.toLocaleString()}
+                    {activity.action === 'earned' ? '+' : '−'}
+                    {activity.points.toLocaleString()}
                   </span>
                   <span className="points-label">pts</span>
                 </div>

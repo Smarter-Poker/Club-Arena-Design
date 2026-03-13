@@ -2,27 +2,33 @@ import React from 'react';
 import './PageInfo.css';
 
 interface PageInfoProps {
-    currentPage: number;
-    totalPages: number;
-    totalItems: number;
-    itemsPerPage: number;
+  currentPage: number;
+  totalPages: number;
+  totalItems: number;
+  itemsPerPage: number;
 }
 
 export const PageInfo: React.FC<PageInfoProps> = ({
-    currentPage,
-    totalPages,
-    totalItems,
-    itemsPerPage
+  currentPage,
+  totalPages,
+  totalItems,
+  itemsPerPage,
 }) => {
-    const start = (currentPage - 1) * itemsPerPage + 1;
-    const end = Math.min(currentPage * itemsPerPage, totalItems);
+  const start = (currentPage - 1) * itemsPerPage + 1;
+  const end = Math.min(currentPage * itemsPerPage, totalItems);
 
-    return (
-        <div className="page-info">
-            Showing <strong>{start}-{end}</strong> of <strong>{totalItems}</strong>
-            <span className="page-number">Page {currentPage} of {totalPages}</span>
-        </div>
-    );
+  return (
+    <div className="page-info">
+      Showing{' '}
+      <strong>
+        {start}-{end}
+      </strong>{' '}
+      of <strong>{totalItems}</strong>
+      <span className="page-number">
+        Page {currentPage} of {totalPages}
+      </span>
+    </div>
+  );
 };
 
 export default PageInfo;

@@ -49,12 +49,7 @@ class PreciseActionTimerClass {
    * Start a new action timer for a player.
    * Records the absolute deadline and sets up expiry callback.
    */
-  startTimer(
-    tableId: string,
-    playerId: string,
-    durationMs: number,
-    onExpiry?: () => void
-  ): void {
+  startTimer(tableId: string, playerId: string, durationMs: number, onExpiry?: () => void): void {
     const key = this.key(tableId, playerId);
     const now = Date.now();
 

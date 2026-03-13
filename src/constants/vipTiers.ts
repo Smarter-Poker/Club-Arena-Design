@@ -90,17 +90,17 @@ export const VIP_TIERS = [
   },
 ] as const;
 
-export type VIPTierId = typeof VIP_TIERS[number]['id'];
+export type VIPTierId = (typeof VIP_TIERS)[number]['id'];
 
 export const getTierById = (id: VIPTierId) => {
-  return VIP_TIERS.find(tier => tier.id === id);
+  return VIP_TIERS.find((tier) => tier.id === id);
 };
 
 export const getTierByPoints = (points: number) => {
-  return [...VIP_TIERS].reverse().find(tier => points >= tier.minPoints) || VIP_TIERS[0];
+  return [...VIP_TIERS].reverse().find((tier) => points >= tier.minPoints) || VIP_TIERS[0];
 };
 
 export const getNextTier = (currentTierId: VIPTierId) => {
-  const currentIndex = VIP_TIERS.findIndex(tier => tier.id === currentTierId);
+  const currentIndex = VIP_TIERS.findIndex((tier) => tier.id === currentTierId);
   return VIP_TIERS[currentIndex + 1] || null;
 };

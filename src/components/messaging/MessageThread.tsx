@@ -138,8 +138,11 @@ export default function MessageThread({ conversationId, onBack }: MessageThreadP
                     sender_id,
                     content,
                     image_url,
+                    audio_url,
                     created_at,
                     is_seen,
+                    edited_at,
+                    is_edited,
                     profiles(id, username, avatar_url)
                 `
           )
@@ -232,7 +235,7 @@ export default function MessageThread({ conversationId, onBack }: MessageThreadP
         const newMessage: Message = {
           id: data.id,
           conversationId: data.conversation_id,
-          userId: data.user_id,
+          userId: data.sender_id,
           userFullname: user.username || 'You',
           userPicture: user.avatar_url || '/default-avatar.png',
           content: data.content,
@@ -361,7 +364,7 @@ export default function MessageThread({ conversationId, onBack }: MessageThreadP
         .from('messages')
         .delete()
         .eq('id', messageId)
-        .eq('user_id', user?.id);
+        .eq('sender_id', user?.id);
       if (error) throw error;
       setMessages((prev) => prev.filter((m) => m.id !== messageId));
     } catch (error) {

@@ -14,7 +14,10 @@ interface TierProgressionCardProps {
   activeStreak: number;
 }
 
-const AnimatedCounter: React.FC<{ value: number; duration?: number }> = ({ value, duration = 1000 }) => {
+const AnimatedCounter: React.FC<{ value: number; duration?: number }> = ({
+  value,
+  duration = 1000,
+}) => {
   const [displayValue, setDisplayValue] = useState(0);
 
   useEffect(() => {
@@ -53,13 +56,17 @@ export const TierProgressionCard: React.FC<TierProgressionCardProps> = ({
     : 100;
 
   const pointsToNextTier = nextTier ? nextTier.minPoints - currentPoints : 0;
-  const estimatedDaysToNextTier = monthlyPoints > 0 ? Math.ceil(pointsToNextTier / (monthlyPoints / 30)) : 0;
+  const estimatedDaysToNextTier =
+    monthlyPoints > 0 ? Math.ceil(pointsToNextTier / (monthlyPoints / 30)) : 0;
 
   return (
     <div className="tier-progression-card">
       {/* Header with Current Tier Badge */}
       <div className="progression-header">
-        <div className="tier-badge-large" style={{ '--tier-color': currentTier.color } as React.CSSProperties}>
+        <div
+          className="tier-badge-large"
+          style={{ '--tier-color': currentTier.color } as React.CSSProperties}
+        >
           <span className="tier-icon">{currentTier.icon}</span>
           <div className="tier-badge-info">
             <span className="tier-name">{currentTier.name}</span>
@@ -151,7 +158,11 @@ export const TierProgressionCard: React.FC<TierProgressionCardProps> = ({
                 <div className="roadmap-name">{tier.name}</div>
                 {isCurrentTier && <div className="current-indicator">●</div>}
                 {!isCurrentTier && idx < VIP_TIERS.length - 1 && (
-                  <div className={`roadmap-arrow ${idx === VIP_TIERS.findIndex(t => t.id === currentTier.id) ? 'active' : ''}`}>→</div>
+                  <div
+                    className={`roadmap-arrow ${idx === VIP_TIERS.findIndex((t) => t.id === currentTier.id) ? 'active' : ''}`}
+                  >
+                    →
+                  </div>
                 )}
               </div>
             );

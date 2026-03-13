@@ -426,24 +426,70 @@ export const ClubFinancialDashboard: React.FC<FinancialDashboardProps> = ({ club
         </div>
 
         {/* Financial Tools Quick Navigation */}
-        <div style={{
-          background: 'rgba(255,255,255,0.03)',
-          border: '1px solid rgba(255,255,255,0.08)',
-          borderRadius: '12px',
-          padding: '16px',
-          gridColumn: '1 / -1',
-        }}>
-          <h2 style={{ color: '#8899aa', fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '12px' }}>
+        <div
+          style={{
+            background: 'rgba(255,255,255,0.03)',
+            border: '1px solid rgba(255,255,255,0.08)',
+            borderRadius: '12px',
+            padding: '16px',
+            gridColumn: '1 / -1',
+          }}
+        >
+          <h2
+            style={{
+              color: '#8899aa',
+              fontSize: '0.75rem',
+              textTransform: 'uppercase',
+              letterSpacing: '0.05em',
+              marginBottom: '12px',
+            }}
+          >
             🛠️ Financial Tools
           </h2>
           <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-            <a href="/financial-alerts" style={{ padding: '8px 14px', background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.3)', borderRadius: '8px', color: '#ef4444', fontSize: '0.8rem', fontWeight: 600, textDecoration: 'none' }}>
+            <a
+              href="/financial-alerts"
+              style={{
+                padding: '8px 14px',
+                background: 'rgba(239,68,68,0.1)',
+                border: '1px solid rgba(239,68,68,0.3)',
+                borderRadius: '8px',
+                color: '#ef4444',
+                fontSize: '0.8rem',
+                fontWeight: 600,
+                textDecoration: 'none',
+              }}
+            >
               🚨 Financial Alerts
             </a>
-            <a href={`/clubs/${clubId}/disputes`} style={{ padding: '8px 14px', background: 'rgba(245,158,11,0.1)', border: '1px solid rgba(245,158,11,0.3)', borderRadius: '8px', color: '#f59e0b', fontSize: '0.8rem', fontWeight: 600, textDecoration: 'none' }}>
+            <a
+              href={`/clubs/${clubId}/disputes`}
+              style={{
+                padding: '8px 14px',
+                background: 'rgba(245,158,11,0.1)',
+                border: '1px solid rgba(245,158,11,0.3)',
+                borderRadius: '8px',
+                color: '#f59e0b',
+                fontSize: '0.8rem',
+                fontWeight: 600,
+                textDecoration: 'none',
+              }}
+            >
               ⚠️ Disputes
             </a>
-            <a href="/financial-health" style={{ padding: '8px 14px', background: 'rgba(16,185,129,0.1)', border: '1px solid rgba(16,185,129,0.3)', borderRadius: '8px', color: '#10b981', fontSize: '0.8rem', fontWeight: 600, textDecoration: 'none' }}>
+            <a
+              href="/financial-health"
+              style={{
+                padding: '8px 14px',
+                background: 'rgba(16,185,129,0.1)',
+                border: '1px solid rgba(16,185,129,0.3)',
+                borderRadius: '8px',
+                color: '#10b981',
+                fontSize: '0.8rem',
+                fontWeight: 600,
+                textDecoration: 'none',
+              }}
+            >
               🩺 System Health
             </a>
           </div>

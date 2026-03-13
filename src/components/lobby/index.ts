@@ -23,7 +23,13 @@ export type { QuickSeatProps } from './QuickSeat';
 
 // Ring Game Filter (Stakes/Variant)
 export { default as RingGameFilter } from './RingGameFilter';
-export type { RingGameFilterProps, RingGameFilterState, GameVariant, TableSize, StakesRange } from './RingGameFilter';
+export type {
+  RingGameFilterProps,
+  RingGameFilterState,
+  GameVariant,
+  TableSize,
+  StakesRange,
+} from './RingGameFilter';
 
 // Cash Table List
 export { default as CashTableList } from './CashTableList';
@@ -31,7 +37,12 @@ export type { CashTableListProps, CashTable, SortField, SortDirection } from './
 
 // Tournament List
 export { default as TournamentList } from './TournamentList';
-export type { TournamentListProps, Tournament, TournamentStatus, TournamentType } from './TournamentList';
+export type {
+  TournamentListProps,
+  Tournament,
+  TournamentStatus,
+  TournamentType,
+} from './TournamentList';
 
 // New Components
 export { LobbyTableList } from './LobbyTableList';

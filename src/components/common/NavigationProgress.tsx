@@ -43,10 +43,7 @@ export default function NavigationProgress() {
 
   return (
     <div className="nav-progress" role="progressbar" aria-valuenow={progress}>
-      <div
-        className="nav-progress__bar"
-        style={{ width: `${progress}%` }}
-      />
+      <div className="nav-progress__bar" style={{ width: `${progress}%` }} />
     </div>
   );
 }

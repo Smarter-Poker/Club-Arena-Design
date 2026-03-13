@@ -101,6 +101,7 @@ const DisputeManagementPage = lazy(() => import('./pages/DisputeManagementPage')
 const FinancialHealthPage = lazy(() => import('./pages/FinancialHealthPage'));
 const FinancialAdminHub = lazy(() => import('./pages/FinancialAdminHub'));
 const RateAuditPage = lazy(() => import('./pages/RateAuditPage'));
+const SettlementDashboardPage = lazy(() => import('./pages/SettlementDashboardPage'));
 const AgentPortalPage = lazy(() => import('./pages/AgentPortalPage'));
 const RakebackDashboard = lazy(() => import('./pages/RakebackDashboard'));
 const CreditAdminPanel = lazy(() => import('./pages/CreditAdminPanel'));
@@ -1104,6 +1105,16 @@ export default function App() {
                     <AuthGuard>
                       <PageErrorBoundary pageName="Rate Audit">
                         <RateAuditPage />
+                      </PageErrorBoundary>
+                    </AuthGuard>
+                  }
+                />
+                <Route
+                  path="settlement-dashboard"
+                  element={
+                    <AuthGuard>
+                      <PageErrorBoundary pageName="Settlement Dashboard">
+                        <SettlementDashboardPage />
                       </PageErrorBoundary>
                     </AuthGuard>
                   }

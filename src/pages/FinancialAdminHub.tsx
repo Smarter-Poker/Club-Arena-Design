@@ -96,6 +96,15 @@ const NAV_ITEMS = [
   },
   {
     icon: '⚖️',
+    label: 'Settlement Center',
+    description: 'Canary checks, payout execution & monitoring',
+    path: '/settlement-dashboard',
+    color: '#6366f1',
+    bg: 'rgba(99,102,241,0.1)',
+    border: 'rgba(99,102,241,0.3)',
+  },
+  {
+    icon: '⚖️',
     label: 'Settlements',
     description: 'Club & agent settlement management',
     path: '/wallet',

@@ -18,49 +18,45 @@ import { useRef, useCallback } from 'react';
 
 const prefetchCache = new Map<string, unknown>();
 
-export function usePrefetch<T>(
-    key: string,
-    fetchFn: () => Promise<T>,
-    delayMs: number = 150
-) {
-    const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+export function usePrefetch<T>(key: string, fetchFn: () => Promise<T>, delayMs: number = 150) {
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-    const onMouseEnter = useCallback(() => {
-        // Already cached? Skip
-        if (prefetchCache.has(key)) return;
+  const onMouseEnter = useCallback(() => {
+    // Already cached? Skip
+    if (prefetchCache.has(key)) return;
 
-        timerRef.current = setTimeout(async () => {
-            try {
-                const data = await fetchFn();
-                prefetchCache.set(key, data);
-            } catch {
-                // Prefetch failures are silent — user hasn't clicked yet
-            }
-        }, delayMs);
-    }, [key, fetchFn, delayMs]);
+    timerRef.current = setTimeout(async () => {
+      try {
+        const data = await fetchFn();
+        prefetchCache.set(key, data);
+      } catch {
+        // Prefetch failures are silent — user hasn't clicked yet
+      }
+    }, delayMs);
+  }, [key, fetchFn, delayMs]);
 
-    const onMouseLeave = useCallback(() => {
-        if (timerRef.current) {
-            clearTimeout(timerRef.current);
-            timerRef.current = null;
-        }
-    }, []);
+  const onMouseLeave = useCallback(() => {
+    if (timerRef.current) {
+      clearTimeout(timerRef.current);
+      timerRef.current = null;
+    }
+  }, []);
 
-    return { onMouseEnter, onMouseLeave };
+  return { onMouseEnter, onMouseLeave };
 }
 
 /**
  * Get prefetched data from cache (if available).
  */
 export function getPrefetchedData<T>(key: string): T | undefined {
-    return prefetchCache.get(key) as T | undefined;
+  return prefetchCache.get(key) as T | undefined;
 }
 
 /**
  * Clear a specific prefetch entry (e.g., after data changes).
  */
 export function clearPrefetch(key: string): void {
-    prefetchCache.delete(key);
+  prefetchCache.delete(key);
 }
 
 export default usePrefetch;

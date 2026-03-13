@@ -63,12 +63,18 @@ export default function OddsDisplay({
 
   const getDrawTypeLabel = (type?: string) => {
     switch (type) {
-      case 'flush-draw': return 'Flush Draw';
-      case 'straight-draw': return 'Straight Draw';
-      case 'combo-draw': return 'Combo Draw';
-      case 'gutshot': return 'Gutshot';
-      case 'overcards': return 'Overcards';
-      default: return undefined;
+      case 'flush-draw':
+        return 'Flush Draw';
+      case 'straight-draw':
+        return 'Straight Draw';
+      case 'combo-draw':
+        return 'Combo Draw';
+      case 'gutshot':
+        return 'Gutshot';
+      case 'overcards':
+        return 'Overcards';
+      default:
+        return undefined;
     }
   };
 

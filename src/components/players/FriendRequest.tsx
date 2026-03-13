@@ -2,76 +2,72 @@ import React from 'react';
 import './FriendRequest.css';
 
 interface FriendRequestProps {
-    id: string;
-    username: string;
-    displayName: string;
-    avatarUrl?: string;
-    mutualFriends?: number;
-    sentAt: Date;
-    isOutgoing?: boolean;
-    onAccept?: () => void;
-    onDecline?: () => void;
-    onCancel?: () => void;
+  id: string;
+  username: string;
+  displayName: string;
+  avatarUrl?: string;
+  mutualFriends?: number;
+  sentAt: Date;
+  isOutgoing?: boolean;
+  onAccept?: () => void;
+  onDecline?: () => void;
+  onCancel?: () => void;
 }
 
 export const FriendRequest: React.FC<FriendRequestProps> = ({
-    id,
-    username,
-    displayName,
-    avatarUrl,
-    mutualFriends = 0,
-    sentAt,
-    isOutgoing = false,
-    onAccept,
-    onDecline,
-    onCancel
+  id,
+  username,
+  displayName,
+  avatarUrl,
+  mutualFriends = 0,
+  sentAt,
+  isOutgoing = false,
+  onAccept,
+  onDecline,
+  onCancel,
 }) => {
-    const formatTime = (date: Date) => {
-        const diff = Date.now() - date.getTime();
-        if (diff < 3600000) return `${Math.floor(diff / 60000)}m ago`;
-        if (diff < 86400000) return `${Math.floor(diff / 3600000)}h ago`;
-        return date.toLocaleDateString();
-    };
+  const formatTime = (date: Date) => {
+    const diff = Date.now() - date.getTime();
+    if (diff < 3600000) return `${Math.floor(diff / 60000)}m ago`;
+    if (diff < 86400000) return `${Math.floor(diff / 3600000)}h ago`;
+    return date.toLocaleDateString();
+  };
 
-    return (
-        <div className="friend-request">
-            <div className="request-avatar">
-                {avatarUrl ? (
-                    <img src={avatarUrl} alt={displayName} />
-                ) : (
-                    <span>{displayName[0]}</span>
-                )}
-            </div>
+  return (
+    <div className="friend-request">
+      <div className="request-avatar">
+        {avatarUrl ? <img src={avatarUrl} alt={displayName} /> : <span>{displayName[0]}</span>}
+      </div>
 
-            <div className="request-info">
-                <div className="request-name">{displayName}</div>
-                <div className="request-username">@{username}</div>
-                {mutualFriends > 0 && (
-                    <div className="mutual-friends">
-                        {mutualFriends} mutual friend{mutualFriends > 1 ? 's' : ''}
-                    </div>
-                )}
-                <div className="request-time">{formatTime(sentAt)}</div>
-            </div>
+      <div className="request-info">
+        <div className="request-name">{displayName}</div>
+        <div className="request-username">@{username}</div>
+        {mutualFriends > 0 && (
+          <div className="mutual-friends">
+            {mutualFriends} mutual friend{mutualFriends > 1 ? 's' : ''}
+          </div>
+        )}
+        <div className="request-time">{formatTime(sentAt)}</div>
+      </div>
 
-            <div className="request-actions">
-                {isOutgoing ? (
-                    <button className="cancel-btn" onClick={onCancel}>
-                        Cancel
-                    </button>
-                ) : (
-                    <>
-                        <button className="accept-btn" onClick={onAccept}>
-                            Accept
-                        </button>
-                        <button className="decline-btn" onClick={onDecline}>
-                            Decline
-                        </button>
-                    </>
-                )}
-            </div>
-        </div>
-    );
+      <div className="request-actions">
+        {isOutgoing ? (
+          <button className="cancel-btn" onClick={onCancel}>
+            Cancel
+          </button>
+        ) : (
+          <>
+            <button className="accept-btn" onClick={onAccept}>
+              Accept
+            </button>
+            <button className="decline-btn" onClick={onDecline}>
+              Decline
+            </button>
+          </>
+        )}
+      </div>
+    </div>
+  );
 };
 
 export default FriendRequest;

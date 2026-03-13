@@ -15,7 +15,10 @@ interface VIPStatsHeaderProps {
   daysSinceReview: number;
 }
 
-const AnimatedValue: React.FC<{ value: number; duration?: number }> = ({ value, duration = 800 }) => {
+const AnimatedValue: React.FC<{ value: number; duration?: number }> = ({
+  value,
+  duration = 800,
+}) => {
   const [displayValue, setDisplayValue] = useState(0);
 
   useEffect(() => {

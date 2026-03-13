@@ -448,11 +448,16 @@ export const HydraService = {
     );
 
     if (rpcErr) {
-      console.error(`[HydraService] atomic_table_buyin FAILED for horse ${horseId}:`, rpcErr.message);
+      console.error(
+        `[HydraService] atomic_table_buyin FAILED for horse ${horseId}:`,
+        rpcErr.message
+      );
       return null;
     }
 
-    console.debug(`[HydraService] atomic_table_buyin SUCCESS for horse ${horseId} at seat ${availableSeat}`);
+    console.debug(
+      `[HydraService] atomic_table_buyin SUCCESS for horse ${horseId} at seat ${availableSeat}`
+    );
 
     // Log buy-in transaction via centralized WalletService RPC
     await WalletService.logTransaction(
@@ -472,7 +477,7 @@ export const HydraService = {
       .select('club_id')
       .eq('id', tableId)
       .maybeSingle();
-      
+
     if (tableClubData?.club_id) {
       // Fire and forget: logging
       supabase.from('chip_transactions').insert({

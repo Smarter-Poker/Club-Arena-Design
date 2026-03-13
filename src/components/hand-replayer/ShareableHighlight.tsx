@@ -65,8 +65,7 @@ export default function ShareableHighlight({
     }
   };
 
-  const resultColor =
-    result === 'win' ? '#10b981' : result === 'loss' ? '#ef4444' : '#f59e0b';
+  const resultColor = result === 'win' ? '#10b981' : result === 'loss' ? '#ef4444' : '#f59e0b';
   const resultLabel = result === 'win' ? 'WINNER' : result === 'loss' ? 'LOSER' : 'SPLIT';
   const resultIcon = result === 'win' ? '🏆' : result === 'loss' ? '⚠️' : '🤝';
 
