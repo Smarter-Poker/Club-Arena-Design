@@ -18,6 +18,8 @@ export interface Friend {
     avatar?: string;
     status: 'online' | 'offline' | 'in-game';
     lastSeen?: string;
+    currentTable?: string;
+    statusText?: string;
 }
 
 export interface FriendsListProps {
@@ -194,7 +196,16 @@ function FriendItem({ friend, onChat, onRemove, onInvite }: {
                 <div className="friend-info">
                     <span className="friend-name">{friend.name}</span>
                     <span className="friend-status-text">
-                        {friend.status === 'in-game' ? 'Playing Poker' : friend.status === 'online' ? 'Online' : 'Offline'}
+                        {friend.status === 'in-game' && friend.currentTable
+                          ? `🎯 Playing at ${friend.currentTable}`
+                          : friend.statusText
+                            ? friend.statusText
+                            : friend.status === 'in-game'
+                              ? 'Playing Poker'
+                              : friend.status === 'online'
+                                ? 'Online'
+                                : 'Offline'
+                        }
                     </span>
                 </div>
             </div>
