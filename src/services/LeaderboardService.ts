@@ -402,7 +402,8 @@ export const LeaderboardService = {
                 `
         )
         .eq('tournaments.club_id', clubId)
-        .in('status', ['eliminated', 'winner']);
+        .in('status', ['eliminated', 'winner'])
+        .limit(10000);
 
       if (resultsError || !playerResults) {
         console.error('LeaderboardService.getClubTournamentStats error:', resultsError);
