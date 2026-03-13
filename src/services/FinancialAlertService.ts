@@ -70,7 +70,7 @@ export const FinancialAlertService = {
 
     // 1. Persist to Supabase for ops dashboard
     try {
-      await supabase.from('financial_alerts').insert({
+      const { error: insertErr } = await supabase.from('financial_alerts').insert({
         severity: alert.severity,
         source: alert.source,
         message: alert.message,
@@ -78,6 +78,13 @@ export const FinancialAlertService = {
         resolved: false,
         created_at: alert.createdAt,
       });
+      if (insertErr) {
+        console.error(
+          `[FinancialAlert] DB insert failed — ${severity.toUpperCase()}: ${source}: ${message}`,
+          context,
+          insertErr
+        );
+      }
     } catch (err) {
       // If the table doesn't exist yet, log to console as fallback
       console.error(
@@ -144,10 +151,14 @@ export const FinancialAlertService = {
    * Resolve an alert (mark as handled)
    */
   async resolve(alertId: string): Promise<void> {
-    await supabase
+    const { error } = await supabase
       .from('financial_alerts')
       .update({ resolved: true, resolved_at: new Date().toISOString() })
       .eq('id', alertId);
+
+    if (error) {
+      console.error('[FinancialAlert] Failed to resolve alert:', alertId, error);
+    }
   },
 
   /**
