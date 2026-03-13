@@ -717,7 +717,7 @@ export function calculateRake(
     cap = config.capByPlayerCount[playerCount] ?? config.cap;
   }
 
-  // Exact cent precision — no floating-point drift
+  // Exact precision — no floating-point drift
   const rake = Math.trunc(pot * config.percent) / 100;
   return Math.min(rake, cap);
 }
