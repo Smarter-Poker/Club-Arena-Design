@@ -417,6 +417,14 @@ class NotificationServiceClass {
     // Q3: Respect DND mode
     if (this.isDndActive()) return;
 
+    // Q3: Respect per-type notification preferences
+    try {
+      const { messagingService } = await import('./MessagingService');
+      if (messagingService.isNotificationTypeMuted(notification.type)) return;
+    } catch {
+      /* service not loaded — allow notification */
+    }
+
     if (!('Notification' in window)) return;
 
     if (Notification.permission === 'default') {

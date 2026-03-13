@@ -556,6 +556,30 @@ export default function TablePage({
   const [showBBJ, setShowBBJ] = useState(false);
   const [bbjAmount, setBbjAmount] = useState(0);
 
+  // Q3: Auto-set "Playing At" status for friends to see
+  useEffect(() => {
+    if (
+      tableState.tableName !== 'Loading...' &&
+      tableState.heroSeat > 0 &&
+      userId &&
+      userId !== 'guest' &&
+      tableId
+    ) {
+      playerStatusService.setPlayingAt(
+        userId,
+        `${tableState.gameType} ${tableState.blinds}`,
+        tableId
+      );
+    }
+  }, [
+    tableState.tableName,
+    tableState.heroSeat,
+    tableState.gameType,
+    tableState.blinds,
+    userId,
+    tableId,
+  ]);
+
   // Handle insurance offer (triggered by game engine)
   const handleInsuranceAccept = async (coverageAmount: number) => {
     if (userId && tableId) {

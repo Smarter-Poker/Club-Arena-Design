@@ -578,6 +578,23 @@ export class HeadlessTableEngine {
     // Wait for hand to complete before returning
     let persistenceUnsub: (() => void) | null = null;
     this.handInvalidated = false; // Mark hand as valid at start
+
+    // Record initial chip total for state verification (chip conservation check)
+    stateVerifier.recordInitialChipTotal(
+      this.tableId,
+      players.map((p) => ({
+        user_id: p.user_id,
+        username: p.username,
+        stack: p.stack,
+        seat: p.seat_number,
+        bet: 0,
+        cards: [],
+        is_folded: false,
+        is_all_in: false,
+        is_sitting_out: false,
+        totalInvested: 0,
+      })) as any
+    );
     return new Promise<void>((resolve) => {
       const handCompleteTimeout = setTimeout(() => {
         console.warn(
@@ -625,7 +642,7 @@ export class HeadlessTableEngine {
             }
           }
 
-          // State verification between hands
+          // State verification between hands (StateVerifier emits bus events internally)
           try {
             const verifyResult = stateVerifier.verify({
               tableId: this.tableId,
@@ -640,16 +657,7 @@ export class HeadlessTableEngine {
                 `[HeadlessTableEngine:${this.tableId}] STATE INTEGRITY VIOLATION hand #${this.handCount}:`,
                 verifyResult.violations
               );
-              masterBus.emit('STATE_INTEGRITY_VIOLATION', {
-                tableId: this.tableId,
-                handNumber: this.handCount,
-                violationCount: verifyResult.violations.length,
-                violations: verifyResult.violations.map((v: any) => ({
-                  type: v.type || 'UNKNOWN',
-                  message: v.message || v.description || String(v),
-                  severity: v.severity || 'error',
-                })),
-              });
+              // Note: StateVerifier.verify() already emits STATE_INTEGRITY_VIOLATION to masterBus
             }
           } catch (verifyErr) {
             console.warn(`[HeadlessTableEngine:${this.tableId}] StateVerifier error:`, verifyErr);

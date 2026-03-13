@@ -16,6 +16,7 @@ import { ThrowableLayer, useThrowableReactions } from './ThrowableReaction';
 import { useMessageDraft } from '../../hooks/useMessageDraft';
 import MessageSearchBar from './MessageSearchBar';
 import ForwardMessageModal from './ForwardMessageModal';
+import ScheduledMessagePanel from './ScheduledMessagePanel';
 import styles from './MessageThread.module.css';
 
 interface Reaction {
@@ -70,6 +71,7 @@ export default function MessageThread({ conversationId, onBack }: MessageThreadP
   const [replyingToMessage, setReplyingToMessage] = useState<Message | null>(null);
   // Q3: Search & Forward state
   const [showSearch, setShowSearch] = useState(false);
+  const [showSchedule, setShowSchedule] = useState(false);
   const [forwardingMessage, setForwardingMessage] = useState<Message | null>(null);
   const [highlightedMessageId, setHighlightedMessageId] = useState<string | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -522,6 +524,13 @@ export default function MessageThread({ conversationId, onBack }: MessageThreadP
         >
           🔍
         </button>
+        <button
+          className={styles.searchToggle}
+          onClick={() => setShowSchedule((prev) => !prev)}
+          title="Schedule message"
+        >
+          ⏰
+        </button>
       </div>
 
       {/* Q3: Search Bar */}
@@ -620,6 +629,16 @@ export default function MessageThread({ conversationId, onBack }: MessageThreadP
           messageContent={forwardingMessage.content}
           onClose={() => setForwardingMessage(null)}
           onForwarded={() => setForwardingMessage(null)}
+        />
+      )}
+
+      {/* Q3: Scheduled Message Panel */}
+      {showSchedule && user?.id && (
+        <ScheduledMessagePanel
+          conversationId={conversationId}
+          senderId={user.id}
+          onClose={() => setShowSchedule(false)}
+          onScheduled={() => setShowSchedule(false)}
         />
       )}
 

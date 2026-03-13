@@ -170,7 +170,30 @@ export default function MessageBubble({
           )}
 
           {/* Text */}
-          {message.content && <p className={styles.text}>{linkifyText(message.content)}</p>}
+          {message.content &&
+            (message.content.startsWith('📇 Shared a contact:') ? (
+              <div
+                className={styles.contactCard}
+                style={{
+                  background:
+                    'linear-gradient(135deg, rgba(255,255,255,0.08), rgba(255,255,255,0.03))',
+                  borderRadius: '12px',
+                  padding: '10px 14px',
+                  border: '1px solid rgba(255,255,255,0.1)',
+                  cursor: 'pointer',
+                }}
+              >
+                <span style={{ fontSize: '1.1rem' }}>📇</span>
+                <span style={{ fontWeight: 600, marginLeft: 6 }}>
+                  {message.content.split('@')[1]?.split('\n')[0] || 'Contact'}
+                </span>
+                <span style={{ display: 'block', fontSize: '0.75rem', opacity: 0.6, marginTop: 2 }}>
+                  Tap to view profile
+                </span>
+              </div>
+            ) : (
+              <p className={styles.text}>{linkifyText(message.content)}</p>
+            ))}
 
           {/* Q3: Link Preview */}
           {message.content && extractUrl(message.content) && (
