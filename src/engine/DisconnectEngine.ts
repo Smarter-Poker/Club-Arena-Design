@@ -130,6 +130,9 @@ class DisconnectEngineClass {
       state.disconnectedAt = undefined;
       state.consecutiveTimeouts = 0;
 
+      // Cancel the disconnect timeout timer — player is back
+      preciseActionTimer.cancelTimer(tableId, `disconnect:${playerId}`);
+
       masterBus.emit('PLAYER_RECONNECTED', {
         tableId,
         userId: playerId,

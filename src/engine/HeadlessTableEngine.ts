@@ -20,6 +20,9 @@ import { HandController, type HandConfig, type HandEvent } from './HandControlle
 import { evaluateHand, evaluateOmahaHand, cardToString, determineWinners } from './PokerEngine';
 import { straddleEngine } from './StraddleEngine';
 import { runItTwiceEngine } from './RunItTwiceEngine';
+import { insuranceEngine } from './InsuranceEngine';
+import { timeBankEngine } from './TimeBankEngine';
+import { disconnectEngine } from './DisconnectEngine';
 import { HandPersistence } from '../services/HandPersistenceService';
 import { HorseLogic, type HorseStyle, type HorseDecision } from './HorseLogic';
 import { HorseBrainAdapter } from './HorseBrainAdapter';
@@ -206,6 +209,9 @@ export class HeadlessTableEngine {
     // Clean up straddle and RIT engine state for this table (prevents stale enrollments/offers)
     straddleEngine.dispose(this.tableId);
     runItTwiceEngine.dispose(this.tableId);
+    insuranceEngine.dispose(this.tableId);
+    timeBankEngine.dispose(this.tableId);
+    disconnectEngine.dispose(this.tableId);
   }
 
   /**
@@ -563,6 +569,33 @@ export class HeadlessTableEngine {
 
     this.handController = new HandController(config, hcPlayers, dealerSeat);
 
+    // Configure time bank engine for this table (cash games get 30s/4 uses, tournaments 15s/2 uses)
+    timeBankEngine.configure(this.tableId, {
+      totalBankSeconds: this.isTournamentTable() ? 15 : 30,
+      maxUses: this.isTournamentTable() ? 2 : 4,
+      secondsPerUse: this.isTournamentTable() ? 15 : 15,
+      refillPerOrbit: !this.isTournamentTable(),
+      refillSeconds: 15,
+      autoActivate: true,
+    });
+
+    // Initialize time bank for each player
+    for (const p of players) {
+      timeBankEngine.initializePlayer(this.tableId, p.user_id);
+    }
+
+    // Configure insurance engine (cash games only)
+    if (!this.isTournamentTable()) {
+      insuranceEngine.configure(this.tableId, {
+        enabled: true,
+        houseMargin: 1.05,
+        maxInsurablePercent: 100,
+        offerTimeoutSeconds: 15,
+        minPotForInsurance: this.tableInfo.big_blind * 10,
+        equityIterations: 5000,
+      });
+    }
+
     // Wire per-table persistence service (NOT the singleton — each table gets its own)
     this.persistence.wireToHandController(this.handController, {
       tableId: this.tableId,
@@ -799,6 +832,10 @@ export class HeadlessTableEngine {
         break;
 
       case 'PLAYER_ACTION':
+        // Notify time bank engine that player acted (cancels active time bank)
+        if ((event as any).playerId) {
+          timeBankEngine.playerActed(this.tableId, (event as any).playerId);
+        }
         // Broadcast after each player action so UI updates bets/stacks
         this.broadcastCurrentState();
         break;
@@ -811,6 +848,36 @@ export class HeadlessTableEngine {
         const offeredBy = activeIds[0];
         const offeredTo = activeIds[1];
         const handId = `${this.tableId}-${this.handCount}`;
+
+        // Insurance offering (cash games only, before RIT flow)
+        if (insuranceEngine.isEnabled(this.tableId) && activeIds.length >= 2) {
+          const allInPlayers = event.activePlayers.map((p: any) => ({
+            playerId: p.user_id,
+            holeCards: p.cards || [],
+          }));
+          const board = this.handController?.getState()?.communityCards || [];
+          insuranceEngine.createOffers(
+            this.tableId,
+            handId,
+            allInPlayers,
+            board,
+            event.pot
+          );
+
+          // Wait for insurance responses (max 15s, then auto-decline remaining)
+          await new Promise<void>((resolve) => {
+            const checkInterval = setInterval(() => {
+              if (insuranceEngine.allResponded(this.tableId)) {
+                clearInterval(checkInterval);
+                resolve();
+              }
+            }, 500);
+            setTimeout(() => {
+              clearInterval(checkInterval);
+              resolve();
+            }, 16000); // 16s safety (15s offer timeout + 1s buffer)
+          });
+        }
 
         // Guard: only enter the RIT flow if the engine is configured for this table
         if (!runItTwiceEngine.isEnabled(this.tableId) || activeIds.length < 2) {
