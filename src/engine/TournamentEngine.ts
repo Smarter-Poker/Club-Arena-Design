@@ -18,6 +18,7 @@
 import { SupabaseClient } from '@supabase/supabase-js';
 import { HeadlessTableEngine } from './HeadlessTableEngine';
 import { tableBreakEngine, type TableSnapshot } from './TableBreakEngine';
+import { chipRaceEngine } from './ChipRaceEngine';
 import { BLIND_STRUCTURES, PAYOUT_STRUCTURES } from '../services/TournamentService';
 import { WalletService } from '../services/WalletService';
 import { masterBus } from '../core/MasterBus';
@@ -898,6 +899,34 @@ export class TournamentEngine {
 
       // Update all tournament tables with new blinds
       this.updateTableBlinds(level);
+
+      // Execute chip race: remove obsolete small denomination chips
+      if (newLevel > 0 && this.tournamentInfo.blind_structure[prevLevel]) {
+        const prevBlind = this.tournamentInfo.blind_structure[prevLevel];
+        const oldSmallest = prevBlind.smallBlind;
+        const newSmallest = level.smallBlind;
+        // Only race if the smallest denomination actually increased
+        if (newSmallest > oldSmallest && this.players.size > 0) {
+          const playerStacks = new Map<string, number>();
+          for (const [pid, pdata] of this.players) {
+            playerStacks.set(pid, pdata.chips);
+          }
+          const raceResult = chipRaceEngine.executeChipRace(
+            this.tournamentId,
+            playerStacks,
+            oldSmallest,
+            newSmallest
+          );
+          // Sync adjusted stacks back to player records
+          for (const [pid, newStack] of playerStacks) {
+            const player = this.players.get(pid);
+            if (player) player.chips = newStack;
+          }
+          console.log(
+            `[TournamentEngine:${this.tournamentId.slice(0, 8)}] Chip race: removed ${oldSmallest} denomination, ${raceResult.players.length} players affected`
+          );
+        }
+      }
 
       // ── ADD-ON PERIOD TRIGGER ──
       // When we advance past the rebuy_levels threshold and add-on is available,

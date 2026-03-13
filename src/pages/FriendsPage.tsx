@@ -27,6 +27,7 @@ interface Friend {
   avatar_url?: string;
   is_online: boolean;
   current_table?: string;
+  status_text?: string;
 }
 
 type FriendsTab = 'friends' | 'pending' | 'recent';
@@ -629,6 +630,22 @@ function SwipeableFriendRow({ friend, visible, onMessage, onRemove, onChallenge,
         </div>
         <div className="friend-info">
           <span className="friend-name">{friend.username}</span>
+          {friend.current_table && (
+            <span
+              className="friend-status"
+              style={{ fontSize: '0.7rem', color: '#10b981', fontWeight: 600 }}
+            >
+              🎰 Playing at {friend.current_table}
+            </span>
+          )}
+          {!friend.current_table && friend.status_text && (
+            <span
+              className="friend-status"
+              style={{ fontSize: '0.7rem', color: 'var(--text-secondary, #8b9dc3)' }}
+            >
+              {friend.status_text}
+            </span>
+          )}
         </div>
         <button
           className="fr-challenge-btn"
