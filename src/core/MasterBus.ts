@@ -228,6 +228,10 @@ export type BusEventType =
   // Phase Q1: Rakeback events
   | 'RAKEBACK_CALCULATED'
   | 'RAKEBACK_DISTRIBUTED'
+  // Phase 7: Hand Replay events
+  | 'HAND_REPLAY_LOADED'
+  | 'HAND_REPLAY_STEP'
+  | 'HAND_REPLAY_COMPLETE'
   // Session lifecycle
   | 'SESSION_ENDED'
   // Table creation event
@@ -692,6 +696,16 @@ export interface BusPayloadMap {
     tier: string;
   };
   RAKEBACK_DISTRIBUTED: { period: string; totalDistributed: number; playersCount: number };
+  // Hand Replay
+  HAND_REPLAY_LOADED: { handId: string; tableId: string; handNumber: number; totalSteps: number };
+  HAND_REPLAY_STEP: {
+    handId: string;
+    step: number;
+    totalSteps: number;
+    action: any;
+    snapshot: any;
+  };
+  HAND_REPLAY_COMPLETE: { handId: string };
   // Session lifecycle
   SESSION_ENDED: { tableId: string; sessionId?: string; userId?: string };
   // Table creation

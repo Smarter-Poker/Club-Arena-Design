@@ -11,6 +11,7 @@ import { useAuthUser } from '../../hooks/useAuthUser';
 import { useWalletStore } from '../../stores/useWalletStore';
 import { notificationService } from '../../services/NotificationService';
 import { messagingService } from '../../services/MessagingService';
+import { masterBus } from '../../core/MasterBus';
 import { useState, useEffect } from 'react';
 import './SmarterHeader.css';
 
@@ -37,6 +38,21 @@ export default function SmarterHeader({
       notificationService.getUnreadCount(user.id).then(setUnreadNotifications);
       messagingService.getUnreadCount(user.id).then(setUnreadMessages);
     }
+  }, [user?.id]);
+
+  // Q3: Real-time DM badge updates via MasterBus
+  useEffect(() => {
+    const unsubDM = masterBus.subscribe('UNREAD_DM_COUNT_CHANGED', (ev) => {
+      setUnreadMessages(ev.payload.count);
+    });
+    const unsubMsg = masterBus.subscribe('MESSAGE_RECEIVED', () => {
+      // Refresh count on any new message
+      if (user?.id) messagingService.getUnreadCount(user.id).then(setUnreadMessages);
+    });
+    return () => {
+      unsubDM();
+      unsubMsg();
+    };
   }, [user?.id]);
 
   const handleBack = () => {

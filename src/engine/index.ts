@@ -93,3 +93,14 @@ export {
   type RakebackConfig,
   type RakebackTier,
 } from './RakebackEngine';
+
+// Hand Replay Engine
+export {
+  handReplayEngine,
+  type ReplayAction,
+  type ReplaySnapshot,
+  type HandReplayData,
+} from './HandReplayEngine';
+
+// Horse Brain Adapter
+export { HorseBrainAdapter, type RebuyStrategy } from './HorseBrainAdapter';
