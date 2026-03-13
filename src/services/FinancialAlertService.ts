@@ -112,16 +112,18 @@ export const FinancialAlertService = {
       severity === 'critical' ? '🔴 CRITICAL' : severity === 'warning' ? '🟡 WARNING' : 'ℹ️ INFO';
     console.error(`[FinancialAlert] ${prefix}: ${source}: ${message}`, context);
 
-    // 4. Emit toast notification for user-facing display
-    try {
-      masterBus.emit('SHOW_TOAST', {
-        severity,
-        message: `${prefix}: ${message}`,
-        source,
-        durationMs: severity === 'critical' ? 10000 : 5000,
-      });
-    } catch {
-      /* non-fatal */
+    // 4. Emit toast notification for user-facing display (skip infra-level canary alerts)
+    if (!message.toLowerCase().includes('canary')) {
+      try {
+        masterBus.emit('SHOW_TOAST', {
+          severity,
+          message: `${prefix}: ${message}`,
+          source,
+          durationMs: severity === 'critical' ? 10000 : 5000,
+        });
+      } catch {
+        /* non-fatal */
+      }
     }
   },
 

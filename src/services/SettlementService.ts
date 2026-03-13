@@ -117,7 +117,7 @@ export const SettlementService = {
     if (data && data.length > 0) {
       const period = data[0];
       return {
-        id: period.id || 'default',
+        id: period.id || '00000000-0000-0000-0000-000000000000',
         periodNumber: 1,
         year: new Date().getFullYear(),
         startAt: period.period_start,
@@ -133,7 +133,7 @@ export const SettlementService = {
 
     // Return default empty period if none exists
     return {
-      id: 'default',
+      id: '00000000-0000-0000-0000-000000000000',
       periodNumber: 1,
       year: new Date().getFullYear(),
       startAt: new Date().toISOString(),

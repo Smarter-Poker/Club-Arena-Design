@@ -13,6 +13,7 @@ import { useAuthUser } from '../hooks/useAuthUser';
 import { useToast } from '../components/common/Toast';
 import ClubBottomNav from '../components/club/ClubBottomNav';
 import { sanitizeInput } from '../utils/sanitizeInput';
+import { resolveClubIdFilter } from '../utils/clubIdResolver';
 import './ClubRulesPage.css';
 
 const rulesLineAnimationStyle = (index: number) => ({
@@ -62,10 +63,11 @@ export default function ClubRulesPage() {
     setLoading(true);
     try {
       // Load club info
+      const { column: clubCol, value: clubVal } = resolveClubIdFilter(clubId!);
       const { data: club } = await supabase
         .from('clubs')
         .select('name, rules_text, owner_id')
-        .eq('id', clubId)
+        .eq(clubCol, clubVal)
         .maybeSingle();
 
       if (getIsMounted && !getIsMounted()) return;
@@ -106,10 +108,11 @@ export default function ClubRulesPage() {
     if (!clubId) return;
     setSaving(true);
     try {
+      const { column: saveCol, value: saveVal } = resolveClubIdFilter(clubId!);
       const { error } = await supabase
         .from('clubs')
         .update({ rules_text: sanitizeInput(editValue) })
-        .eq('id', clubId);
+        .eq(saveCol, saveVal);
 
       if (error) throw error;
 

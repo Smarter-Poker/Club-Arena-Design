@@ -13,6 +13,7 @@ export class TournamentOrchestrator {
   private pollInterval: any = null;
   // Enhancement #3: Dedup notification emissions
   private notifiedTournaments: Set<string> = new Set();
+  private realtimeChannel: any = null;
 
   // Singleton instance
   private static instance: TournamentOrchestrator;
@@ -37,10 +38,67 @@ export class TournamentOrchestrator {
     // 1. Initial spin up of all running/starting tournaments
     await this.syncActiveTournaments();
 
-    // 2. Start polling for new tournaments every 30 seconds
+    // 2. Set up Supabase Realtime subscription on tournaments
+    try {
+      this.realtimeChannel = supabase
+        .channel('tournament-orchestrator-tournaments')
+        .on(
+          'postgres_changes',
+          {
+            event: '*',
+            schema: 'public',
+            table: 'tournaments',
+          },
+          (payload: any) => {
+            const { eventType, new: newRow } = payload;
+            if (eventType === 'INSERT' || eventType === 'UPDATE') {
+              const tournamentId = newRow?.id;
+              const status = newRow?.status;
+              if (!tournamentId) return;
+
+              // Spin up if status is active and not already tracked
+              if (
+                ['REGISTERING', 'ANNOUNCED', 'RUNNING'].includes(status) &&
+                !this.activeEngines.has(tournamentId)
+              ) {
+                if (status === 'RUNNING') {
+                  this.spinUpTournament(tournamentId);
+                } else if (newRow?.started_at) {
+                  const startTime = new Date(newRow.started_at).getTime();
+                  if (Date.now() >= startTime - 60_000) {
+                    this.spinUpTournament(tournamentId);
+                  }
+                }
+              }
+
+              // Tear down if finished/cancelled
+              if (
+                ['FINISHED', 'CANCELLED'].includes(status) &&
+                this.activeEngines.has(tournamentId)
+              ) {
+                console.log(
+                  `[TournamentOrchestrator] Realtime: ${tournamentId} ${status}, stopping engine`
+                );
+                const engine = this.activeEngines.get(tournamentId)!;
+                engine.stop();
+                this.activeEngines.delete(tournamentId);
+              }
+            }
+          }
+        )
+        .subscribe();
+      console.log('[TournamentOrchestrator] Supabase Realtime subscription active on tournaments');
+    } catch (err) {
+      console.warn(
+        '[TournamentOrchestrator] Realtime subscription failed, relying on polling:',
+        err
+      );
+    }
+
+    // 3. Keep 60s polling as fallback
     this.pollInterval = setInterval(() => {
       this.syncActiveTournaments();
-    }, 30_000);
+    }, 60_000);
   }
 
   /**
@@ -49,6 +107,12 @@ export class TournamentOrchestrator {
   async stop() {
     this.isRunning = false;
     if (this.pollInterval) clearInterval(this.pollInterval);
+
+    // Unsubscribe from Realtime channel
+    if (this.realtimeChannel) {
+      supabase.removeChannel(this.realtimeChannel);
+      this.realtimeChannel = null;
+    }
 
     console.log(
       `[TournamentOrchestrator] Stopping ${this.activeEngines.size} active tournament engines...`

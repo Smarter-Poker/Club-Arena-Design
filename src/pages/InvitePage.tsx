@@ -12,6 +12,7 @@ import { useToast } from '../components/common/Toast';
 import { masterBus } from '../core/MasterBus';
 import './InvitePage.css';
 import { retryAsync } from '../utils/retryAsync';
+import { resolveClubIdFilter } from '../utils/clubIdResolver';
 
 const inviteStepAnimationStyle = {
   opacity: 0,
@@ -67,7 +68,8 @@ export default function InvitePage() {
       if (inviteCode) {
         clubQuery = clubQuery.eq('invite_code', inviteCode);
       } else if (clubId) {
-        clubQuery = clubQuery.eq('id', clubId);
+        const { column, value } = resolveClubIdFilter(clubId);
+        clubQuery = clubQuery.eq(column, value);
       } else {
         if (!getIsMounted || getIsMounted()) {
           setError('Invalid invitation link');

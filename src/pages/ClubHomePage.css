@@ -8,888 +8,934 @@
    BASE LAYOUT
 ═══════════════════════════════════════════════════════════════════════════════ */
 .club-home {
-    display: flex;
-    flex-direction: column;
-    min-height: 100vh;
-    background: linear-gradient(180deg, #0a0a0f 0%, #1a1a2e 100%);
-    position: relative;
-    overflow-x: hidden;
-    padding-bottom: 80px;
-    /* Space for fixed bottom navigation */
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  background: linear-gradient(180deg, #0a0a0f 0%, #1a1a2e 100%);
+  position: relative;
+  overflow-x: hidden;
+  padding-bottom: 80px;
+  /* Space for fixed bottom navigation */
 }
 
 .club-home.loading,
 .club-home.error {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    text-align: center;
-    gap: 1rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  gap: 1rem;
 }
 
 .club-home .loader {
-    color: #888;
-    font-size: 1.2rem;
+  color: #888;
+  font-size: 1.2rem;
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════════
    HEADER - Modified Smarter.Poker (No Search)
 ═══════════════════════════════════════════════════════════════════════════════ */
 .club-home__header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 0.75rem 1rem;
-    background: rgba(0, 0, 0, 0.6);
-    backdrop-filter: blur(16px) saturate(1.2);
-    -webkit-backdrop-filter: blur(16px) saturate(1.2);
-    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.75rem 1rem;
+  background: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(16px) saturate(1.2);
+  -webkit-backdrop-filter: blur(16px) saturate(1.2);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06);
 }
 
 .club-home__user {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
 }
 
 .club-home__user-avatar {
-    width: 40px;
-    height: 40px;
-    border-radius: 50%;
-    overflow: hidden;
-    background: linear-gradient(135deg, #1877F2, #4599FF);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    border: 2px solid #FFB800;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  overflow: hidden;
+  background: linear-gradient(135deg, #1877f2, #4599ff);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 2px solid #ffb800;
 }
 
 .club-home__user-avatar img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
 }
 
 .club-home__user-avatar .avatar-placeholder {
-    color: white;
-    font-weight: bold;
-    font-size: 1.2rem;
+  color: white;
+  font-weight: bold;
+  font-size: 1.2rem;
 }
 
 .club-home__user-info {
-    display: flex;
-    flex-direction: column;
+  display: flex;
+  flex-direction: column;
 }
 
 .club-home__username {
-    color: white;
-    font-weight: 600;
-    font-size: 0.9rem;
+  color: white;
+  font-weight: 600;
+  font-size: 0.9rem;
 }
 
 .club-home__user-id {
-    color: #888;
-    font-size: 0.75rem;
+  color: #888;
+  font-size: 0.75rem;
 }
 
 .club-home__header-center {
-    flex: 1;
-    display: flex;
-    justify-content: center;
+  flex: 1;
+  display: flex;
+  justify-content: center;
 }
 
 .club-home__vip-badge {
-    background: linear-gradient(135deg, #2a2a3e, #1a1a2e);
-    backdrop-filter: blur(16px) saturate(1.2);
-    -webkit-backdrop-filter: blur(16px) saturate(1.2);
-    border: 1px solid #FFB800;
-    color: #FFB800;
-    padding: 0.25rem 0.75rem;
-    border-radius: 4px;
-    font-size: 0.8rem;
-    font-weight: bold;
-    box-shadow: 0 0 10px rgba(255, 184, 0, 0.3);
-    transition: all 0.25s var(--ease-spring, cubic-bezier(0.175, 0.885, 0.32, 1.275));
+  background: linear-gradient(135deg, #2a2a3e, #1a1a2e);
+  backdrop-filter: blur(16px) saturate(1.2);
+  -webkit-backdrop-filter: blur(16px) saturate(1.2);
+  border: 1px solid #ffb800;
+  color: #ffb800;
+  padding: 0.25rem 0.75rem;
+  border-radius: 4px;
+  font-size: 0.8rem;
+  font-weight: bold;
+  box-shadow: 0 0 10px rgba(255, 184, 0, 0.3);
+  transition: all 0.25s var(--ease-spring, cubic-bezier(0.175, 0.885, 0.32, 1.275));
 }
 
 .club-home__header-right {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
 }
 
 .club-home__diamonds {
-    display: flex;
-    align-items: center;
-    gap: 0.25rem;
-    background: rgba(255, 255, 255, 0.1);
-    padding: 0.25rem 0.5rem;
-    border-radius: 4px;
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  background: rgba(255, 255, 255, 0.1);
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
 }
 
 .diamond-icon::before {
-    content: '◆';
-    color: #a855f7;
-    font-size: 1rem;
+  content: '◆';
+  color: #a855f7;
+  font-size: 1rem;
 }
 
 .diamond-amount {
-    color: white;
-    font-weight: 600;
-    font-size: 0.9rem;
+  color: white;
+  font-weight: 600;
+  font-size: 0.9rem;
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════════
    QUICK ACTION ICONS ROW
 ═══════════════════════════════════════════════════════════════════════════════ */
 .club-home__actions-row {
-    display: flex;
-    align-items: center;
-    padding: 0.5rem 1rem;
-    gap: 0.5rem;
+  display: flex;
+  align-items: center;
+  padding: 0.5rem 1rem;
+  gap: 0.5rem;
 }
 
 .club-home__back-btn {
-    background: transparent;
-    border: none;
-    color: white;
-    font-size: 1.5rem;
-    cursor: pointer;
-    padding: 0.25rem 0.5rem;
+  background: transparent;
+  border: none;
+  color: white;
+  font-size: 1.5rem;
+  cursor: pointer;
+  padding: 0.25rem 0.5rem;
 }
 
 .club-home__quick-icons {
-    display: flex;
-    gap: 0.5rem;
+  display: flex;
+  gap: 0.5rem;
 }
 
 .quick-icon {
-    width: 44px;
-    height: 44px;
-    border-radius: 8px;
-    background: linear-gradient(180deg, #2a2a3e 0%, #1a1a2e 100%);
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    cursor: pointer;
+  width: 44px;
+  height: 44px;
+  border-radius: 8px;
+  background: linear-gradient(180deg, #2a2a3e 0%, #1a1a2e 100%);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
 }
 
 .icon-events::before {
-    content: '🏆';
-    font-size: 1.2rem;
+  content: '🏆';
+  font-size: 1.2rem;
 }
 
 .icon-leaderboard::before {
-    content: '📊';
-    font-size: 1.2rem;
+  content: '📊';
+  font-size: 1.2rem;
 }
 
 .club-home__bbj {
-    margin-left: auto;
-    text-align: right;
+  margin-left: auto;
+  text-align: right;
 }
 
 .bbj-label {
-    background: linear-gradient(90deg, #ef4444, #f59e0b);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
-    font-size: 0.65rem;
-    font-weight: bold;
-    line-height: 1.2;
-    text-transform: uppercase;
+  background: linear-gradient(90deg, #ef4444, #f59e0b);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  font-size: 0.65rem;
+  font-weight: bold;
+  line-height: 1.2;
+  text-transform: uppercase;
 }
 
 .bbj-amount {
-    background: linear-gradient(180deg, #3a3a4e 0%, #2a2a3e 100%);
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    border-radius: 4px;
-    padding: 0.25rem 0.5rem;
-    color: #10b981;
-    font-weight: bold;
-    font-size: 0.9rem;
-    font-family: monospace;
+  background: linear-gradient(180deg, #3a3a4e 0%, #2a2a3e 100%);
+  border: 1px solid rgba(255, 200, 0, 0.35);
+  border-radius: 6px;
+  padding: 0.3rem 0.65rem;
+  color: #10b981;
+  font-weight: bold;
+  font-size: 1rem;
+  font-family: 'Oswald', 'Impact', monospace;
+  letter-spacing: 0.5px;
+  position: relative;
+  overflow: hidden;
+  box-shadow:
+    0 0 12px rgba(255, 200, 0, 0.1),
+    inset 0 1px 0 rgba(255, 255, 255, 0.06);
+  transition: all 0.3s ease;
+}
+
+.bbj-amount::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 215, 0, 0.12), transparent);
+  animation: bbjAmountShimmer 4s ease-in-out infinite;
+}
+
+@keyframes bbjAmountShimmer {
+  0%,
+  60% {
+    left: -100%;
+  }
+  100% {
+    left: 200%;
+  }
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════════
    CLUB CARD + WALLET SECTION
 ═══════════════════════════════════════════════════════════════════════════════ */
 .club-home__club-section {
-    display: flex;
-    align-items: stretch;
-    padding: 0.75rem 1rem;
-    gap: 0.75rem;
+  display: flex;
+  align-items: stretch;
+  padding: 0.75rem 1rem;
+  gap: 0.75rem;
 }
 
 .club-home__club-card {
-    flex: 1;
-    display: flex;
-    align-items: center;
-    gap: 0.75rem;
-    background: rgba(0, 0, 0, 0.4);
-    border-radius: 8px;
-    padding: 0.75rem;
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  background: rgba(0, 0, 0, 0.4);
+  border-radius: 8px;
+  padding: 0.75rem;
 }
 
 .club-card__avatar {
-    width: 50px;
-    height: 50px;
-    border-radius: 8px;
-    overflow: hidden;
-    background: linear-gradient(135deg, #2a2a3e, #1a1a2e);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    border: 2px solid #FFB800;
+  width: 50px;
+  height: 50px;
+  border-radius: 8px;
+  overflow: hidden;
+  background: linear-gradient(135deg, #2a2a3e, #1a1a2e);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 2px solid #ffb800;
 }
 
 .club-card__avatar img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
 }
 
 .club-card__avatar-placeholder {
-    color: #FFB800;
-    font-size: 1.5rem;
+  color: #ffb800;
+  font-size: 1.5rem;
 }
 
 .club-card__info {
-    flex: 1;
+  flex: 1;
 }
 
 .club-card__name {
-    color: #1877F2;
-    font-size: 1rem;
-    font-weight: 600;
-    margin: 0 0 0.25rem;
+  color: #1877f2;
+  font-size: 1rem;
+  font-weight: 600;
+  margin: 0 0 0.25rem;
 }
 
 .club-card__meta {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    color: #888;
-    font-size: 0.8rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: #888;
+  font-size: 0.8rem;
 }
 
 .club-card__members::before {
-    content: '👥 ';
+  content: '👥 ';
 }
 
 .club-card__share {
-    background: transparent;
-    border: none;
-    cursor: pointer;
-    padding: 0.25rem;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  padding: 0.25rem;
 }
 
 .icon-link::before {
-    content: '🔗';
+  content: '🔗';
 }
 
 /* Wallet Display */
 .club-home__wallet {
-    display: flex;
-    flex-direction: column;
-    gap: 0.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
 }
 
 .wallet-row {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    background: linear-gradient(180deg, #2a2a3e 0%, #1a1a2e 100%);
-    backdrop-filter: blur(16px) saturate(1.2);
-    -webkit-backdrop-filter: blur(16px) saturate(1.2);
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    border-radius: 4px;
-    padding: 0.25rem 0.5rem;
-    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06);
-    transition: all 0.25s var(--ease-spring, cubic-bezier(0.175, 0.885, 0.32, 1.275));
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: linear-gradient(180deg, #2a2a3e 0%, #1a1a2e 100%);
+  backdrop-filter: blur(16px) saturate(1.2);
+  -webkit-backdrop-filter: blur(16px) saturate(1.2);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 4px;
+  padding: 0.25rem 0.5rem;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06);
+  transition: all 0.25s var(--ease-spring, cubic-bezier(0.175, 0.885, 0.32, 1.275));
 }
 
 .wallet-row.gold {
-    border-color: rgba(255, 184, 0, 0.3);
+  border-color: rgba(255, 184, 0, 0.3);
 }
 
 .wallet-row.diamond {
-    border-color: rgba(168, 85, 247, 0.3);
+  border-color: rgba(168, 85, 247, 0.3);
 }
 
 .gold-icon::before {
-    content: '●';
-    color: #FFB800;
-    font-size: 1rem;
+  content: '●';
+  color: #ffb800;
+  font-size: 1rem;
 }
 
 .diamond-icon::before {
-    content: '◆';
-    color: #a855f7;
-    font-size: 1rem;
+  content: '◆';
+  color: #a855f7;
+  font-size: 1rem;
 }
 
 .wallet-amount {
-    color: white;
-    font-weight: 600;
-    font-size: 0.9rem;
-    min-width: 80px;
-    text-align: right;
+  color: white;
+  font-weight: 600;
+  font-size: 0.9rem;
+  min-width: 80px;
+  text-align: right;
 }
 
 .wallet-add-btn {
-    width: 24px;
-    height: 24px;
-    border-radius: 50%;
-    background: #10b981;
-    border: none;
-    color: white;
-    font-weight: bold;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    transition: all 0.25s var(--ease-spring, cubic-bezier(0.175, 0.885, 0.32, 1.275));
-    box-shadow: 0 0 10px rgba(16, 185, 129, 0.3);
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: #10b981;
+  border: none;
+  color: white;
+  font-weight: bold;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.25s var(--ease-spring, cubic-bezier(0.175, 0.885, 0.32, 1.275));
+  box-shadow: 0 0 10px rgba(16, 185, 129, 0.3);
 }
 
 .wallet-add-btn:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 0 15px rgba(16, 185, 129, 0.5);
+  transform: translateY(-2px);
+  box-shadow: 0 0 15px rgba(16, 185, 129, 0.5);
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════════
    CLUB INTRODUCTION
 ═══════════════════════════════════════════════════════════════════════════════ */
 .club-home__intro {
-    padding: 0.75rem 1rem;
+  padding: 0.75rem 1rem;
 }
 
 .club-home__intro p {
-    background: rgba(0, 0, 0, 0.4);
-    backdrop-filter: blur(16px) saturate(1.2);
-    -webkit-backdrop-filter: blur(16px) saturate(1.2);
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    border-radius: 8px;
-    padding: 0.75rem;
-    color: #888;
-    font-size: 0.85rem;
-    margin: 0;
-    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06);
+  background: rgba(0, 0, 0, 0.4);
+  backdrop-filter: blur(16px) saturate(1.2);
+  -webkit-backdrop-filter: blur(16px) saturate(1.2);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  padding: 0.75rem;
+  color: #888;
+  font-size: 0.85rem;
+  margin: 0;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06);
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════════
    GAME TYPE FILTERS
 ═══════════════════════════════════════════════════════════════════════════════ */
 .club-home__filters {
-    display: flex;
-    align-items: center;
-    padding: 0.5rem 1rem;
-    gap: 0.25rem;
-    overflow-x: auto;
-    scrollbar-width: none;
+  display: flex;
+  align-items: center;
+  padding: 0.5rem 1rem;
+  gap: 0.25rem;
+  overflow-x: auto;
+  scrollbar-width: none;
 }
 
 .club-home__filters::-webkit-scrollbar {
-    display: none;
+  display: none;
 }
 
 .filter-tab {
-    padding: 0.5rem 1rem;
-    border-radius: 20px;
-    border: none;
-    background: rgba(255, 255, 255, 0.1);
-    color: #888;
-    font-size: 0.85rem;
-    cursor: pointer;
-    white-space: nowrap;
-    transition: all 0.25s var(--ease-spring, cubic-bezier(0.175, 0.885, 0.32, 1.275));
+  padding: 0.5rem 1rem;
+  border-radius: 20px;
+  border: none;
+  background: rgba(255, 255, 255, 0.1);
+  color: #888;
+  font-size: 0.85rem;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.25s var(--ease-spring, cubic-bezier(0.175, 0.885, 0.32, 1.275));
 }
 
 .filter-tab:hover {
-    background: rgba(255, 255, 255, 0.15);
-    transform: translateY(-2px);
+  background: rgba(255, 255, 255, 0.15);
+  transform: translateY(-2px);
 }
 
 .filter-tab.active {
-    background: #FFB800;
-    color: #000;
-    font-weight: 600;
+  background: #ffb800;
+  color: #000;
+  font-weight: 600;
 }
 
 .filter-more {
-    background: transparent;
-    border: none;
-    color: #888;
-    cursor: pointer;
-    padding: 0.5rem;
+  background: transparent;
+  border: none;
+  color: #888;
+  cursor: pointer;
+  padding: 0.5rem;
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════════
    SUB-FILTERS (Cash: Live/Empty/Full | Tournament: Running/Registering/etc.)
 ═══════════════════════════════════════════════════════════════════════════════ */
 .club-home__sub-filters {
-    display: flex;
-    align-items: center;
-    padding: 0.25rem 1rem 0.5rem;
-    gap: 0.25rem;
-    overflow-x: auto;
-    scrollbar-width: none;
+  display: flex;
+  align-items: center;
+  padding: 0.25rem 1rem 0.5rem;
+  gap: 0.25rem;
+  overflow-x: auto;
+  scrollbar-width: none;
 }
 
 .club-home__sub-filters::-webkit-scrollbar {
-    display: none;
+  display: none;
 }
 
 .sub-filter-tab {
-    padding: 0.35rem 0.75rem;
-    border-radius: 14px;
-    border: 1px solid rgba(255, 255, 255, 0.15);
-    background: transparent;
-    color: #999;
-    font-size: 0.75rem;
-    cursor: pointer;
-    white-space: nowrap;
-    transition: all 0.2s ease;
+  padding: 0.35rem 0.75rem;
+  border-radius: 14px;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  background: transparent;
+  color: #999;
+  font-size: 0.75rem;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.2s ease;
 }
 
 .sub-filter-tab:hover {
-    background: rgba(255, 255, 255, 0.08);
-    color: #ccc;
+  background: rgba(255, 255, 255, 0.08);
+  color: #ccc;
 }
 
 .sub-filter-tab.active {
-    background: rgba(0, 200, 255, 0.15);
-    border-color: rgba(0, 200, 255, 0.5);
-    color: #00c8ff;
-    font-weight: 600;
+  background: rgba(0, 200, 255, 0.15);
+  border-color: rgba(0, 200, 255, 0.5);
+  color: #00c8ff;
+  font-weight: 600;
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════════
    GAMES GRID
 ═══════════════════════════════════════════════════════════════════════════════ */
 .club-home__games {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
-    gap: 1rem;
-    padding: 1rem;
-    position: relative;
-    z-index: 1;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 1rem;
+  padding: 1rem;
+  position: relative;
+  z-index: 1;
+  animation: gamesGridFade 0.5s ease-out;
+}
+
+@keyframes gamesGridFade {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════════
    CREATE NEW TABLE CARD
 ═══════════════════════════════════════════════════════════════════════════════ */
 .create-table-card {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    text-decoration: none;
-    cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-decoration: none;
+  cursor: pointer;
 }
 
 .create-table-card__table {
-    width: 140px;
-    height: 90px;
-    background: linear-gradient(180deg, #2a2a3e 0%, #1a1a2e 100%);
-    backdrop-filter: blur(16px) saturate(1.2);
-    -webkit-backdrop-filter: blur(16px) saturate(1.2);
-    border-radius: 50px;
-    border: 2px solid rgba(255, 255, 255, 0.2);
-    position: relative;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    transition: all 0.25s var(--ease-spring, cubic-bezier(0.175, 0.885, 0.32, 1.275));
-    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06);
+  width: 140px;
+  height: 90px;
+  background: linear-gradient(180deg, #2a2a3e 0%, #1a1a2e 100%);
+  backdrop-filter: blur(16px) saturate(1.2);
+  -webkit-backdrop-filter: blur(16px) saturate(1.2);
+  border-radius: 50px;
+  border: 2px solid rgba(255, 255, 255, 0.2);
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.25s var(--ease-spring, cubic-bezier(0.175, 0.885, 0.32, 1.275));
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06);
 }
 
 .create-table-card__table:hover {
-    border-color: #1877F2;
-    transform: translateY(-2px);
+  border-color: #1877f2;
+  transform: translateY(-2px);
 }
 
 .new-badge {
-    position: absolute;
-    top: -10px;
-    left: -10px;
-    background: linear-gradient(135deg, #888, #666);
-    color: white;
-    font-size: 0.7rem;
-    font-weight: bold;
-    font-style: italic;
-    padding: 0.15rem 0.5rem;
-    border-radius: 4px;
-    transform: rotate(-15deg);
+  position: absolute;
+  top: -10px;
+  left: -10px;
+  background: linear-gradient(135deg, #888, #666);
+  color: white;
+  font-size: 0.7rem;
+  font-weight: bold;
+  font-style: italic;
+  padding: 0.15rem 0.5rem;
+  border-radius: 4px;
+  transform: rotate(-15deg);
 }
 
 .plus-icon {
-    color: rgba(255, 255, 255, 0.5);
-    font-size: 2rem;
+  color: rgba(255, 255, 255, 0.5);
+  font-size: 2rem;
 }
 
 .create-table-card__label {
-    color: #888;
-    font-size: 0.8rem;
-    margin-top: 0.5rem;
+  color: #888;
+  font-size: 0.8rem;
+  margin-top: 0.5rem;
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════════
    TABLE CARD
 ═══════════════════════════════════════════════════════════════════════════════ */
 .table-card {
-    display: flex;
-    flex-direction: column;
-    background: linear-gradient(180deg, #2a2a3e 0%, #1a1a2e 100%);
-    backdrop-filter: blur(16px) saturate(1.2);
-    -webkit-backdrop-filter: blur(16px) saturate(1.2);
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    border-radius: 8px;
-    padding: 0.75rem;
-    text-decoration: none;
-    transition: all 0.25s var(--ease-spring, cubic-bezier(0.175, 0.885, 0.32, 1.275));
-    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06);
+  display: flex;
+  flex-direction: column;
+  background: linear-gradient(180deg, #2a2a3e 0%, #1a1a2e 100%);
+  backdrop-filter: blur(16px) saturate(1.2);
+  -webkit-backdrop-filter: blur(16px) saturate(1.2);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  padding: 0.75rem;
+  text-decoration: none;
+  transition: all 0.25s var(--ease-spring, cubic-bezier(0.175, 0.885, 0.32, 1.275));
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06);
 }
 
 .table-card:hover {
-    border-color: #1877F2;
-    transform: translateY(-2px);
-    box-shadow: 0 8px 24px rgba(24, 119, 242, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.06);
+  border-color: #1877f2;
+  transform: translateY(-2px);
+  box-shadow:
+    0 8px 24px rgba(24, 119, 242, 0.3),
+    inset 0 1px 0 rgba(255, 255, 255, 0.06);
 }
 
 .table-card__header {
-    display: flex;
-    justify-content: space-between;
-    margin-bottom: 0.5rem;
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 0.5rem;
 }
 
 .table-card__variant {
-    background: #1877F2;
-    color: white;
-    font-size: 0.7rem;
-    padding: 0.15rem 0.5rem;
-    border-radius: 4px;
+  background: #1877f2;
+  color: white;
+  font-size: 0.7rem;
+  padding: 0.15rem 0.5rem;
+  border-radius: 4px;
 }
 
 .table-card__seats {
-    color: #888;
-    font-size: 0.75rem;
+  color: #888;
+  font-size: 0.75rem;
 }
 
 .table-card__body {
-    flex: 1;
+  flex: 1;
 }
 
 .table-card__name {
-    color: white;
-    font-size: 0.9rem;
-    margin: 0 0 0.25rem;
+  color: white;
+  font-size: 0.9rem;
+  margin: 0 0 0.25rem;
 }
 
 .table-card__stakes {
-    color: #FFB800;
-    font-weight: 600;
-    font-size: 0.85rem;
+  color: #ffb800;
+  font-weight: 600;
+  font-size: 0.85rem;
 }
 
 .table-card__players {
-    color: #888;
-    font-size: 0.75rem;
+  color: #888;
+  font-size: 0.75rem;
 }
 
 .table-card__status {
-    display: flex;
-    align-items: center;
-    gap: 0.25rem;
-    margin-top: 0.5rem;
-    font-size: 0.75rem;
-    color: #888;
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  margin-top: 0.5rem;
+  font-size: 0.75rem;
+  color: #888;
 }
 
 .status-dot {
-    width: 8px;
-    height: 8px;
-    border-radius: 50%;
-    background: #888;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #888;
 }
 
 .status-dot.running,
 .status-dot.active {
-    background: #10b981;
-    box-shadow: 0 0 10px rgba(16, 185, 129, 0.6);
+  background: #10b981;
+  box-shadow: 0 0 10px rgba(16, 185, 129, 0.6);
 }
 
 .status-dot.waiting {
-    background: #f59e0b;
-    box-shadow: 0 0 10px rgba(245, 158, 11, 0.6);
+  background: #f59e0b;
+  box-shadow: 0 0 10px rgba(245, 158, 11, 0.6);
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════════
    TOURNAMENT CARD
 ═══════════════════════════════════════════════════════════════════════════════ */
 .tournament-card {
-    display: flex;
-    flex-direction: column;
-    background: linear-gradient(180deg, #1a2a3e 0%, #0f1a2e 100%);
-    backdrop-filter: blur(16px) saturate(1.2);
-    -webkit-backdrop-filter: blur(16px) saturate(1.2);
-    border: 1px solid rgba(59, 130, 246, 0.2);
-    border-radius: 8px;
-    padding: 0.75rem;
-    text-decoration: none;
-    transition: all 0.25s var(--ease-spring, cubic-bezier(0.175, 0.885, 0.32, 1.275));
-    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06);
+  display: flex;
+  flex-direction: column;
+  background: linear-gradient(180deg, #1a2a3e 0%, #0f1a2e 100%);
+  backdrop-filter: blur(16px) saturate(1.2);
+  -webkit-backdrop-filter: blur(16px) saturate(1.2);
+  border: 1px solid rgba(59, 130, 246, 0.2);
+  border-radius: 8px;
+  padding: 0.75rem;
+  text-decoration: none;
+  transition: all 0.25s var(--ease-spring, cubic-bezier(0.175, 0.885, 0.32, 1.275));
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06);
 }
 
 .tournament-card:hover {
-    border-color: #3b82f6;
-    transform: translateY(-2px);
+  border-color: #3b82f6;
+  transform: translateY(-2px);
 }
 
 .tournament-card.live {
-    border-color: rgba(239, 68, 68, 0.4);
-    box-shadow: 0 0 20px rgba(239, 68, 68, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.06);
+  border-color: rgba(239, 68, 68, 0.4);
+  box-shadow:
+    0 0 20px rgba(239, 68, 68, 0.4),
+    inset 0 1px 0 rgba(255, 255, 255, 0.06);
 }
 
 .tournament-card__header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 0.5rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.5rem;
 }
 
 .tournament-card__type {
-    background: #7c3aed;
-    color: white;
-    font-size: 0.65rem;
-    padding: 0.1rem 0.4rem;
-    border-radius: 3px;
-    font-weight: 600;
+  background: #7c3aed;
+  color: white;
+  font-size: 0.65rem;
+  padding: 0.1rem 0.4rem;
+  border-radius: 3px;
+  font-weight: 600;
 }
 
 .tournament-card__status {
-    font-size: 0.65rem;
-    font-weight: 600;
-    text-transform: uppercase;
+  font-size: 0.65rem;
+  font-weight: 600;
+  text-transform: uppercase;
 }
 
 .tournament-card__status.running {
-    color: #ef4444;
+  color: #ef4444;
 }
 
 .tournament-card__status.announced {
-    color: #3b82f6;
+  color: #3b82f6;
 }
 
 .tournament-card__status.registering {
-    color: #10b981;
+  color: #10b981;
 }
 
 .tournament-card__body {
-    flex: 1;
+  flex: 1;
 }
 
 .tournament-card__name {
-    color: white;
-    font-size: 0.85rem;
-    margin: 0 0 0.35rem;
-    line-height: 1.2;
+  color: white;
+  font-size: 0.85rem;
+  margin: 0 0 0.35rem;
+  line-height: 1.2;
 }
 
 .tournament-card__buyin {
-    color: #fbbf24;
-    font-weight: 600;
-    font-size: 0.8rem;
+  color: #fbbf24;
+  font-weight: 600;
+  font-size: 0.8rem;
 }
 
 .tournament-card__fee {
-    color: #888;
-    font-size: 0.7rem;
-    margin-left: 0.25rem;
+  color: #888;
+  font-size: 0.7rem;
+  margin-left: 0.25rem;
 }
 
 .tournament-card__gtd {
-    color: #10b981;
-    font-weight: 600;
-    font-size: 0.75rem;
-    margin-top: 0.15rem;
+  color: #10b981;
+  font-weight: 600;
+  font-size: 0.75rem;
+  margin-top: 0.15rem;
 }
 
 .tournament-card__players {
-    color: #888;
-    font-size: 0.7rem;
-    margin-top: 0.15rem;
+  color: #888;
+  font-size: 0.7rem;
+  margin-top: 0.15rem;
 }
 
 .tournament-card__footer {
-    margin-top: 0.5rem;
-    padding-top: 0.4rem;
-    border-top: 1px solid rgba(255, 255, 255, 0.05);
+  margin-top: 0.5rem;
+  padding-top: 0.4rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.05);
 }
 
 .tournament-card__time {
-    color: #888;
-    font-size: 0.7rem;
+  color: #888;
+  font-size: 0.7rem;
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════════
    EMPTY STATE
 ═══════════════════════════════════════════════════════════════════════════════ */
 .empty-tables {
-    grid-column: 1 / -1;
-    text-align: center;
-    padding: 2rem;
-    color: #888;
+  grid-column: 1 / -1;
+  text-align: center;
+  padding: 2rem;
+  color: #888;
 }
 
 .empty-tables .empty-hint {
-    font-size: 0.85rem;
-    color: #666;
+  font-size: 0.85rem;
+  color: #666;
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════════
    BACKGROUND (Premium Bar Scene)
 ═══════════════════════════════════════════════════════════════════════════════ */
 .club-home__background {
-    position: fixed;
-    bottom: 0;
-    left: 0;
-    right: 0;
-    height: 50vh;
-    background: linear-gradient(180deg,
-            transparent 0%,
-            rgba(13, 79, 60, 0.3) 50%,
-            rgba(13, 79, 60, 0.5) 100%);
-    pointer-events: none;
-    z-index: 0;
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 50vh;
+  background: linear-gradient(
+    180deg,
+    transparent 0%,
+    rgba(13, 79, 60, 0.3) 50%,
+    rgba(13, 79, 60, 0.5) 100%
+  );
+  pointer-events: none;
+  z-index: 0;
 }
 
 /* Table Card Wrapper — contains Link + Delete button */
 .table-card-wrapper {
-    position: relative;
+  position: relative;
 }
 
 .table-card__delete-btn {
-    position: absolute;
-    top: 8px;
-    right: 8px;
-    width: 24px;
-    height: 24px;
-    border-radius: 50%;
-    border: 1px solid rgba(255, 59, 48, 0.4);
-    background: rgba(255, 59, 48, 0.15);
-    color: #ff3b30;
-    font-size: 12px;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    z-index: 2;
-    transition: all 0.25s var(--ease-spring, cubic-bezier(0.175, 0.885, 0.32, 1.275));
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  border: 1px solid rgba(255, 59, 48, 0.4);
+  background: rgba(255, 59, 48, 0.15);
+  color: #ff3b30;
+  font-size: 12px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 2;
+  transition: all 0.25s var(--ease-spring, cubic-bezier(0.175, 0.885, 0.32, 1.275));
 }
 
 .table-card__delete-btn:hover {
-    background: rgba(255, 59, 48, 0.35);
-    border-color: #ff3b30;
-    transform: translateY(-2px);
-    box-shadow: 0 0 10px rgba(255, 59, 48, 0.5);
+  background: rgba(255, 59, 48, 0.35);
+  border-color: #ff3b30;
+  transform: translateY(-2px);
+  box-shadow: 0 0 10px rgba(255, 59, 48, 0.5);
 }
 
 .table-card__delete-btn:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════════
    RESPONSIVE
 ═══════════════════════════════════════════════════════════════════════════════ */
 @media (max-width: 480px) {
-    .club-home__club-section {
-        flex-direction: column;
-    }
+  .club-home__club-section {
+    flex-direction: column;
+  }
 
-    .club-home__wallet {
-        flex-direction: row;
-        justify-content: space-between;
-    }
+  .club-home__wallet {
+    flex-direction: row;
+    justify-content: space-between;
+  }
 
-    .club-home__games {
-        grid-template-columns: repeat(2, 1fr);
-    }
+  .club-home__games {
+    grid-template-columns: repeat(2, 1fr);
+  }
 }
 
 @media (max-width: 380px) {
-    .club-home__games {
-        grid-template-columns: 1fr;
-    }
+  .club-home__games {
+    grid-template-columns: 1fr;
+  }
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════════
    CLUB LEVEL BADGE & PROGRESS
 ═══════════════════════════════════════════════════════════════════════════════ */
 .club-card__level {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    margin-top: 6px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 6px;
 }
 
 .club-card__online {
-    color: #00e676;
-    font-size: 0.8em;
+  color: #00e676;
+  font-size: 0.8em;
 }
 
 .club-level-badge {
-    display: flex;
-    align-items: center;
-    gap: 5px;
-    padding: 3px 10px;
-    border-radius: 12px;
-    flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 10px;
+  border-radius: 12px;
+  flex-shrink: 0;
 }
 
 .club-level-badge__number {
-    font-weight: 800;
-    font-size: 0.75rem;
-    color: #000;
-    text-shadow: 0 1px 0 rgba(255, 255, 255, 0.3);
+  font-weight: 800;
+  font-size: 0.75rem;
+  color: #000;
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.3);
 }
 
 .club-level-badge__tier {
-    font-size: 0.65rem;
-    font-weight: 600;
-    color: rgba(0, 0, 0, 0.7);
-    white-space: nowrap;
+  font-size: 0.65rem;
+  font-weight: 600;
+  color: rgba(0, 0, 0, 0.7);
+  white-space: nowrap;
 }
 
 .club-level-progress {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    flex: 1;
-    min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex: 1;
+  min-width: 0;
 }
 
 .club-level-progress__bar {
-    flex: 1;
-    height: 6px;
-    background: rgba(255, 255, 255, 0.1);
-    border-radius: 3px;
-    overflow: hidden;
+  flex: 1;
+  height: 6px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 3px;
+  overflow: hidden;
 }
 
 .club-level-progress__fill {
-    height: 100%;
-    border-radius: 3px;
-    transition: width 1s cubic-bezier(0.34, 1.56, 0.64, 1);
+  height: 100%;
+  border-radius: 3px;
+  transition: width 1s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
 .club-level-progress__text {
-    font-size: 0.65rem;
-    color: rgba(255, 255, 255, 0.5);
-    flex-shrink: 0;
-    min-width: 28px;
-    text-align: right;
+  font-size: 0.65rem;
+  color: rgba(255, 255, 255, 0.5);
+  flex-shrink: 0;
+  min-width: 28px;
+  text-align: right;
 }

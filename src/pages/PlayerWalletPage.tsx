@@ -12,6 +12,8 @@ import { useWalletStore } from '../stores/useWalletStore';
 import { useAuthUser } from '../hooks/useAuthUser';
 import { TransactionHistory } from '../components/wallet/TransactionHistory';
 import DepositWithdrawModal from '../components/wallet/DepositWithdrawModal';
+import DisputeSubmitModal from '../components/wallet/DisputeSubmitModal';
+import { FinancialExportService } from '../services/FinancialExportService';
 import './PlayerWalletPage.css';
 
 type WalletTab = 'overview' | 'transfer' | 'history';
@@ -175,6 +177,8 @@ export default function PlayerWalletPage() {
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
   const [showDepositModal, setShowDepositModal] = useState(false);
   const [showWithdrawModal, setShowWithdrawModal] = useState(false);
+  const [showDisputeModal, setShowDisputeModal] = useState(false);
+  const [exporting, setExporting] = useState(false);
   const [visibleCards, setVisibleCards] = useState(new Set<number>());
 
   // Stagger wallet cards animation
@@ -352,6 +356,9 @@ export default function PlayerWalletPage() {
           <button className="hero-btn secondary" onClick={() => navigate('/transactions')}>
             History
           </button>
+          <button className="hero-btn secondary" onClick={() => setShowDisputeModal(true)}>
+            ⚠ Dispute
+          </button>
         </div>
       </div>
 
@@ -490,6 +497,11 @@ export default function PlayerWalletPage() {
         userId={user?.id || ''}
         currentBalance={balances.PLAYER.available}
         onComplete={() => user?.id && loadBalances(user.id)}
+      />
+      <DisputeSubmitModal
+        isOpen={showDisputeModal}
+        onClose={() => setShowDisputeModal(false)}
+        clubId=""
       />
     </div>
   );

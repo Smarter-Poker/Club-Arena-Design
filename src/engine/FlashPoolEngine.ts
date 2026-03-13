@@ -17,6 +17,8 @@
  */
 
 import { masterBus } from '../core/MasterBus';
+import { HeadlessTableEngine } from './HeadlessTableEngine';
+import { supabase } from '../lib/supabase';
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // TYPES
@@ -71,6 +73,7 @@ export interface FlashPoolState {
 
 class FlashPoolEngineClass {
   private pools: Map<string, FlashPoolState> = new Map();
+  private dealingEngines: Map<string, HeadlessTableEngine> = new Map();
 
   /**
    * Create a new flash pool at a given stake level
@@ -92,6 +95,13 @@ class FlashPoolEngineClass {
         players: new Set(),
         isActive: true,
         handInProgress: false,
+      });
+
+      // Spin up a HeadlessTableEngine per flash table
+      const engine = new HeadlessTableEngine(tableId, supabase);
+      this.dealingEngines.set(tableId, engine);
+      engine.start().catch((err) => {
+        console.error(`[FlashPoolEngine] Engine start failed for ${tableId}:`, err);
       });
     }
 
@@ -169,6 +179,13 @@ class FlashPoolEngineClass {
         handInProgress: false,
       };
       pool.tables.set(tableId, targetTable);
+
+      // Spin up a dealing engine for the new table
+      const engine = new HeadlessTableEngine(tableId, supabase);
+      this.dealingEngines.set(tableId, engine);
+      engine.start().catch((err) => {
+        console.error(`[FlashPoolEngine] Engine start failed for ${tableId}:`, err);
+      });
     }
 
     if (!targetTable) return; // Pool is full
@@ -349,7 +366,15 @@ class FlashPoolEngineClass {
     const excessCount = pool.tables.size - pool.config.minTablesActive;
 
     for (let i = 0; i < Math.min(emptyTables.length, excessCount); i++) {
-      pool.tables.delete(emptyTables[i].tableId);
+      const tableId = emptyTables[i].tableId;
+      pool.tables.delete(tableId);
+
+      // Stop and cleanup the dealing engine for removed tables
+      const engine = this.dealingEngines.get(tableId);
+      if (engine) {
+        engine.stop().catch(() => {});
+        this.dealingEngines.delete(tableId);
+      }
     }
   }
 
@@ -371,7 +396,25 @@ class FlashPoolEngineClass {
    * Cleanup entire pool
    */
   dispose(poolId: string): void {
+    const pool = this.pools.get(poolId);
+    if (pool) {
+      // Stop all dealing engines for this pool's tables
+      for (const table of pool.tables.values()) {
+        const engine = this.dealingEngines.get(table.tableId);
+        if (engine) {
+          engine.stop().catch(() => {});
+          this.dealingEngines.delete(table.tableId);
+        }
+      }
+    }
     this.pools.delete(poolId);
+  }
+
+  /**
+   * Get the dealing engine for a specific flash table
+   */
+  getEngine(tableId: string): HeadlessTableEngine | null {
+    return this.dealingEngines.get(tableId) ?? null;
   }
 }
 

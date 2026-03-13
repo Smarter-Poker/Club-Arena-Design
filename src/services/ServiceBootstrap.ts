@@ -59,7 +59,7 @@ export async function bootServices(options?: {
   }
 
   // 2. Settlement Cron — only for admin/owner roles
-  if (options?.enableSettlementCron !== false) {
+  if (options?.enableSettlementCron === true) {
     try {
       SettlementCronService.start({ checkIntervalMs: 60 * 60 * 1000 });
       result.settlementCron = true;

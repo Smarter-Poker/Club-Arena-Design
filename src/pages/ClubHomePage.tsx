@@ -31,6 +31,7 @@ import { useToast } from '../components/common/Toast';
 import ConfirmModal from '../components/common/ConfirmModal';
 import './ClubHomePage.css';
 import { useVisibilityRefresh } from '../hooks/useVisibilityRefresh';
+import { resolveClubIdFilter } from '../utils/clubIdResolver';
 
 // Types
 interface ClubData {
@@ -326,11 +327,12 @@ export default function ClubHomePage() {
     if (!getIsMounted || getIsMounted()) setLoading(true);
 
     try {
-      // Load club info
+      // Load club info — smart resolve: clubId may be UUID or integer club_id
+      const { column: clubCol, value: clubVal } = resolveClubIdFilter(clubId);
       const { data: clubData, error: clubError } = await supabase
         .from('clubs')
         .select('*')
-        .eq('id', clubId)
+        .eq(clubCol, clubVal)
         .maybeSingle();
 
       if (clubError || !clubData) {

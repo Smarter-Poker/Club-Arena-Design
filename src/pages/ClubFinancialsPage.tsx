@@ -14,6 +14,7 @@ import FinancialChart from '../components/charts/FinancialChart';
 import RakeReports from '../components/admin/RakeReports';
 import PageSkeleton from '../components/common/PageSkeleton';
 import { useVisibilityRefresh } from '../hooks/useVisibilityRefresh';
+import { FinancialExportService } from '../services/FinancialExportService';
 import './ClubFinancialsPage.css';
 
 interface FinancialSummary {
@@ -51,6 +52,7 @@ export default function ClubFinancialsPage() {
   const toast = useToast();
   useVisibilityRefresh(() => loadFinancials());
   const [visibleTransactions, setVisibleTransactions] = useState<Set<string>>(new Set());
+  const [exporting, setExporting] = useState(false);
 
   const isMounted = useRef(true);
   useEffect(() => {
@@ -317,6 +319,43 @@ export default function ClubFinancialsPage() {
             {p === 'week' ? 'This Week' : p === 'month' ? 'This Month' : 'All Time'}
           </button>
         ))}
+        <button
+          className="export-btn"
+          disabled={exporting}
+          onClick={async () => {
+            if (!clubId) return;
+            setExporting(true);
+            try {
+              await FinancialExportService.exportCSV({
+                type: 'rake_records',
+                clubId,
+                periodStart:
+                  period === 'week'
+                    ? new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString()
+                    : period === 'month'
+                      ? new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString()
+                      : undefined,
+              });
+            } catch {
+              console.error('CSV export failed');
+            }
+            setExporting(false);
+          }}
+          style={{
+            marginLeft: 'auto',
+            padding: '6px 14px',
+            background: 'rgba(24, 119, 242, 0.1)',
+            border: '1px solid rgba(24, 119, 242, 0.3)',
+            borderRadius: '8px',
+            color: '#1877f2',
+            fontWeight: 700,
+            fontSize: '0.75rem',
+            cursor: exporting ? 'wait' : 'pointer',
+            opacity: exporting ? 0.5 : 1,
+          }}
+        >
+          {exporting ? 'Exporting...' : '📥 Export CSV'}
+        </button>
       </div>
 
       {/* Revenue Chart */}

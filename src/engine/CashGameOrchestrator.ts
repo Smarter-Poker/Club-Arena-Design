@@ -13,6 +13,7 @@ export class CashGameOrchestrator {
   private isRunning: boolean = false;
   private pollInterval: any = null;
   private hydraInterval: any = null;
+  private realtimeChannel: any = null;
 
   // Singleton instance
   private static instance: CashGameOrchestrator;
@@ -37,13 +38,77 @@ export class CashGameOrchestrator {
     // 1. Initial spin up of all existing active tables
     await this.syncActiveTables();
 
-    // 2. Start polling for new tables every 30 seconds
+    // 2. Set up Supabase Realtime subscription on tables (replaces 30s polling)
+    try {
+      this.realtimeChannel = supabase
+        .channel('cash-game-orchestrator-tables')
+        .on(
+          'postgres_changes',
+          {
+            event: '*',
+            schema: 'public',
+            table: 'tables',
+            filter: 'tournament_id=is.null',
+          },
+          (payload: any) => {
+            // React to table changes in real-time
+            const { eventType, new: newRow, old: oldRow } = payload;
+            if (eventType === 'INSERT' || eventType === 'UPDATE') {
+              const tableId = newRow?.id;
+              const status = newRow?.status;
+              const isDeleted = newRow?.is_deleted;
+              if (
+                tableId &&
+                status !== 'closed' &&
+                !isDeleted &&
+                !this.activeEngines.has(tableId)
+              ) {
+                console.log(
+                  `[CashGameOrchestrator] Realtime: new table ${tableId}, spinning up engine`
+                );
+                const engine = new HeadlessTableEngine(tableId, supabase);
+                this.activeEngines.set(tableId, engine);
+                engine.start().catch((err) => {
+                  console.error(
+                    `[CashGameOrchestrator] Engine failed to start for ${tableId}:`,
+                    err
+                  );
+                  this.activeEngines.delete(tableId);
+                });
+              } else if (
+                tableId &&
+                (status === 'closed' || isDeleted) &&
+                this.activeEngines.has(tableId)
+              ) {
+                console.log(
+                  `[CashGameOrchestrator] Realtime: table ${tableId} closed, stopping engine`
+                );
+                const engine = this.activeEngines.get(tableId)!;
+                engine.stop().catch(() => {});
+                this.activeEngines.delete(tableId);
+              }
+            } else if (eventType === 'DELETE') {
+              const tableId = oldRow?.id;
+              if (tableId && this.activeEngines.has(tableId)) {
+                const engine = this.activeEngines.get(tableId)!;
+                engine.stop().catch(() => {});
+                this.activeEngines.delete(tableId);
+              }
+            }
+          }
+        )
+        .subscribe();
+      console.log('[CashGameOrchestrator] Supabase Realtime subscription active on tables');
+    } catch (err) {
+      console.warn('[CashGameOrchestrator] Realtime subscription failed, relying on polling:', err);
+    }
+
+    // 3. Keep 60s polling as fallback (resilience against Realtime drops)
     this.pollInterval = setInterval(() => {
       this.syncActiveTables();
-    }, 30_000);
+    }, 60_000);
 
-    // 3. Start Hydra Fleet management
-    // Hydra check happens less frequently to let organic recedes trigger
+    // 4. Start Hydra Fleet management
     this.hydraInterval = setInterval(() => {
       this.manageLiquidity();
     }, 45_000);
@@ -56,6 +121,12 @@ export class CashGameOrchestrator {
     this.isRunning = false;
     if (this.pollInterval) clearInterval(this.pollInterval);
     if (this.hydraInterval) clearInterval(this.hydraInterval);
+
+    // Unsubscribe from Realtime channel
+    if (this.realtimeChannel) {
+      supabase.removeChannel(this.realtimeChannel);
+      this.realtimeChannel = null;
+    }
 
     console.log(
       `[CashGameOrchestrator] Stopping ${this.activeEngines.size} active table engines...`

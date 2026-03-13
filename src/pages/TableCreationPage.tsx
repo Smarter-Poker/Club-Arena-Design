@@ -6,6 +6,7 @@ import { useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { useAuthUser } from '../hooks/useAuthUser';
+import { masterBus } from '../core/MasterBus';
 import './TableCreationPage.css';
 
 const sectionAnimationStyle = (index: number) => ({
@@ -89,6 +90,9 @@ export default function TableCreationPage() {
 
       if (createError) throw createError;
       if (!data) throw new Error('Table creation returned no data');
+
+      // Notify other pages (lobby, club home) about the new table
+      masterBus.emit('TABLE_CREATED', { tableId: data.id, clubId, table: data });
 
       navigate(`/table/${data.id}`);
     } catch (err: any) {

@@ -265,6 +265,21 @@ export class HeadlessTableEngine {
     }
   }
 
+  /**
+   * Dynamically update blind levels (used by SpinIt/Tournament blind escalation).
+   * Takes effect on the next hand dealt.
+   */
+  updateBlinds(smallBlind: number, bigBlind: number, ante?: number): void {
+    if (this.tableInfo) {
+      this.tableInfo.small_blind = smallBlind;
+      this.tableInfo.big_blind = bigBlind;
+      if (ante !== undefined) this.tableInfo.ante = ante;
+      console.log(
+        `[HeadlessTableEngine:${this.tableId.slice(0, 8)}] Blinds updated: ${smallBlind}/${bigBlind}${ante ? ` ante ${ante}` : ''}`
+      );
+    }
+  }
+
   // ═════════════════════════════════════════════════════════════════════════════
   // PRIVATE: SETUP
   // ═════════════════════════════════════════════════════════════════════════════

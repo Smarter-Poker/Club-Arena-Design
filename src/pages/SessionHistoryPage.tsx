@@ -11,6 +11,8 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { useAuthUser } from '../hooks/useAuthUser';
+import { masterBus } from '../core/MasterBus';
+import { useVisibilityRefresh } from '../hooks/useVisibilityRefresh';
 import './SessionHistoryPage.css';
 
 interface SessionRecord {
@@ -44,6 +46,17 @@ export default function SessionHistoryPage() {
   useEffect(() => {
     if (!user?.id) return;
     loadSessions();
+  }, [user?.id, timeFilter]);
+
+  // Auto-refresh on tab return
+  useVisibilityRefresh(() => loadSessions());
+
+  // Bus listener: refresh when a session ends
+  useEffect(() => {
+    const unsub = masterBus.subscribe('SESSION_ENDED', () => {
+      loadSessions();
+    });
+    return () => unsub();
   }, [user?.id, timeFilter]);
 
   const loadSessions = async () => {

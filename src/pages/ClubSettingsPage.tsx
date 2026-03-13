@@ -15,6 +15,7 @@ import ClubBottomNav from '../components/club/ClubBottomNav';
 import AuditLog from '../components/admin/AuditLog';
 import { StatsExport } from '../components/admin/StatsExport';
 import { useVisibilityRefresh } from '../hooks/useVisibilityRefresh';
+import { resolveClubIdFilter } from '../utils/clubIdResolver';
 import '../components/common/ButtonSpinner.css';
 import './ClubSettingsPage.css';
 
@@ -153,10 +154,11 @@ export default function ClubSettingsPage() {
   const loadClubSettings = async (getIsMounted?: () => boolean) => {
     if (!getIsMounted || getIsMounted()) setLoading(true);
     try {
+      const { column: clubCol, value: clubVal } = resolveClubIdFilter(clubId!);
       const { data, error } = await supabase
         .from('clubs')
         .select('*')
-        .eq('id', clubId)
+        .eq(clubCol, clubVal)
         .maybeSingle();
 
       if (getIsMounted && !getIsMounted()) return;
@@ -225,7 +227,7 @@ export default function ClubSettingsPage() {
               min_buyin_bb: settings.min_buyin_bb,
               max_buyin_bb: settings.max_buyin_bb,
             })
-            .eq('id', clubId);
+            .eq(resolveClubIdFilter(clubId!).column, resolveClubIdFilter(clubId!).value);
           if (error) throw error;
         }
       );

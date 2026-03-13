@@ -12,6 +12,7 @@ import { masterBus } from '../core/MasterBus';
 import { BBJService } from './BBJService';
 import type { Club, ClubMember, ClubSettings, MemberRole } from '../types/database.types';
 import { retryAsync } from '../utils/retryAsync';
+import { resolveClubIdFilter } from '../utils/clubIdResolver';
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // SERVICE
@@ -40,7 +41,12 @@ class ClubServiceClass {
    * Get a single club by ID
    */
   async getClub(clubId: string): Promise<Club | null> {
-    const { data, error } = await supabase.from('clubs').select('*').eq('id', clubId).maybeSingle();
+    const { column, value } = resolveClubIdFilter(clubId);
+    const { data, error } = await supabase
+      .from('clubs')
+      .select('*')
+      .eq(column, value)
+      .maybeSingle();
 
     if (error && error.code !== 'PGRST116') throw error;
     return data;

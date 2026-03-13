@@ -320,6 +320,7 @@ import DailyChallengesWidget from '../components/rewards/DailyChallengesWidget';
 import ClubBottomNav from '../components/club/ClubBottomNav';
 import ConfirmModal from '../components/common/ConfirmModal';
 import { useVisibilityRefresh } from '../hooks/useVisibilityRefresh';
+import { resolveClubIdFilter } from '../utils/clubIdResolver';
 
 export default function ClubDetailPage() {
   const { clubId } = useParams();
@@ -553,10 +554,11 @@ export default function ClubDetailPage() {
 
     try {
       // Load club from Supabase
+      const { column: clubCol, value: clubVal } = resolveClubIdFilter(clubId);
       const { data: clubData, error: clubError } = await supabase
         .from('clubs')
         .select('*')
-        .eq('id', clubId)
+        .eq(clubCol, clubVal)
         .maybeSingle();
 
       if (clubError || !clubData) {

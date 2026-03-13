@@ -33,6 +33,7 @@ import { MetalFrame, MetalButton, MetalInput, MetalCard } from '../components/me
 import { useVIPStatus } from '../hooks/useVIP';
 import { useToast } from '../components/common/Toast';
 import { useVisibilityRefresh } from '../hooks/useVisibilityRefresh';
+import { resolveClubIdFilter } from '../utils/clubIdResolver';
 import './CashierPage.css';
 
 type CashierAction = 'send' | 'buyin' | 'cashout' | 'mint' | 'history';
@@ -271,10 +272,11 @@ export default function CashierPage() {
       setUserRole(role);
 
       // Get club name
+      const { column: clubCol, value: clubVal } = resolveClubIdFilter(clubId);
       const { data: clubData } = await supabase
         .from('clubs')
         .select('name')
-        .eq('id', clubId)
+        .eq(clubCol, clubVal)
         .maybeSingle();
       if (!isMounted.current) return;
       setClubName(clubData?.name || '');

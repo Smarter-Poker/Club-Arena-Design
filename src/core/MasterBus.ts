@@ -227,7 +227,11 @@ export type BusEventType =
   | 'OFC_FANTASYLAND_ENTERED'
   // Phase Q1: Rakeback events
   | 'RAKEBACK_CALCULATED'
-  | 'RAKEBACK_DISTRIBUTED';
+  | 'RAKEBACK_DISTRIBUTED'
+  // Session lifecycle
+  | 'SESSION_ENDED'
+  // Table creation event
+  | 'TABLE_CREATED';
 
 // #13: Type-safe payload map — compile-time enforcement of correct payloads
 export interface BusPayloadMap {
@@ -688,6 +692,10 @@ export interface BusPayloadMap {
     tier: string;
   };
   RAKEBACK_DISTRIBUTED: { period: string; totalDistributed: number; playersCount: number };
+  // Session lifecycle
+  SESSION_ENDED: { tableId: string; sessionId?: string; userId?: string };
+  // Table creation
+  TABLE_CREATED: { tableId: string; clubId?: string; table?: Record<string, unknown> };
 }
 
 export interface BusEvent<T = unknown> {

@@ -16,6 +16,7 @@ import { messagingService } from '../services/MessagingService';
 import { useAuthUser } from '../hooks/useAuthUser';
 import { useToast } from '../components/common/Toast';
 import { supabase } from '../lib/supabase';
+import { masterBus } from '../core/MasterBus';
 import { PlayerAvatar } from '../components/avatars/PlayerAvatar';
 import PlayerBlockModal from '../components/social/PlayerBlockModal';
 import './PublicProfilePage.css';
@@ -90,6 +91,31 @@ export default function PublicProfilePage() {
   useEffect(() => {
     loadProfile();
   }, [loadProfile]);
+
+  // Bus listeners: real-time friend/block state sync
+  useEffect(() => {
+    const unsubFriend = masterBus.subscribe('FRIEND_REQUEST_ACCEPTED', () => {
+      // Re-check friendship status when any request is accepted
+      if (user?.id && userId) {
+        checkFriendship(user.id, userId).then(setFriendStatus);
+      }
+    });
+    const unsubBlock = masterBus.subscribe('USER_BLOCKED', (event) => {
+      if (event.payload?.blockedUserId === userId) {
+        setIsBlocked(true);
+      }
+    });
+    const unsubUnblock = masterBus.subscribe('USER_UNBLOCKED', (event) => {
+      if (event.payload?.unblockedUserId === userId) {
+        setIsBlocked(false);
+      }
+    });
+    return () => {
+      unsubFriend();
+      unsubBlock();
+      unsubUnblock();
+    };
+  }, [userId, user?.id]);
 
   // Check friendship status
   async function checkFriendship(

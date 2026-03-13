@@ -17,6 +17,9 @@
  */
 
 import { masterBus } from '../core/MasterBus';
+import { HeadlessTableEngine } from './HeadlessTableEngine';
+import { supabase } from '../lib/supabase';
+import { secureRandom } from './CryptoRandom';
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // TYPES
@@ -100,6 +103,7 @@ class SpinItEngineClass {
   private games: Map<string, SpinItState> = new Map();
   private configs: Map<string, SpinItConfig> = new Map();
   private timers: Map<string, ReturnType<typeof setInterval>> = new Map();
+  private dealingEngines: Map<string, HeadlessTableEngine> = new Map();
 
   /**
    * Create a new Spin-It lobby
@@ -163,9 +167,9 @@ class SpinItEngineClass {
 
     state.status = 'spinning';
 
-    // Weighted random selection
+    // Weighted random selection using crypto-safe RNG
     const totalWeight = PRIZE_TIERS.reduce((sum, t) => sum + t.weight, 0);
-    let roll = Math.random() * totalWeight;
+    let roll = secureRandom() * totalWeight;
     let selected = PRIZE_TIERS[0];
 
     for (const tier of PRIZE_TIERS) {
@@ -210,6 +214,14 @@ class SpinItEngineClass {
       prizePool: state.prizePool,
       blinds: config.blindLevels[0],
     });
+
+    // Create a HeadlessTableEngine for the dealing pipeline
+    // The lobby ID maps to a Supabase table row that the engine reads from
+    const engine = new HeadlessTableEngine(lobbyId, supabase);
+    this.dealingEngines.set(lobbyId, engine);
+    engine.start().catch((err) => {
+      console.error(`[SpinItEngine] HeadlessTableEngine failed to start for ${lobbyId}:`, err);
+    });
   }
 
   /**
@@ -240,6 +252,13 @@ class SpinItEngineClass {
           level: state.currentLevel,
           blinds: config.blindLevels[state.currentLevel],
         });
+
+        // Sync blind level to HeadlessTableEngine if active
+        const engine = this.dealingEngines.get(lobbyId);
+        if (engine) {
+          const newLevel = config.blindLevels[state.currentLevel];
+          engine.updateBlinds(newLevel.small, newLevel.big);
+        }
       }
     }, 1000);
 
@@ -339,6 +358,20 @@ class SpinItEngineClass {
     this.timers.delete(lobbyId);
     this.games.delete(lobbyId);
     this.configs.delete(lobbyId);
+
+    // Stop dealing engine
+    const engine = this.dealingEngines.get(lobbyId);
+    if (engine) {
+      engine.stop().catch(() => {});
+      this.dealingEngines.delete(lobbyId);
+    }
+  }
+
+  /**
+   * Get the HeadlessTableEngine for external hand state queries
+   */
+  getEngine(lobbyId: string): HeadlessTableEngine | null {
+    return this.dealingEngines.get(lobbyId) ?? null;
   }
 }
 

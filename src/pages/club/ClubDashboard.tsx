@@ -24,6 +24,7 @@ import ClubBottomNav from '../../components/club/ClubBottomNav';
 import PageSkeleton from '../../components/common/PageSkeleton';
 import { useToast } from '../../components/common/Toast';
 import { useVisibilityRefresh } from '../../hooks/useVisibilityRefresh';
+import { resolveClubIdFilter } from '../../utils/clubIdResolver';
 import styles from './ClubDashboard.module.css';
 
 interface ClubInfo {
@@ -243,10 +244,11 @@ export default function ClubDashboard() {
     setLoading(true);
     try {
       // Load club info
+      const { column: clubCol, value: clubVal } = resolveClubIdFilter(clubId);
       const { data: clubData } = await supabase
         .from('clubs')
         .select('id, name, avatar_url, created_at')
-        .eq('id', clubId)
+        .eq(clubCol, clubVal)
         .maybeSingle();
 
       if (clubData) {

@@ -10,6 +10,7 @@ import { useNavigate } from 'react-router-dom';
 import { supabase } from '../../lib/supabase';
 import { masterBus } from '../../core/MasterBus';
 import { useAuthUser } from '../../hooks/useAuthUser';
+import { messagingService } from '../../services/MessagingService';
 import styles from './ConversationList.module.css';
 
 interface Conversation {
@@ -22,6 +23,7 @@ interface Conversation {
   lastMessageUserId: string;
   unreadCount: number;
   isGroup: boolean;
+  isPinned: boolean;
   participantCount?: number;
 }
 
@@ -117,6 +119,7 @@ export default function ConversationList({
             `
                     conversation_id,
                     unread_count,
+                    is_pinned,
                     conversations(
                         id,
                         name,
@@ -154,6 +157,7 @@ export default function ConversationList({
                 lastMessageUserId: conv?.last_message_user_id,
                 unreadCount: item.unread_count || 0,
                 isGroup: conv?.is_group || false,
+                isPinned: item.is_pinned || false,
                 participantCount: conv?.conversation_participants?.length,
               };
             })
@@ -217,11 +221,36 @@ export default function ConversationList({
   }, [loadConversations, loadClubMessagesCount, initHeartbeat]);
 
   // Filter by search
-  const filteredConversations = conversations.filter(
-    (c) =>
-      c.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      c.lastMessage.toLowerCase().includes(searchQuery.toLowerCase())
+  // Q3: Pin/unpin handler
+  const handlePin = useCallback(
+    async (e: React.MouseEvent, convId: string, isPinned: boolean) => {
+      e.stopPropagation();
+      if (!user?.id) return;
+      if (isPinned) {
+        await messagingService.unpinConversation(user.id, convId);
+      } else {
+        await messagingService.pinConversation(user.id, convId);
+      }
+      // Update local state
+      setConversations((prev) =>
+        prev.map((c) => (c.id === convId ? { ...c, isPinned: !isPinned } : c))
+      );
+    },
+    [user?.id]
   );
+
+  const filteredConversations = conversations
+    .filter(
+      (c) =>
+        c.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        c.lastMessage.toLowerCase().includes(searchQuery.toLowerCase())
+    )
+    // Q3: Pinned conversations float to top
+    .sort((a, b) => {
+      if (a.isPinned && !b.isPinned) return -1;
+      if (!a.isPinned && b.isPinned) return 1;
+      return 0;
+    });
 
   // Format relative time
   const formatTime = (dateStr: string): string => {
@@ -319,6 +348,11 @@ export default function ConversationList({
               <div className={styles.content}>
                 <div className={styles.header}>
                   <span className={styles.name}>
+                    {conv.isPinned && (
+                      <span className={styles.pinIcon} title="Pinned">
+                        📌
+                      </span>
+                    )}
                     {conv.isGroup && ' '}
                     {conv.name}
                   </span>
@@ -329,7 +363,18 @@ export default function ConversationList({
                     {conv.lastMessageUserId === user?.id && ' '}
                     {conv.lastMessage || 'No messages yet'}
                   </span>
-                  {conv.unreadCount > 0 && <span className={styles.badge}>{conv.unreadCount}</span>}
+                  <div className={styles.previewActions}>
+                    <button
+                      className={`${styles.pinBtn} ${conv.isPinned ? styles.pinActive : ''}`}
+                      onClick={(e) => handlePin(e, conv.id, conv.isPinned)}
+                      title={conv.isPinned ? 'Unpin' : 'Pin'}
+                    >
+                      📌
+                    </button>
+                    {conv.unreadCount > 0 && (
+                      <span className={styles.badge}>{conv.unreadCount}</span>
+                    )}
+                  </div>
                 </div>
               </div>
             </div>

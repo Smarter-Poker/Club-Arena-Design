@@ -19,6 +19,7 @@ import { supabase } from '../../lib/supabase';
 import { useAuthUser } from '../../hooks/useAuthUser';
 import { useToast } from '../common/Toast';
 import { ChipFlowService } from '../../services/ChipFlowService';
+import { resolveClubIdFilter } from '../../utils/clubIdResolver';
 import './ChipTransferModal.css';
 
 interface Recipient {
@@ -105,10 +106,11 @@ export default function ChipTransferModal({
       setSenderRole(member?.role || 'member');
 
       // Get club name
+      const { column: clubCol, value: clubVal } = resolveClubIdFilter(clubId);
       const { data: club } = await supabase
         .from('clubs')
         .select('name')
-        .eq('id', clubId)
+        .eq(clubCol, clubVal)
         .maybeSingle();
       setClubName(club?.name || '');
     } catch (err) {

@@ -14,6 +14,8 @@ import MessageInput from './MessageInput';
 import { PlayerAvatar } from '../avatars/PlayerAvatar';
 import { ThrowableLayer, useThrowableReactions } from './ThrowableReaction';
 import { useMessageDraft } from '../../hooks/useMessageDraft';
+import MessageSearchBar from './MessageSearchBar';
+import ForwardMessageModal from './ForwardMessageModal';
 import styles from './MessageThread.module.css';
 
 interface Reaction {
@@ -66,6 +68,10 @@ export default function MessageThread({ conversationId, onBack }: MessageThreadP
   const [visibleMessages, setVisibleMessages] = useState<Set<number>>(new Set());
   const [replyingToId, setReplyingToId] = useState<string | null>(null);
   const [replyingToMessage, setReplyingToMessage] = useState<Message | null>(null);
+  // Q3: Search & Forward state
+  const [showSearch, setShowSearch] = useState(false);
+  const [forwardingMessage, setForwardingMessage] = useState<Message | null>(null);
+  const [highlightedMessageId, setHighlightedMessageId] = useState<string | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
   const heartbeatRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -452,6 +458,27 @@ export default function MessageThread({ conversationId, onBack }: MessageThreadP
 
   const otherParticipant = participants.find((p) => p.userId !== user?.id);
 
+  // Q3: Handle search result navigation
+  const handleSearchResult = useCallback((messageId: string) => {
+    setHighlightedMessageId(messageId);
+    // Scroll to the message
+    const el = document.getElementById(`msg-${messageId}`);
+    if (el) {
+      el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+    // Clear highlight after 2s
+    setTimeout(() => setHighlightedMessageId(null), 2000);
+  }, []);
+
+  // Q3: Forward action
+  const handleForward = useCallback(
+    (messageId: string) => {
+      const msg = messages.find((m) => m.id === messageId);
+      if (msg) setForwardingMessage(msg);
+    },
+    [messages]
+  );
+
   return (
     <div className={styles.container}>
       {/* Header */}
@@ -487,7 +514,24 @@ export default function MessageThread({ conversationId, onBack }: MessageThreadP
             </div>
           </div>
         )}
+        {/* Q3: Search toggle button */}
+        <button
+          className={styles.searchToggle}
+          onClick={() => setShowSearch((prev) => !prev)}
+          title="Search messages"
+        >
+          🔍
+        </button>
       </div>
+
+      {/* Q3: Search Bar */}
+      {showSearch && (
+        <MessageSearchBar
+          conversationId={conversationId}
+          onResultSelect={handleSearchResult}
+          onClose={() => setShowSearch(false)}
+        />
+      )}
 
       {/* Messages */}
       <div className={styles.messages} ref={scrollRef}>
@@ -504,10 +548,14 @@ export default function MessageThread({ conversationId, onBack }: MessageThreadP
           messages.map((message, idx) => (
             <div
               key={message.id}
+              id={`msg-${message.id}`}
               style={{
                 opacity: visibleMessages.has(idx) ? 1 : 0,
                 transform: visibleMessages.has(idx) ? 'translateY(0)' : 'translateY(8px)',
                 transition: 'all 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275)',
+                background:
+                  highlightedMessageId === message.id ? 'rgba(0, 212, 255, 0.08)' : undefined,
+                borderRadius: highlightedMessageId === message.id ? '12px' : undefined,
               }}
             >
               <MessageBubble
@@ -516,6 +564,7 @@ export default function MessageThread({ conversationId, onBack }: MessageThreadP
                 onReact={reactToMessage}
                 onDelete={deleteMessage}
                 onReply={handleReply}
+                onForward={handleForward}
               />
             </div>
           ))
@@ -563,6 +612,16 @@ export default function MessageThread({ conversationId, onBack }: MessageThreadP
         initialDraft={draft}
         onDraftChange={setDraft}
       />
+
+      {/* Q3: Forward Message Modal */}
+      {forwardingMessage && (
+        <ForwardMessageModal
+          messageId={forwardingMessage.id}
+          messageContent={forwardingMessage.content}
+          onClose={() => setForwardingMessage(null)}
+          onForwarded={() => setForwardingMessage(null)}
+        />
+      )}
 
       {/* Throwable Animation Layer */}
       <ThrowableLayer throwables={activeThrowables} onComplete={handleComplete} />

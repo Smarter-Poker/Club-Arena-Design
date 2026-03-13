@@ -10,6 +10,7 @@ import styles from './ChatBubble.module.css';
 import { ImageThumbnail, ImageLightbox } from './ImageMessage';
 import EmojiReactions from './EmojiReactions';
 import { ReadReceipt } from './ReadReceipt';
+import LinkPreview, { extractUrl } from './LinkPreview';
 
 interface Reaction {
   emoji: string;
@@ -41,6 +42,7 @@ interface MessageBubbleProps {
   onReact?: (messageId: string, emoji: string) => void;
   onDelete?: (messageId: string) => void;
   onReply?: (messageId: string) => void;
+  onForward?: (messageId: string) => void;
   onViewThread?: (messageId: string) => void;
 }
 
@@ -51,6 +53,7 @@ export default function MessageBubble({
   onReact,
   onDelete,
   onReply,
+  onForward,
   onViewThread,
 }: MessageBubbleProps) {
   const [showMenu, setShowMenu] = useState(false);
@@ -102,6 +105,11 @@ export default function MessageBubble({
 
   const handleReply = () => {
     onReply?.(message.id);
+    setShowMenu(false);
+  };
+
+  const handleForward = () => {
+    onForward?.(message.id);
     setShowMenu(false);
   };
 
@@ -163,6 +171,11 @@ export default function MessageBubble({
 
           {/* Text */}
           {message.content && <p className={styles.text}>{linkifyText(message.content)}</p>}
+
+          {/* Q3: Link Preview */}
+          {message.content && extractUrl(message.content) && (
+            <LinkPreview url={extractUrl(message.content)!} />
+          )}
         </div>
 
         {/* Timestamp + Read Receipt */}
@@ -209,6 +222,9 @@ export default function MessageBubble({
               </button>
               <button className={styles.menuItem} onClick={handleCopy}>
                 Copy
+              </button>
+              <button className={styles.menuItem} onClick={handleForward}>
+                ↪ Forward
               </button>
               {isCurrentUser && (
                 <button className={`${styles.menuItem} ${styles.danger}`} onClick={handleDelete}>
