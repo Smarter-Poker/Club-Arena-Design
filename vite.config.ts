@@ -30,12 +30,7 @@ export default defineConfig({
         rollupOptions: {
             output: {
                 manualChunks: {
-                    // Split vendor chunks
-                    'vendor-react': ['react', 'react-dom', 'react-router-dom'],
-                    'vendor-supabase': ['@supabase/supabase-js'],
-                    'vendor-three': ['three', '@react-three/fiber', '@react-three/drei'],
-                    'vendor-charts': ['recharts'],
-                    'vendor-motion': ['framer-motion'],
+                    'vendor-react': ['react', 'react-dom'],
                 },
             },
         },
