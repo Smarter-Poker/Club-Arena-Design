@@ -252,18 +252,21 @@ export default function ClubDashboard() {
         .maybeSingle();
 
       if (clubData) {
+        // Use resolved UUID for all FK queries — clubId from URL may be integer
+        const resolvedId = clubData.id;
+
         // Get member count — exclude horses
         const { count: memberCount } = await supabase
           .from('club_members')
           .select('user_id, profiles!inner(id)', { count: 'exact', head: true })
-          .eq('club_id', clubId)
+          .eq('club_id', resolvedId)
           .eq('profiles.is_horse', false);
 
         // Get table count
         const { count: tableCount } = await supabase
           .from('tables')
           .select('*', { count: 'exact', head: true })
-          .eq('club_id', clubId);
+          .eq('club_id', resolvedId);
 
         setClub({
           id: clubData.id,
@@ -276,7 +279,8 @@ export default function ClubDashboard() {
       }
 
       // Load top players by profit (chips_won - chips_lost)
-      // Fetch extra candidates since profit != chips_won rank; re-sort client-side
+      // Use resolved club UUID for FK query
+      const resolvedClubId = clubData?.id || clubId;
       const { data: playersData } = await supabase
         .from('club_members')
         .select(
@@ -288,7 +292,7 @@ export default function ClubDashboard() {
                     profiles!inner(display_name, avatar_url, is_horse)
                 `
         )
-        .eq('club_id', clubId)
+        .eq('club_id', resolvedClubId)
         .eq('profiles.is_horse', false)
         .order('chips_won', { ascending: false })
         .limit(50);

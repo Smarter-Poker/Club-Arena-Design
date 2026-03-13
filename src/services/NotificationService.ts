@@ -207,11 +207,17 @@ class NotificationServiceClass {
   }
 
   /**
-   * Create a notification (for internal use or testing)
+   * Create a notification (with auto-generated deep-link URL)
    */
   async create(
     notification: Omit<Notification, 'id' | 'createdAt' | 'isRead'>
   ): Promise<Notification | null> {
+    // Q3: Auto-generate action_url from metadata
+    const actionUrl = NotificationServiceClass.getDeepLinkUrl(
+      notification.type,
+      notification.metadata
+    );
+
     const { data, error } = await supabase
       .from('notifications')
       .insert({
@@ -220,6 +226,7 @@ class NotificationServiceClass {
         title: notification.title,
         message: notification.message,
         metadata: notification.metadata,
+        action_url: actionUrl,
         is_read: false,
       })
       .select()
@@ -265,10 +272,155 @@ class NotificationServiceClass {
     });
   }
 
+  // ═══════════════════════════════════════════════════════════════════════════
+  // Q3: DEEP-LINK URL GENERATION
+  // ═══════════════════════════════════════════════════════════════════════════
+
   /**
-   * Show browser notification (if permitted)
+   * Generate the appropriate deep-link URL based on notification type + metadata
+   */
+  static getDeepLinkUrl(
+    type: Notification['type'],
+    metadata?: Record<string, unknown>
+  ): string | undefined {
+    if (!metadata) return undefined;
+
+    switch (type) {
+      case 'waitlist_ready':
+        return metadata.tableId ? `/table/${metadata.tableId}` : '/lobby';
+      case 'table_invite':
+        return metadata.tableId ? `/table/${metadata.tableId}` : '/lobby';
+      case 'club_announcement':
+        return metadata.clubId ? `/club/${metadata.clubId}` : '/clubs';
+      case 'message':
+        return metadata.conversationId
+          ? `/messages/${metadata.conversationId}`
+          : metadata.senderId
+            ? `/profile/${metadata.senderId}`
+            : '/messages';
+      case 'achievement':
+        return '/achievements';
+      case 'bonus':
+        return '/bonus';
+      case 'settlement':
+        return metadata.clubId ? `/club/${metadata.clubId}/financials` : '/wallet';
+      case 'system':
+      default:
+        return undefined;
+    }
+  }
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // Q3: DO NOT DISTURB MODE
+  // ═══════════════════════════════════════════════════════════════════════════
+
+  private dndUntil: number | null = null;
+
+  /**
+   * Enable DND mode for a specified duration in minutes
+   */
+  setDnd(durationMinutes: number): void {
+    this.dndUntil = Date.now() + durationMinutes * 60_000;
+    localStorage.setItem('dnd_until', String(this.dndUntil));
+    masterBus.emit('SYSTEM_ALERT', {
+      type: 'info',
+      title: 'DND Enabled',
+      message: `Notifications muted for ${durationMinutes} minutes`,
+    });
+  }
+
+  /**
+   * Disable DND mode immediately
+   */
+  clearDnd(): void {
+    this.dndUntil = null;
+    localStorage.removeItem('dnd_until');
+  }
+
+  /**
+   * Check if DND mode is currently active
+   */
+  isDndActive(): boolean {
+    if (this.dndUntil === null) {
+      // Rehydrate from localStorage
+      const saved = localStorage.getItem('dnd_until');
+      if (saved) this.dndUntil = Number(saved);
+    }
+    if (this.dndUntil && Date.now() < this.dndUntil) return true;
+    if (this.dndUntil && Date.now() >= this.dndUntil) {
+      this.clearDnd(); // Auto-expire
+    }
+    return false;
+  }
+
+  /**
+   * Get remaining DND time in minutes (0 if not active)
+   */
+  getDndRemaining(): number {
+    if (!this.isDndActive() || !this.dndUntil) return 0;
+    return Math.ceil((this.dndUntil - Date.now()) / 60_000);
+  }
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // Q3: NOTIFICATION GROUPING UTILITY
+  // ═══════════════════════════════════════════════════════════════════════════
+
+  /**
+   * Group similar notifications for collapsed display.
+   * E.g. "3 new friend requests" instead of 3 individual entries.
+   */
+  static groupNotifications(
+    notifications: Notification[]
+  ): Array<Notification & { groupCount?: number; groupIds?: string[] }> {
+    const groups = new Map<string, Notification[]>();
+    const ungroupable: Notification[] = [];
+
+    for (const notif of notifications) {
+      // Group by type + approximate time (within 30 minutes)
+      const timeBucket = Math.floor(new Date(notif.createdAt).getTime() / (30 * 60_000));
+      const groupKey = `${notif.type}:${timeBucket}`;
+
+      if (['message', 'achievement', 'bonus'].includes(notif.type)) {
+        if (!groups.has(groupKey)) groups.set(groupKey, []);
+        groups.get(groupKey)!.push(notif);
+      } else {
+        ungroupable.push(notif);
+      }
+    }
+
+    const result: Array<Notification & { groupCount?: number; groupIds?: string[] }> = [];
+
+    for (const [, group] of groups) {
+      if (group.length >= 3) {
+        // Collapse into a single entry
+        const newest = group[0]; // Already sorted newest-first
+        result.push({
+          ...newest,
+          title: `${group.length} ${newest.type} notifications`,
+          message: group
+            .map((n) => n.message)
+            .slice(0, 3)
+            .join(' • '),
+          groupCount: group.length,
+          groupIds: group.map((n) => n.id),
+        });
+      } else {
+        result.push(...group);
+      }
+    }
+
+    result.push(...ungroupable);
+    result.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+    return result;
+  }
+
+  /**
+   * Show browser notification (if permitted and not in DND)
    */
   private async showBrowserNotification(notification: Notification): Promise<void> {
+    // Q3: Respect DND mode
+    if (this.isDndActive()) return;
+
     if (!('Notification' in window)) return;
 
     if (Notification.permission === 'default') {
