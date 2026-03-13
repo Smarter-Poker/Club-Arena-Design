@@ -117,7 +117,7 @@ export class HorseLifecycleManager {
           if (!profiles || profiles.length === 0) continue;
 
           for (const profile of profiles) {
-            const reset = await this.resetHorse(profile.id);
+            const reset = await this.evaluateHorseStatus(profile.id);
             if (reset) horsesReset++;
           }
 
@@ -189,7 +189,7 @@ export class HorseLifecycleManager {
           if (activeTournaments && activeTournaments.length > 0) continue; // Still in tournament
 
           // Force reset
-          const reset = await this.resetHorse(horse.id);
+          const reset = await this.forceResetHorse(horse.id);
           if (reset) forcedResets++;
         } catch {
           // Skip individual horse errors
@@ -208,7 +208,49 @@ export class HorseLifecycleManager {
   // HORSE RESET
   // ─────────────────────────────────────────────────────────────────────────
 
-  async resetHorse(horseId: string): Promise<boolean> {
+  async evaluateHorseStatus(horseId: string): Promise<boolean> {
+    try {
+      // Check if horse has ANY active seats
+      const { data: activeSeats } = await supabase
+        .from('table_seats')
+        .select('id')
+        .eq('user_id', horseId)
+        .is('left_at', null)
+        .limit(1);
+
+      // Check if in ANY active tournament
+      const { data: activeTournaments } = await supabase
+        .from('tournament_players')
+        .select('id')
+        .eq('user_id', horseId)
+        .in('status', ['registered', 'in_progress'])
+        .limit(1);
+
+      const hasActiveGames =
+        (activeSeats && activeSeats.length > 0) ||
+        (activeTournaments && activeTournaments.length > 0);
+
+      if (!hasActiveGames) {
+        // Only reset if they have NO active games at all
+        const { error } = await supabase
+          .from('profiles')
+          .update({ horse_status: 'available', updated_at: new Date().toISOString() })
+          .eq('id', horseId);
+
+        if (error) {
+          console.error(`[Lifecycle] Failed to reset horse ${horseId}:`, error.message);
+          return false;
+        }
+        return true; // Horse was reset to available
+      }
+      return false; // Horse remains seated/active
+    } catch {
+      return false;
+    }
+  }
+
+  // FORCE RESET function for genuinely stuck horses (used by detectStuckHorses)
+  async forceResetHorse(horseId: string): Promise<boolean> {
     try {
       // Clear stale seat records
       await supabase
@@ -223,12 +265,7 @@ export class HorseLifecycleManager {
         .update({ horse_status: 'available', updated_at: new Date().toISOString() })
         .eq('id', horseId);
 
-      if (error) {
-        console.error(`[Lifecycle] Failed to reset horse ${horseId}:`, error.message);
-        return false;
-      }
-
-      return true;
+      return !error;
     } catch {
       return false;
     }
@@ -322,7 +359,7 @@ export class HorseLifecycleManager {
         try {
           await supabase
             .from('table_seats')
-            .update({ left_at: new Date().toISOString(), status: 'left' })
+            .update({ left_at: new Date().toISOString() })
             .eq('id', seat.id);
           cleaned++;
 
@@ -334,7 +371,7 @@ export class HorseLifecycleManager {
             .single();
 
           if (profile?.is_horse) {
-            await this.resetHorse(seat.user_id);
+            await this.evaluateHorseStatus(seat.user_id);
           }
         } catch {
           // Skip individual errors
@@ -392,7 +429,7 @@ export class HorseLifecycleManager {
         .eq('user_id', horseId)
         .eq('tournament_id', tournamentId);
 
-      return await this.resetHorse(horseId);
+      return await this.evaluateHorseStatus(horseId);
     } catch {
       return false;
     }
