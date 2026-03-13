@@ -131,6 +131,17 @@ import { TablePerfMonitor } from '../components/table/TablePerfMonitor';
 import { HoleCardReveal } from '../components/tournament/HoleCardReveal';
 import { playerStyleClassifier } from '../services/PlayerStyleClassifier';
 import { playerPositionStatsService } from '../services/PlayerPositionStatsService';
+// Phase 9: Previously unwired table components
+import { EmoteBroadcast } from '../components/table/EmoteBroadcast';
+import { StreamerMode } from '../components/table/StreamerMode';
+import { SitOutToggle } from '../components/table/SitOutToggle';
+import { BankrollWidget } from '../components/table/BankrollWidget';
+import { HandReveal } from '../components/table/HandReveal';
+import PositionStatsPopup from '../components/table/PositionStatsPopup';
+import { SessionAnalytics } from '../components/table/SessionAnalytics';
+import { SessionTrajectoryMini } from '../components/table/SessionTrajectoryMini';
+import { StreakBadge } from '../components/table/StreakBadge';
+import { SpinItWheel } from '../components/table/SpinItWheel';
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // RAKE CONFIG HELPER — Derives HandController rake from official chart

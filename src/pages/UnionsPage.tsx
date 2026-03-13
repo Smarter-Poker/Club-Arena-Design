@@ -4,6 +4,8 @@
  */
 
 import './UnionsPage.css';
+import PageSkeleton from '../components/common/PageSkeleton';
+import { useVisibilityRefresh } from '../hooks/useVisibilityRefresh';
 
 import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
@@ -89,6 +91,7 @@ export default function UnionsPage() {
   const [unions, setUnions] = useState<Union[]>([]);
   const [loading, setLoading] = useState(true);
   const [isCreating, setIsCreating] = useState(false);
+  useVisibilityRefresh(() => loadUnions());
 
   const loadUnions = () => {
     setLoading(true);
@@ -121,8 +124,8 @@ export default function UnionsPage() {
 
   if (loading) {
     return (
-      <div className="loader-container">
-        <div className="loader-spinner" />
+      <div className="unions-page">
+        <PageSkeleton variant="default" />
       </div>
     );
   }
@@ -139,9 +142,16 @@ export default function UnionsPage() {
       </header>
 
       <div className="unions-grid">
-        {unions.map((union, idx) => (
-          <UnionCard key={union.id} union={union} idx={idx} />
-        ))}
+        {unions.length === 0 ? (
+          <div style={{ gridColumn: '1 / -1', textAlign: 'center', padding: '48px 16px' }}>
+            <span style={{ fontSize: '2rem', display: 'block', marginBottom: '12px' }}>🤝</span>
+            <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: '0.85rem' }}>
+              No unions found. Create one to link your clubs!
+            </p>
+          </div>
+        ) : (
+          unions.map((union, idx) => <UnionCard key={union.id} union={union} idx={idx} />)
+        )}
       </div>
 
       <section className="create-union-cta">

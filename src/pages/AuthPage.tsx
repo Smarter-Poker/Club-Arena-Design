@@ -117,9 +117,7 @@ export default function AuthPage() {
           .maybeSingle();
 
         if (emailMatch && !emailCheckError) {
-          console.debug(
-            `🔐 [AUTH] DUPLICATE PREVENTED: Found existing profile for ${email}. Linking to auth.id=${data.user.id}`
-          );
+          // Duplicate prevention: existing profile found for this email, linking to new auth ID
 
           // Update existing profile's last login
           const { error: linkError } = await supabase
@@ -167,7 +165,7 @@ export default function AuthPage() {
           if (referralCode.trim()) {
             const result = await referralService.redeemCode(data.user.id, referralCode.trim());
             if (result.success) {
-              console.debug('[AUTH] Referral code redeemed successfully');
+              // Referral code applied successfully
             } else {
               console.warn('[AUTH] Referral redemption failed:', result.error);
             }
