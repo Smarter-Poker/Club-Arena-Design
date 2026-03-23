@@ -6,6 +6,7 @@ on:
   push:
     branches: [main]
 
+# Cancel previous runs on the same branch/PR
 concurrency:
   group: ci-${{ github.ref }}
   cancel-in-progress: true
@@ -13,7 +14,6 @@ concurrency:
 jobs:
   # ─────────────────────────────────────────────────────────────────────────────
   # STEP 1: TypeScript compilation check
-  # continue-on-error: reports TS health without blocking deployment
   # ─────────────────────────────────────────────────────────────────────────────
   typecheck:
     name: TypeScript Check
@@ -23,10 +23,10 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v4.2.2
 
       - name: Setup Node 20
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v4.1.0
         with:
           node-version: 20
           cache: npm
@@ -38,7 +38,7 @@ jobs:
         run: npx tsc --noEmit
 
   # ─────────────────────────────────────────────────────────────────────────────
-  # STEP 2: Full production build
+  # STEP 2: Full production build + bundle metrics + security audit
   # ─────────────────────────────────────────────────────────────────────────────
   build:
     name: Production Build
@@ -48,10 +48,10 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v4.2.2
 
       - name: Setup Node 20
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v4.1.0
         with:
           node-version: 20
           cache: npm
@@ -59,13 +59,76 @@ jobs:
       - name: Install Dependencies
         run: npm ci
 
+      # ── Security Audit (advisory — does not block deploy) ─────────────
+      - name: Security Audit
+        continue-on-error: true
+        run: |
+          echo "## 🔒 Security Audit" >> $GITHUB_STEP_SUMMARY
+          AUDIT=$(npm audit --production 2>&1 || true)
+          VULNS=$(echo "$AUDIT" | grep -c "Severity:" || echo "0")
+          if [ "$VULNS" -gt 0 ]; then
+            echo "⚠️ Found $VULNS vulnerability(ies)" >> $GITHUB_STEP_SUMMARY
+            echo '' >> $GITHUB_STEP_SUMMARY
+          else
+            echo "✅ No known vulnerabilities" >> $GITHUB_STEP_SUMMARY
+          fi
+
       - name: Build
         run: npm run build
         env:
           NODE_ENV: production
 
+      # ── Bundle Size Tracking ─────────────────────────────────────────
+      - name: Track Bundle Size
+        if: success()
+        run: |
+          echo "## 📦 Bundle Size Report" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| File | Size | Gzipped |" >> $GITHUB_STEP_SUMMARY
+          echo "|------|------|---------|" >> $GITHUB_STEP_SUMMARY
+
+          TOTAL_JS=0
+          TOTAL_CSS=0
+
+          for f in dist/assets/*.js dist/**/*.js; do
+            if [ -f "$f" ]; then
+              SIZE=$(wc -c < "$f" | tr -d ' ')
+              GZIP=$(gzip -c "$f" | wc -c | tr -d ' ')
+              SIZE_KB=$((SIZE / 1024))
+              GZIP_KB=$((GZIP / 1024))
+              TOTAL_JS=$((TOTAL_JS + SIZE))
+              BASENAME=$(basename "$f")
+              echo "| \`${BASENAME}\` | ${SIZE_KB}kB | ${GZIP_KB}kB |" >> $GITHUB_STEP_SUMMARY
+            fi
+          done
+
+          for f in dist/assets/*.css dist/**/*.css; do
+            if [ -f "$f" ]; then
+              SIZE=$(wc -c < "$f" | tr -d ' ')
+              GZIP=$(gzip -c "$f" | wc -c | tr -d ' ')
+              SIZE_KB=$((SIZE / 1024))
+              GZIP_KB=$((GZIP / 1024))
+              TOTAL_CSS=$((TOTAL_CSS + SIZE))
+              BASENAME=$(basename "$f")
+              echo "| \`${BASENAME}\` | ${SIZE_KB}kB | ${GZIP_KB}kB |" >> $GITHUB_STEP_SUMMARY
+            fi
+          done
+
+          TOTAL_JS_KB=$((TOTAL_JS / 1024))
+          TOTAL_CSS_KB=$((TOTAL_CSS / 1024))
+          TOTAL_KB=$(( (TOTAL_JS + TOTAL_CSS) / 1024 ))
+
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Total JS:** ${TOTAL_JS_KB}kB | **Total CSS:** ${TOTAL_CSS_KB}kB | **Grand Total:** ${TOTAL_KB}kB" >> $GITHUB_STEP_SUMMARY
+
+          if [ $TOTAL_KB -gt 5120 ]; then
+            echo "::error::Bundle size exceeds 5MB limit (${TOTAL_KB}kB)"
+            exit 1
+          fi
+          echo "✅ Bundle size: ${TOTAL_KB}kB (limit: 5120kB)"
+
   # ─────────────────────────────────────────────────────────────────────────────
-  # STEP 3: Deploy to Vercel ONLY after build passes (push only)
+  # STEP 3: Deploy to Vercel ONLY after typecheck + build pass (push only)
   # ─────────────────────────────────────────────────────────────────────────────
   deploy:
     name: Deploy to Vercel
@@ -76,20 +139,32 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v4.2.2
 
       - name: Deploy to Vercel Production
+        id: deploy
         run: |
           npm install -g vercel
-          vercel --prod --token=${{ secrets.VERCEL_TOKEN }} --yes
+          DEPLOY_URL=$(vercel --prod --token=${{ secrets.VERCEL_TOKEN }} --yes 2>&1 | grep -oE 'https://[^ ]+\.vercel\.app' | head -1)
+          echo "url=${DEPLOY_URL}" >> $GITHUB_OUTPUT
+          echo "✅ Deployed: ${DEPLOY_URL}"
         env:
           VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
           VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
 
-      - name: Report Success
+      - name: Post Deploy Summary
         if: success()
-        run: echo "✅ Deployed to Vercel production successfully"
+        run: |
+          echo "## 🚀 Deployment Successful" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**URL:** ${{ steps.deploy.outputs.url }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Commit:** \`${{ github.sha }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "**Branch:** ${{ github.ref_name }}" >> $GITHUB_STEP_SUMMARY
 
       - name: Report Failure
         if: failure()
-        run: echo "❌ Vercel deployment FAILED"
+        run: |
+          echo "## ❌ Deployment FAILED" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "TypeScript and build passed, but Vercel deployment failed." >> $GITHUB_STEP_SUMMARY
+          echo "Check Vercel dashboard for details." >> $GITHUB_STEP_SUMMARY
