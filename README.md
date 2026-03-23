@@ -1,3 +1,5 @@
+![CI](https://github.com/Smarter-Poker/Club-Arena-Design/actions/workflows/ci.yml/badge.svg)
+
 # ♠ Club Arena
 
 > **PokerBros Clone + Better** — Private poker clubs with agents, unions, and full game logic.

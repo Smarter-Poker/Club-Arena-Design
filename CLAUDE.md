@@ -1,48 +1,77 @@
 # Claude Instructions for Club Arena
 
+## MANDATORY FOR ALL AGENTS (AntiGravity, Claude, any AI agent)
+
+**Club Arena has been PERMANENTLY migrated to smarter.poker.**
+
+### Where to PUBLISH / SAVE / DEPLOY:
+1. Build Club Arena: `npm run build` (Vite produces dist/)
+2. Sync to World Hub: `bash scripts/sync-to-world-hub.sh ~/Documents/Smarter-Poker-World-Hub`
+3. Push WORLD HUB (not Club Arena) to deploy: `cd ~/Documents/Smarter-Poker-World-Hub && bash scripts/git-safe-push.sh "your message"`
+4. Verify on: `https://smarter.poker/hub/club-arena/`
+
+### NEVER DO:
+- NEVER run `vercel deploy` or `vercel --prod` in the Club Arena directory
+- NEVER push to or deploy via `club-arena.vercel.app`
+- NEVER push to or deploy via `club-engine.vercel.app`
+- NEVER push to or deploy via `club.smarter.poker`
+- NEVER add iframe code (`window.parent`, `postMessage`, `ClubArenaEmbed`)
+- NEVER add `VITE_` prefixed secret keys (use server-side API routes instead)
+
+### WHERE THINGS LIVE:
+- Production URL: `https://smarter.poker/hub/club-arena/`
+- Built files: `Smarter-Poker-World-Hub/public/hub/club-arena/` (618 files)
+- Source code: `Smarter-Poker-Club-Arena/src/` (this repo)
+- API routes: `Smarter-Poker-World-Hub/pages/api/club-arena/` (66 routes)
+- Vercel project: `smarter-poker` (the ONLY deployment target)
+
 ## CRITICAL: Testing & Deployment Rules
 
 **ALL live E2E testing MUST be done on `smarter.poker` — NEVER on `club-arena.vercel.app` directly.**
 
-Club Arena is embedded inside smarter.poker via iframe. The standalone URL (`club-arena.vercel.app`)
-is NOT how users access the app. Auth tokens, navigation, and the full user experience only work
-correctly when accessed through `smarter.poker/hub/club-arena/*`.
+Club Arena lives 100% inside smarter.poker. All files (JS, CSS, HTML, images, cards,
+videos, logos) are served from `smarter.poker/hub/club-arena/*` via the World Hub's
+`public/` directory. ZERO requests go to external domains.
 
 - Test URL: `https://smarter.poker/hub/club-arena/`
 - NEVER navigate to or test on `club-arena.vercel.app` directly
-- All updates publish automatically to smarter.poker via Vercel (no separate deploy needed)
-- Auth flows, postMessage, and iframe context only work on smarter.poker
+- After code changes: rebuild with Vite, copy dist/ to World Hub's public/hub/club-arena/, push World Hub
 
 ## Architecture — How This App Is Served
 
-Club Arena is a **Vite + React SPA** embedded inside `smarter.poker`:
+Club Arena is a **Vite + React SPA** that lives inside the smarter.poker Next.js app:
 
-1. **Production (user-facing)**: `smarter.poker/hub/club-arena/*` — accessed via iframe embed
-2. **Build target**: `club-arena.vercel.app` — Vercel deployment URL (NOT for testing)
+1. **Production (user-facing)**: `smarter.poker/hub/club-arena/*` — served from World Hub's `public/` directory
+2. **Build tool**: Vite builds the SPA into `dist/` — this output is copied to World Hub's `public/hub/club-arena/`
+3. **SPA routing**: World Hub's `next.config.js` has `fallback` rewrites that serve `index.html` for unmatched routes
+4. **Auth**: Same-origin Supabase session via shared `smarter-poker-auth` localStorage key
 
-The main smarter.poker site (Smarter-Poker-World-Hub, a Next.js app) embeds this SPA
-using the `ClubArenaEmbed` component, which loads an iframe pointing to `club-arena.vercel.app`.
+NO iframe. NO postMessage. NO proxy. NO external domain requests. Everything from smarter.poker.
 
 ### Deployment Pipeline
+
 ```
-Push to GitHub (Smarter-Poker/Smarter-Poker-Club-Arena)
-  → Vercel auto-deploys to club-arena.vercel.app
-  → Changes appear on smarter.poker immediately (iframe loads at runtime)
-  → NO World Hub deploy needed for Club Arena code changes
+1. Make changes in Club Arena repo
+2. Build: npm run build (Vite produces dist/)
+3. Copy dist/ to World Hub: public/hub/club-arena/ (strip source maps)
+4. Push World Hub to GitHub
+5. Vercel auto-deploys smarter.poker with updated Club Arena files
 ```
 
 ### Vercel Project Details
-- Project: `club-arena` (prj_oaCq8RYhExLRUYizLG93li0uX468)
-- Team: team_SVD8r7AOPH065G3usBxVvrBc
-- Domains: club-arena.vercel.app, club-arena-smarter-poker.vercel.app
+
+- World Hub: `smarter-poker` (prj_FNUaJmcjRnwCSh1JzblIUYuOXDGK) — this is the ONLY deployment
+- Club Arena code lives in: `public/hub/club-arena/` within the World Hub repo
 
 ## Tech Stack
+
 - Vite + React 18 + TypeScript
 - React Router v6
 - Supabase (PostgreSQL + Auth + Realtime)
 - CSS Modules + global CSS
 
 ## Key Directories
+
 ```
 src/App.tsx              — React Router (70+ routes)
 src/pages/               — Page components
@@ -53,31 +82,38 @@ src/types/               — TypeScript types
 ```
 
 ## Auth
-- When embedded in smarter.poker, auth token is received via `postMessage` from the parent window
-- When standalone, uses Supabase auth directly
-- Detection: `window.parent !== window` means embedded in iframe
+
+- Same-origin auth via shared Supabase localStorage key (`smarter-poker-auth`)
+- User logs into smarter.poker, Club Arena reads the same session automatically
+- NO iframe, NO postMessage, NO `window.parent` checks — all eliminated March 2026
+- Standard `supabase.auth.getSession()` and `supabase.auth.getUser()` everywhere
 
 ## Code Safety Rules
+
 1. Use `.maybeSingle()` instead of `.single()` for Supabase queries
 2. Always handle null/undefined gracefully in display components
 3. VIP levels must be validated — only render badges for valid levels (bronze/silver/gold/platinum/diamond)
 4. Format numbers with `.toLocaleString()` — never zero-pad with `.padStart()`
 
 ## Performance Optimizations
+
 - **Recharts pages**: Already lazy-loaded via React.lazy() in App.tsx (PlayerStatsPage, RakebackPage, etc.)
 - **Offline queue**: Max size capped at 50 items (see `src/utils/offlineQueue.ts`)
 - **Bundle analysis**: Run `npm run analyze` to visualize bundle size and identify large chunks
 
 ## Large Images (>100KB)
+
 The following images are in `/public` and should be candidates for optimization:
+
 - Card backs: 3.1-3.7MB (backs/black.jpeg, white.jpeg, blue.jpeg, red.jpeg)
-- Club logos: 695K-948K (preset-*.png files)
-- UI assets: 400K-600K (header-*.png, vip-card.png, poker-chip-logo.png)
-- Frame images: 82K-102K (frames/frame-*.jpg)
+- Club logos: 695K-948K (preset-\*.png files)
+- UI assets: 400K-600K (header-\*.png, vip-card.png, poker-chip-logo.png)
+- Frame images: 82K-102K (frames/frame-\*.jpg)
 
 Consider WebP conversion or lazy-loading for these assets.
 
 ## Known Bug Patterns (Fixed, Don't Reintroduce)
+
 - Bad Beat Jackpot: Use `num.toLocaleString()`, NOT `padStart(9, '0')` for formatting
 - VIP Badge: Always validate level against valid list before rendering — return null for invalid/empty/none
 - Promotion types: Format raw DB enums (HIGH_HAND → "High Hand") before display
