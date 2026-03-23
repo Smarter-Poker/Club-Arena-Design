@@ -1,3 +1,2 @@
 #!/usr/bin/env sh
-. "$(dirname -- "$0")/husky.sh"
-. "$(dirname -- "$0")/../pre-push"
+. "$(dirname "$0")/h"
