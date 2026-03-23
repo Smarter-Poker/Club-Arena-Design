@@ -1,3 +1,5 @@
+![CI](https://github.com/Smarter-Poker/Club-Arena-Design/actions/workflows/ci.yml/badge.svg)
+
 # Club Arena - UI Design Sandbox
 
 ## 🎨 Purpose
