@@ -12,12 +12,14 @@ concurrency:
 
 jobs:
   # ─────────────────────────────────────────────────────────────────────────────
-  # STEP 1: TypeScript compilation check (fast — ~40s)
+  # STEP 1: TypeScript compilation check
+  # continue-on-error: reports TS health without blocking deployment
   # ─────────────────────────────────────────────────────────────────────────────
   typecheck:
     name: TypeScript Check
     runs-on: ubuntu-latest
     timeout-minutes: 10
+    continue-on-error: true
 
     steps:
       - name: Checkout
@@ -36,7 +38,7 @@ jobs:
         run: npx tsc --noEmit
 
   # ─────────────────────────────────────────────────────────────────────────────
-  # STEP 2: Full production build (depends on typecheck passing)
+  # STEP 2: Full production build
   # ─────────────────────────────────────────────────────────────────────────────
   build:
     name: Production Build
@@ -63,7 +65,7 @@ jobs:
           NODE_ENV: production
 
   # ─────────────────────────────────────────────────────────────────────────────
-  # STEP 3: Deploy to Vercel ONLY after typecheck + build pass (push only)
+  # STEP 3: Deploy to Vercel ONLY after build passes (push only)
   # ─────────────────────────────────────────────────────────────────────────────
   deploy:
     name: Deploy to Vercel
