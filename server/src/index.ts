@@ -2354,7 +2354,11 @@ const gameServer = new GameServer();
 // CORS HEADERS — Allow frontend to call action endpoints
 // ═══════════════════════════════════════════════════════════════════════════════
 
-const CORS_HEADERS: Record<string, string> = {
+// If behind a proxy like Caddy (which sets its own CORS headers), we avoid duplicate headers.
+// In production, we assume Caddy adds CORS. For local dev, we add them here.
+const isProd = process.env.NODE_ENV === 'production' || !!process.env.FLY_APP_NAME;
+
+const CORS_HEADERS: Record<string, string> = isProd ? {} : {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
   'Access-Control-Allow-Headers': 'Content-Type, Authorization',
