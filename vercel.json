@@ -1,7 +1,8 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "outputDirectory": "dist",
-  "framework": null,
+  "framework": "vite",
+  "buildCommand": "tsc -b && vite build",
   "redirects": [
     {
       "source": "/",
