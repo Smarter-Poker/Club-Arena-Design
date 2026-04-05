@@ -138,8 +138,6 @@ export default function FinancialAdminHub() {
     };
   }, []);
 
-  useVisibilityRefresh(loadStats);
-
   const [stats, setStats] = useState<HubStats>({
     totalAlerts: 0,
     openDisputes: 0,
@@ -151,34 +149,6 @@ export default function FinancialAdminHub() {
   const [visibleCards, setVisibleCards] = useState<Set<number>>(new Set());
   const [visibleNavs, setVisibleNavs] = useState<Set<number>>(new Set());
   const [revenueData, setRevenueData] = useState<{ day: string; amount: number }[]>([]);
-
-  useEffect(() => {
-    loadStats();
-  }, [loadStats]);
-
-  // Bus listeners: refresh stats when financial events fire
-  useEffect(() => {
-    const unsubBalance = masterBus.subscribeDebounced('BALANCE_UPDATED', loadStats, 1000);
-    const unsubSettlement = masterBus.subscribeDebounced('SETTLEMENT_COMPLETED', loadStats, 1000);
-    const unsubAlert = masterBus.subscribeDebounced('FINANCIAL_ALERT', loadStats, 500);
-    return () => {
-      unsubBalance();
-      unsubSettlement();
-      unsubAlert();
-    };
-  }, [loadStats]);
-
-  // Real-time subscription: disputes table changes
-  useEffect(() => {
-    const channelKey = 'financial-admin-hub-disputes';
-    const channel = masterBus.getOrCreateChannel(channelKey);
-    channel
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'disputes' }, loadStats)
-      .subscribe();
-    return () => {
-      masterBus.removeRegisteredChannel(channelKey);
-    };
-  }, [loadStats]);
 
   useEffect(() => {
     const timers: ReturnType<typeof setTimeout>[] = [];
@@ -193,7 +163,7 @@ export default function FinancialAdminHub() {
     return () => timers.forEach(clearTimeout);
   }, []);
 
-  const loadStats = async () => {
+  const loadStats = useCallback(async () => {
     setLoading(true);
     try {
       // ── Batch 1: All KPI counts in parallel ──
@@ -318,7 +288,37 @@ export default function FinancialAdminHub() {
       if (isMounted.current) toast.error('Failed to load financial stats');
     }
     if (isMounted.current) setLoading(false);
-  };
+  }, [toast]);
+
+  useVisibilityRefresh(loadStats);
+
+  useEffect(() => {
+    loadStats();
+  }, [loadStats]);
+
+  // Bus listeners: refresh stats when financial events fire
+  useEffect(() => {
+    const unsubBalance = masterBus.subscribeDebounced('BALANCE_UPDATED', loadStats, 1000);
+    const unsubSettlement = masterBus.subscribeDebounced('SETTLEMENT_COMPLETED', loadStats, 1000);
+    const unsubAlert = masterBus.subscribeDebounced('FINANCIAL_ALERT', loadStats, 500);
+    return () => {
+      unsubBalance();
+      unsubSettlement();
+      unsubAlert();
+    };
+  }, [loadStats]);
+
+  // Real-time subscription: disputes table changes
+  useEffect(() => {
+    const channelKey = 'financial-admin-hub-disputes';
+    const channel = masterBus.getOrCreateChannel(channelKey);
+    channel
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'disputes' }, loadStats)
+      .subscribe();
+    return () => {
+      masterBus.removeRegisteredChannel(channelKey);
+    };
+  }, [loadStats]);
 
   const kpiCards = [
     {
