@@ -76,9 +76,9 @@ class ReferralService {
         .from('referral_codes')
         .insert({ user_id: userId, code })
         .select('id, code, uses, max_uses')
-        .single();
+        .maybeSingle();
 
-      if (error) {
+      if (error || !data) {
         console.error('[ReferralService] Failed to create code:', error);
         return null;
       }
