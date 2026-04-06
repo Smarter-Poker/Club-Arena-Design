@@ -1,0 +1,43 @@
+# Dependencies
+node_modules
+
+# Build output (rebuilt during deploy)
+dist
+
+# Version control
+.git
+
+# IDE & OS
+.idea
+.vscode
+*.swp
+*.swo
+.DS_Store
+
+# Testing
+test-results
+playwright-report
+e2e
+
+# Development files
+*.png
+*.jpg
+scripts/trees/
+AUDIT_REPORT.md
+CLAUDE.md
+CLAUDE_AUDIT_LOG.md
+HORSE_SYSTEM_BUG_REPORT.md
+DEPLOYMENT_PLAN.md
+DEPLOYMENT_TEST.md
+db_schema.sql
+*.cjs
+*.mjs
+*.sh
+svg-positioning-tool.html
+
+# Supabase local
+supabase/.temp
+
+# Test files
+test_*.ts
+check_messages_schema.ts
