@@ -66,11 +66,6 @@ export const PlayerStatsDashboard: React.FC<{ playerId?: string }> = ({ playerId
   const [activeTab, setActiveTab] = useState<'overview' | 'hands' | 'leaks'>('overview');
   const [visibleItems, setVisibleItems] = useState<Set<number>>(new Set());
 
-  useEffect(() => {
-    loadStats();
-    generateSessionData();
-  }, [playerId]);
-
   const loadStats = async () => {
     // In production, fetch from Supabase
     setLoading(false);
@@ -96,6 +91,11 @@ export const PlayerStatsDashboard: React.FC<{ playerId?: string }> = ({ playerId
     }
     setSessionData(data);
   };
+
+  useEffect(() => {
+    loadStats();
+    generateSessionData();
+  }, [playerId]);
 
   const radarData = [
     { stat: 'VPIP', value: stats.vpip, fullMark: 40 },
