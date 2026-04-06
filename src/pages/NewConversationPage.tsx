@@ -205,7 +205,7 @@ export default function NewConversationPage() {
                 presenceStatus={result.isOnline ? 'online' : 'offline'}
                 showPresence={true}
                 showLevelBadge={false}
-                showXpRing={false}
+
                 showVipRing={false}
               />
               <div className="result-info">

@@ -225,7 +225,7 @@ export default function TableCard({ table }: TableCardProps) {
                 size="xs"
                 showPresence={false}
                 showLevelBadge={false}
-                showXpRing={false}
+
                 showVipRing={false}
               />
             </div>

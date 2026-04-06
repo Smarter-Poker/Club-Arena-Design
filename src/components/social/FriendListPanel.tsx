@@ -25,7 +25,7 @@ interface Friend {
   tableName?: string;
   level?: number;
   vipTier?: VipTier;
-  xpProgress?: number;
+
 }
 
 interface FriendListPanelProps {
@@ -117,7 +117,7 @@ export default function FriendListPanel({
         tableName: undefined,
         level: f.profiles?.level || 1,
         vipTier: (f.profiles?.vip_tier as VipTier) || 'bronze',
-        xpProgress: Math.min(100, (f.profiles?.vip_points || 0) % 100),
+
       }));
 
       // Sort by online status
@@ -300,12 +300,12 @@ export default function FriendListPanel({
                 size="md"
                 vipTier={friend.vipTier}
                 level={friend.level}
-                xpProgress={friend.xpProgress}
+
                 presenceStatus={friend.status}
                 isPlaying={friend.status === 'playing'}
                 showPresence={true}
                 showLevelBadge={true}
-                showXpRing={true}
+
                 showVipRing={true}
                 onClick={() => {
                   haptic.selection();

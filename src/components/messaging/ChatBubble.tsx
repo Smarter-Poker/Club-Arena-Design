@@ -136,7 +136,7 @@ export default function ChatBubble({
           size="sm"
           showPresence={false}
           showLevelBadge={false}
-          showXpRing={false}
+
           showVipRing={false}
           alt={message.userFullname}
         />
